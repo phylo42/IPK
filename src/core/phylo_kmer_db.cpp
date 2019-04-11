@@ -1,4 +1,4 @@
-#include "phylo_kmer_db.h"
+#include "core/phylo_kmer_db.h"
 
 void phylo_kmer_db::put(kmer_t key, branch_node_t branch, score_t score)
 {

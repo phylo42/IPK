@@ -1,4 +1,4 @@
-#include "phylo_kmer.h"
+#include "core/phylo_kmer.h"
 #include <cmath>
 
 /// Compares two floats for almost equality.
