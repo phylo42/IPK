@@ -1,0 +1,3 @@
+[submodule "third-party/skarupke"]
+	path = third-party/skarupke
+	url = git@github.com:skarupke/flat_hash_map.git
