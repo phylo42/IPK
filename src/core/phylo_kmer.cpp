@@ -1,6 +1,8 @@
 #include "core/phylo_kmer.h"
 #include <cmath>
 
+using namespace core;
+
 /// Compares two floats for almost equality.
 /// From: https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
 template<class T>
@@ -13,12 +15,12 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_
            || std::abs(x - y) < std::numeric_limits<T>::min();
 }
 
-const kmer_t nan_value = 0;
-const score_t nan_score = std::numeric_limits<score_t>::quiet_NaN();
+const phylo_kmer::key_type nan_key = 0;
+const phylo_kmer::score_type nan_score = std::numeric_limits<phylo_kmer::score_type>::quiet_NaN();
 
 bool phylo_kmer::is_nan() const
 {
-    return (value == nan_value) && (score == nan_score);
+    return (key == nan_key) && (score == nan_score);
 }
 
 bool operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
@@ -29,17 +31,17 @@ bool operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
     }
     else
     {
-        return (lhs.value == rhs.value) && (almost_equal<score_t>(lhs.score, rhs.score));
+        return (lhs.key == rhs.key) && (almost_equal<phylo_kmer::score_type>(lhs.score, rhs.score));
     }
 }
 
 phylo_kmer make_napk()
 {
-    return phylo_kmer { nan_value, nan_score };
+    return phylo_kmer { nan_key, nan_score };
 }
 
-score_t score_threshold(size_t kmer_size)
+phylo_kmer::score_type score_threshold(size_t kmer_size)
 {
-    return std::log10(powf(1.0f / seq_traits<seq_type>::alphabet_size, float(kmer_size)));
+    return std::log10(powf(1.0f / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
 }
 

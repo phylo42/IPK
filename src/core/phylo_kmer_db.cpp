@@ -1,6 +1,8 @@
 #include "core/phylo_kmer_db.h"
 
-void phylo_kmer_db::put(kmer_t key, branch_node_t branch, score_t score)
+using namespace core;
+
+void phylo_kmer_db::put(phylo_kmer::key_type key, phylo_kmer::branch_type branch, phylo_kmer::score_type score)
 {
     if (auto it = _map.find(key); it != _map.end())
     {
