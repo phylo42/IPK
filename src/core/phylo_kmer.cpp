@@ -23,7 +23,7 @@ bool phylo_kmer::is_nan() const
     return (key == nan_key) && (score == nan_score);
 }
 
-bool operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
+bool core::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
 {
     if (lhs.is_nan() || rhs.is_nan())
     {
@@ -35,12 +35,12 @@ bool operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
     }
 }
 
-phylo_kmer make_napk()
+phylo_kmer core::make_napk()
 {
     return phylo_kmer { nan_key, nan_score };
 }
 
-phylo_kmer::score_type score_threshold(size_t kmer_size)
+phylo_kmer::score_type core::score_threshold(size_t kmer_size)
 {
     return std::log10(powf(1.0f / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
 }

@@ -68,7 +68,8 @@ namespace core
     /// \brief A compile-time constant for a current sequence type.
     /// \details Sequence type is determined at compile time for efficiency reasons. To use another sequence type
     /// (e.g. proteins), declare a new seq_traits_impl and recompile core for a new sequence type.
-    using seq_traits = seq_traits_impl<dna>;
+    using seq_type = dna;
+    using seq_traits = seq_traits_impl<seq_type>;
 
     /// \brief Returns amount of bits used to store one base of a sequence of given type.
     template<typename SeqType>
