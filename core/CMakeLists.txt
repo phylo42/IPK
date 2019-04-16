@@ -1,10 +1,9 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-######################################################################################################
+# WARNING: some dependencies are not listed here. See the top-level CMake file
+# for more details
+
 # Create a library target and set properties
-
-find_package(skarupke REQUIRED)
-
 add_library(core STATIC "")
 add_library(rappas::core ALIAS core)
 
@@ -14,6 +13,7 @@ target_sources(core
             src/core/phylo_kmer_db.cpp
         )
 
+# WARNING: third-party dependency here
 target_link_libraries(core
         PUBLIC
             skarupke::flat_hash_map
@@ -40,7 +40,6 @@ target_compile_features(core
 
 ######################################################################################################
 # Library installation
-
 include(GNUInstallDirs)
 
 # Exporting the core target
