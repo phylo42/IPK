@@ -1,7 +1,7 @@
 #ifndef RAPPAS_CORE_PHYLO_KMER_DB_H
 #define RAPPAS_CORE_PHYLO_KMER_DB_H
 
-#include <flat_hash_map.hpp>
+#include <flat_hash_map/flat_hash_map.hpp>
 #include "phylo_kmer.h"
 
 namespace core
