@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(rappas-core VERSION 0.1.0 LANGUAGES CXX)
+project(rappas_core VERSION 0.1.0 LANGUAGES CXX)
 
 # WARNING: Some subprojects have custom libraries as dependencies:
 #
