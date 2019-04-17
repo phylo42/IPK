@@ -19,9 +19,9 @@ namespace core
 
         phylo_kmer_db() = default;
         phylo_kmer_db(const phylo_kmer_db&) = delete;
-        phylo_kmer_db(phylo_kmer_db&&) = delete;
+        phylo_kmer_db(phylo_kmer_db&&) noexcept = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
-        phylo_kmer_db& operator=(phylo_kmer_db&&) = delete;
+        phylo_kmer_db& operator=(phylo_kmer_db&&) noexcept = default;
         ~phylo_kmer_db() noexcept = default;
 
         /// \brief Puts a phylo-kmer in the database.
