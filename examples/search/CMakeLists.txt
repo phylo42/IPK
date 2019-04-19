@@ -13,7 +13,7 @@ target_sources(search_example
 
 target_link_libraries(search_example
         PRIVATE
-            rappas::core_dna
+            rappas::core_n
         )
 
 # Turn on the warnings and treat them as errors
