@@ -10,10 +10,6 @@ target_sources(basic_example
         PRIVATE
             src/main.cpp
         )
-target_include_directories(basic_example
-        PRIVATE
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/
-        )
 
 target_link_libraries(basic_example
         PRIVATE

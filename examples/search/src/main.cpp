@@ -23,21 +23,26 @@ core::phylo_kmer_db create_db()
     return db;
 }
 
-std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
+void search(const core::phylo_kmer_db& db, core::phylo_kmer_db::key_type key)
 {
-    for (const auto& [key, entries] : db)
+    if (auto entries = db.search(key); entries)
     {
-        out << key << ":\n";
-        for (const auto& [branch, score] : entries)
+        std::cout << "Found " << key << ":\n";
+        for (const auto& [branch, score] : *entries)
         {
-            out << '\t' << branch << ": " << score << '\n';
+            std::cout << "\tbranch " << branch << ": " << score << '\n';
         }
     }
-    return out;
+    else
+    {
+        std::cout << "Key " << key << " not found.\n";
+    }
 }
 
 int main()
 {
     const auto db = create_db();
-    std::cout << db;
+    search(db, 0);
+    search(db, 2);
+    search(db, 42);
 }

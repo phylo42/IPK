@@ -7,19 +7,19 @@ core::phylo_kmer_db create_db()
     core::phylo_kmer_db db;
 
     /// branch 0
-    db.put(0, 0, 0.0f);
-    db.put(1, 0, 0.1f);
-    db.put(2, 0, 0.2f);
+    db.put(0, 0, 0.00f);
+    db.put(1, 0, 0.10f);
+    db.put(2, 0, 0.20f);
 
     /// branch 1
-    db.put(1, 1, 0.1f);
-    db.put(2, 1, 0.2f);
-    db.put(3, 1, 0.3f);
+    db.put(1, 1, 0.11f);
+    db.put(2, 1, 0.21f);
+    db.put(3, 1, 0.31f);
 
     /// branch 2
-    db.put(2, 1, 0.2f);
-    db.put(3, 1, 0.3f);
-    db.put(4, 1, 0.4f);
+    db.put(2, 2, 0.22f);
+    db.put(3, 2, 0.32f);
+    db.put(4, 2, 0.42f);
 
     return db;
 }

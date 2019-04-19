@@ -24,6 +24,19 @@ void phylo_kmer_db::put(key_type key, inner_key_type branch, value_type score)
     }
 }
 
+#include <iostream>
+
+std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const
+{
+    if (auto it = _map.find(key); it != _map.end())
+    {
+        return impl::search_result{ it->second.begin(), it->second.end() };
+    }
+    else
+    {
+        return std::nullopt;
+    }
+}
 
 phylo_kmer_db::const_iterator phylo_kmer_db::begin() const
 {
@@ -40,3 +53,21 @@ size_t phylo_kmer_db::size() const
     return _map.size();
 }
 
+impl::search_result::search_result() noexcept
+{}
+
+impl::search_result::search_result(
+    impl::search_result::const_iterator begin,
+    impl::search_result::const_iterator end) noexcept
+    : _begin{ begin }, _end{ end }
+{}
+
+impl::search_result::const_iterator impl::search_result::begin() const
+{
+    return _begin;
+}
+
+impl::search_result::const_iterator impl::search_result::end() const
+{
+    return _end;
+}

@@ -13,10 +13,12 @@ target_sources(core
             src/core/phylo_kmer_db.cpp
         )
 
-# WARNING: third-party dependency here
+find_package(Boost REQUIRED COMPONENTS serialization)
+
 target_link_libraries(core
         PUBLIC
             skarupke::flat_hash_map
+            Boost::serialization
         )
 
 target_include_directories(core
