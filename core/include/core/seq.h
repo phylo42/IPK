@@ -6,13 +6,6 @@
 
 namespace core
 {
-    /// \brief Auxiliary structure to define the seq_type.
-    /// \sa seq_type
-    struct dna
-    {};
-    struct protein
-    {};
-
     /// \brief Sequence traits type.
     /// \details Describes all the properties based on the size of an alphabet, the alphabet itself etc.
     ///
@@ -23,6 +16,17 @@ namespace core
     ///     - size_t encode(char_type)
     template<typename SeqType>
     struct seq_traits_impl;
+
+#ifdef SEQ_TYPE_DNA
+
+    /// \brief Auxiliary structure to define the seq_type.
+    /// \sa seq_type
+    struct dna
+    {};
+
+    /// \brief A compile-time constant for a current sequence type.
+    /// \details Sequence type is determined at compile time for efficiency reasons.
+    using seq_type = dna;
 
     template<>
     struct seq_traits_impl<dna>
@@ -65,32 +69,75 @@ namespace core
         static constexpr size_t max_kmer_length = 16;
     };
 
-    /// \brief A compile-time constant for a current sequence type.
-    /// \details Sequence type is determined at compile time for efficiency reasons. To use another sequence type
-    /// (e.g. proteins), declare a new seq_traits_impl and recompile core for a new sequence type.
-    using seq_type = dna;
+#elif SEQ_TYPE_AA
+    static_assert(false, """SEQ_TYPE_AA is not supported yet. Supported types:\n"""
+                         """SEQ_TYPE_DNA""");
+
+    struct aa
+    {};
+
+    using seq_type = aa;
+
+    template<>
+    struct seq_traits_impl<aa>
+    {
+        using char_type = uint8_t;
+        using key_type = uint64_t;
+
+        static constexpr char_type char_set[] = { 'A' };
+
+        static constexpr char_type decode(size_t /*code*/)
+        {
+            return 0;
+        }
+
+        static constexpr size_t encode(char_type /*base*/)
+        {
+            return 0;
+        }
+
+        static constexpr char_type ambiguous_chars[] =  { 'A' };
+
+        static constexpr size_t alphabet_size = sizeof(char_set);
+        static constexpr size_t max_kmer_length = 0;
+    };
+#else
+
+    static_assert(false, """Please define a sequence type to compile core. Supported types:\n"""
+                         """SEQ_TYPE_DNA""");
+#endif
+
     using seq_traits = seq_traits_impl<seq_type>;
 
     /// \brief Returns amount of bits used to store one base of a sequence of given type.
     template<typename SeqType>
     constexpr seq_traits::key_type bit_length();
 
+    /// \brief Returns a value of kmer_t type that can mask the rightmost base of a kmer_t.
+    /// \details E.g. for DNA 0b1111...1100
+    template<typename SeqType>
+    constexpr seq_traits::key_type rightest_symbol_mask();
+
+
+#ifdef SEQ_TYPE_DNA
     template<>
     constexpr seq_traits::key_type bit_length<dna>()
     {
         return 2ul;
     }
 
-    /// \brief Returns a value of kmer_t type that can mask the rightmost base of a kmer_t.
-    /// \details E.g. for DNA 0b1111...1100
-    template<typename SeqType>
-    constexpr seq_traits::key_type rightest_symbol_mask();
-
     template<>
     constexpr seq_traits::key_type rightest_symbol_mask<dna>()
     {
         return ~0b11ul;
     }
+
+#elif SEQ_TYPE_AA
+    /// ...
+#else
+    /// ...
+#endif
+
 }
 
 #endif
