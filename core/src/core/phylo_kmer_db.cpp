@@ -2,7 +2,7 @@
 
 using namespace core;
 
-void phylo_kmer_db::put(phylo_kmer::key_type key, phylo_kmer::branch_type branch, phylo_kmer::score_type score)
+void phylo_kmer_db::put(key_type key, inner_key_type branch, value_type score)
 {
     if (auto it = _map.find(key); it != _map.end())
     {

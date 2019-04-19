@@ -1,5 +1,6 @@
 #include <iostream>
 #include <core/phylo_kmer_db.h>
+#include <core/serialization.h>
 
 core::phylo_kmer_db create_db()
 {
@@ -38,6 +39,9 @@ std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
 
 int main()
 {
-    const auto db = create_db();
+    const auto filename = "/tmp/rappas_load_example.dat";
+    core::save(filename, create_db());
+
+    const auto db = core::load(filename);
     std::cout << db;
 }
