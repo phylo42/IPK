@@ -18,7 +18,7 @@ namespace core
         return db;
     }
 
-    void save(const std::string& filename, const ::core::phylo_kmer_db& db)
+    void save(const ::core::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream ofs(filename);
         boost::archive::text_oarchive oa(ofs);

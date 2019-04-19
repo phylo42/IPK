@@ -40,7 +40,7 @@ std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
 int main()
 {
     const auto filename = "/tmp/rappas_load_example.dat";
-    core::save(filename, create_db());
+    core::save(create_db(), filename);
 
     const auto db = core::load(filename);
     std::cout << db;
