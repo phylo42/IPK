@@ -1,28 +1,25 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-# WARNING: some dependencies are not listed here. See the top-level CMake file
-# for more details
-
 # Create an executable target and set properties
-add_executable(basic_example EXCLUDE_FROM_ALL "")
+add_executable(core_example_basic EXCLUDE_FROM_ALL "")
 
-target_sources(basic_example
+target_sources(core_example_basic
         PRIVATE
             src/main.cpp
         )
 
-target_link_libraries(basic_example
+target_link_libraries(core_example_basic
         PRIVATE
             rappas::core_n
         )
 
 # Turn on the warnings and treat them as errors
-target_compile_options(basic_example
+target_compile_options(core_example_basic
         PRIVATE
             -Wall -Wextra -Wpedantic -Werror
         )
 
-target_compile_features(basic_example
+target_compile_features(core_example_basic
         PRIVATE
             cxx_std_17
         )
