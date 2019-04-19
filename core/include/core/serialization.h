@@ -1,8 +1,8 @@
 #ifndef RAPPAS_CORE_SERIALIZATION_H
 #define RAPPAS_CORE_SERIALIZATION_H
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <fstream>
 #include "phylo_kmer_db.h"
 
@@ -12,7 +12,7 @@ namespace core
     {
         ::core::phylo_kmer_db db;
         std::ifstream ifs(filename);
-        boost::archive::text_iarchive ia(ifs);
+        boost::archive::binary_iarchive ia(ifs);
 
         ia & db;
         return db;
@@ -21,7 +21,7 @@ namespace core
     void save(const ::core::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream ofs(filename);
-        boost::archive::text_oarchive oa(ofs);
+        boost::archive::binary_oarchive oa(ofs);
         oa & db;
     }
 }
