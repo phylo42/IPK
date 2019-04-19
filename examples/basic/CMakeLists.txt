@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 # for more details
 
 # Create an executable target and set properties
-add_executable(basic_example EXCLUDE_FROM_ALL)
+add_executable(basic_example EXCLUDE_FROM_ALL "")
 
 target_sources(basic_example
         PRIVATE
