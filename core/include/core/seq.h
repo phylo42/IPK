@@ -32,40 +32,57 @@ namespace core
     struct seq_traits_impl<dna>
     {
         /// \brief The type used to store one base of a sequence.
-        using char_type = uint8_t;
+        using char_type = char;
 
         /// \brief The type used to store a k-mer value.
         /// \details K-mers are not stored as strings or char* values, but as values of this type instead.
         /// For example for DNA and k==3 the k-mer "AAA" == 000ul if kmer_t is unsigned long.
         using key_type = uint64_t;
 
-        static constexpr char_type char_set[] = {'A', 'C', 'G', 'T'};
-
-        static constexpr char_type decode(size_t code)
-        {
-            return char_set[code];
-        }
-
-        static constexpr size_t encode(char_type base)
+        static constexpr uint8_t key_to_code(char_type base)
         {
             switch (base)
             {
                 case 'A':
+                    [[fallthrough]];
+                case 'a':
                     return 0;
                 case 'C':
+                    [[fallthrough]];
+                case 'c':
                     return 1;
                 case 'G':
+                    [[fallthrough]];
+                case 'g':
                     return 2;
                 case 'T':
+                    [[fallthrough]];
+                case 't':
+                    [[fallthrough]];
+                case 'U':
+                    [[fallthrough]];
+                case 'u':
                     return 3;
-                default:
+                case 'N':
+                    [[fallthrough]];
+                case 'n':
                     return 4;
+                case '-':
+                    return 5;
+                case '.':
+                    return 6;
+                default:
+                    return 5;
             }
-        }
+        };
 
+        static constexpr char_type code_to_key[] = {'A', 'C', 'G', 'T'};
         static constexpr char_type ambiguous_chars[] =  {'N', '.', '-', 'R', 'Y', 'S', 'W', 'K', 'M', 'B', 'D', 'H', 'V'};
-        static constexpr size_t alphabet_size = sizeof(char_set);
 
+        /// \brief Alphabet size
+        /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
+        /// same code, which counts only once.
+        static constexpr size_t alphabet_size = 4;
         static constexpr size_t max_kmer_length = 16;
     };
 
@@ -138,6 +155,20 @@ namespace core
     /// ...
 #endif
 
+    template<typename SeqTraits>
+    constexpr typename SeqTraits::char_type decode_impl(uint8_t code)
+    {
+        return SeqTraits::code_to_key[code];
+    }
+
+    template<typename SeqTraits>
+    constexpr uint8_t encode_impl(typename SeqTraits::char_type key)
+    {
+        return SeqTraits::key_to_code(key);
+    }
+
+    const auto decode = decode_impl<seq_traits>;
+    const auto encode = encode_impl<seq_traits>;
 }
 
 #endif

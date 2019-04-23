@@ -48,18 +48,18 @@ namespace boost {
         template<class Archive>
         inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
         {
-            size_t table_size;
+            size_t table_size = 0;
             ar & table_size;
             for (size_t i = 0; i < table_size; ++i)
             {
-                ::core::phylo_kmer::key_type key;
-                size_t entries_size;
+                ::core::phylo_kmer::key_type key = ::core::phylo_kmer::nan_key;
+                size_t entries_size = 0;
                 ar & key;
                 ar & entries_size;
                 for (size_t j = 0; j < entries_size; ++j)
                 {
-                    ::core::phylo_kmer::branch_type branch;
-                    ::core::phylo_kmer::score_type score;
+                    ::core::phylo_kmer::branch_type branch = ::core::phylo_kmer::nan_branch;
+                    ::core::phylo_kmer::score_type score = ::core::phylo_kmer::nan_score;
                     ar & branch & score;
                     db.put(key, branch, score);
                 }

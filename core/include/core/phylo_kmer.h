@@ -2,6 +2,8 @@
 #define RAPPAS_CORE_PHYLO_KMER_H
 
 #include "seq.h"
+#include <limits>
+#include <string>
 
 namespace core
 {
@@ -24,6 +26,10 @@ namespace core
         /// The type of a phylokmer's position in the alignment
         using pos_type = uint32_t;
 
+        static constexpr key_type nan_key = std::numeric_limits<phylo_kmer::key_type>::max();
+        static constexpr score_type nan_score = std::numeric_limits<phylo_kmer::score_type>::quiet_NaN();
+        static constexpr branch_type nan_branch = std::numeric_limits<phylo_kmer::branch_type>::max();
+
         bool is_nan() const;
 
         key_type key;
@@ -38,6 +44,13 @@ namespace core
 
     /// Returns a minumum score
     phylo_kmer::score_type score_threshold(size_t kmer_size);
+
+    /// \brief Returns a code of input k-mer.
+    /// \details Assumes that the size of input sequence equals k
+    phylo_kmer::key_type encode_kmer(const std::string& kmer);
+
+    /// Creates a string of size kmer_size by given key
+    std::string decode_kmer(phylo_kmer::key_type key, size_t kmer_size);
 }
 
 #endif

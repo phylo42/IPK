@@ -1,5 +1,7 @@
 #include "core/phylo_kmer.h"
+#include "core/seq.h"
 #include <cmath>
+#include <vector>
 
 using namespace core;
 
@@ -14,9 +16,6 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_
            // unless the result is subnormal
            || std::abs(x - y) < std::numeric_limits<T>::min();
 }
-
-const phylo_kmer::key_type nan_key = 0;
-const phylo_kmer::score_type nan_score = std::numeric_limits<phylo_kmer::score_type>::quiet_NaN();
 
 bool phylo_kmer::is_nan() const
 {
@@ -37,11 +36,40 @@ bool core::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
 
 phylo_kmer core::make_napk()
 {
-    return phylo_kmer { nan_key, nan_score };
+    return phylo_kmer { phylo_kmer::nan_key, phylo_kmer::nan_score };
 }
 
 phylo_kmer::score_type core::score_threshold(size_t kmer_size)
 {
     return std::log10(powf(1.0f / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
+}
+
+phylo_kmer::key_type core::encode_kmer(const std::string& kmer)
+{
+    phylo_kmer::key_type key = 0;
+    for (const auto base : kmer)
+    {
+        key = (key << core::bit_length<core::seq_type>()) | core::encode(base);
+    }
+    return key;
+}
+
+std::string core::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
+{
+    std::vector<uint8_t> result;
+    result.reserve(kmer_size);
+
+    while (key > 0)
+    {
+        result.push_back(core::decode(key & ~core::rightest_symbol_mask<seq_type>()));
+        key >>= bit_length<seq_type>();
+    }
+
+    for (size_t i = result.size(); i < kmer_size; ++i)
+    {
+        result.push_back(core::decode(0));
+    }
+
+    return { result.rbegin(), result.rend() };
 }
 
