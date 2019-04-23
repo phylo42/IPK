@@ -29,7 +29,7 @@ void encode_decode(const std::string& kmer)
     assert(kmer == core::decode_kmer(key, kmer.size()));
 }
 
-std::string_view substring(std::string_view s, std::size_t p, std::size_t n = std::string_view::npos)
+std::string_view sub_string_view(std::string_view s, std::size_t p, std::size_t n = std::string_view::npos)
 {
     return s.substr(p, n);
 }
@@ -48,6 +48,6 @@ int main()
 
     /// An example of core::encode for std::string_view as input
     std::string long_read = "AAAATGCAAAAAAAAA";
-    std::string_view kmer = substring(long_read, 3, 4);
-    std::cout << kmer << ": " << core::encode_kmer(kmer) << std::endl;
+    const auto kmer = sub_string_view(long_read, 3, 4);
+    std::cout << '\n' << kmer << ": " << core::encode_kmer(kmer) << std::endl;
 }

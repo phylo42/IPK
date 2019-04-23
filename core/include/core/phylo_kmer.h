@@ -48,7 +48,7 @@ namespace core
     /// \brief Returns a code of input k-mer.
     /// \details Assumes that the size of input sequence equals k
     phylo_kmer::key_type encode_kmer(const std::string& kmer);
-    phylo_kmer::key_type encode_kmer(const std::string_view& kmer);
+    phylo_kmer::key_type encode_kmer(std::string_view kmer);
 
     /// Creates a string of size kmer_size by given key
     std::string decode_kmer(phylo_kmer::key_type key, size_t kmer_size);
