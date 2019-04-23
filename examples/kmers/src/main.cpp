@@ -29,14 +29,25 @@ void encode_decode(const std::string& kmer)
     assert(kmer == core::decode_kmer(key, kmer.size()));
 }
 
+std::string_view substring(std::string_view s, std::size_t p, std::size_t n = std::string_view::npos)
+{
+    return s.substr(p, n);
+}
+
 int main()
 {
     std::vector<char> alphabet = { 'A', 'C', 'G', 'T' };
-    const size_t kmer_size = 3;
+    const size_t kmer_size = 4;
 
+    /// An example of core::encode and core::decode for std::string as input
     for_each_combination(alphabet, kmer_size,
         [&](std::vector<char>& bases) {
             const auto kmer = std::string{ bases.begin(), bases.end() };
             encode_decode(kmer);
     });
+
+    /// An example of core::encode for std::string_view as input
+    std::string long_read = "AAAATGCAAAAAAAAA";
+    std::string_view kmer = substring(long_read, 3, 4);
+    std::cout << kmer << ": " << core::encode_kmer(kmer) << std::endl;
 }
