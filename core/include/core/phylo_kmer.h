@@ -8,7 +8,7 @@
 namespace core
 {
     /// \brief A phylo k-mer structure.
-    /// \details A key-value pair for a phylo-kmer, where key is a kmer_t value of a k-mer, and value is
+    /// \details A key-value pair for a phylo-kmer, where key is a key_type value of a k-mer, and value is
     /// posterior probability score of this k-mer. Branch node id, position etc. omitted here, because these values
     /// are shared among multiple phylo k-mers and can be stored more effectively.
     struct phylo_kmer
