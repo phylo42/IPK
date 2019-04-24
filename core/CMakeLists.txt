@@ -19,6 +19,7 @@ target_sources(core_p
         PRIVATE
             src/core/phylo_kmer.cpp
             src/core/phylo_kmer_db.cpp
+            src/core/kmer_iterator.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization)
@@ -62,6 +63,7 @@ target_sources(core_n
         PRIVATE
             src/core/phylo_kmer.cpp
             src/core/phylo_kmer_db.cpp
+            src/core/kmer_iterator.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization)

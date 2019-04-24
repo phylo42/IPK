@@ -1,10 +1,11 @@
 #include <iostream>
-#include <core/seq.h>
-#include <core/phylo_kmer.h>
 #include <cassert>
 #include <vector>
 #include <algorithm>
 #include <cmath>
+#include <core/seq.h>
+#include <core/phylo_kmer.h>
+#include <core/kmer_iterator.h>
 
 /// Iterate over all the combinations with repetition
 /// http://shoaib-ahmed.com/2018/for-each-combination-with-repetetion-c++/
@@ -22,21 +23,43 @@ void for_each_combination(V &v, size_t gp_sz, Callable f) {
     }
 }
 
-void encode_decode(const std::string& kmer)
+void encode_string()
 {
-    const auto key = core::encode_kmer(kmer);
-    std::cout << kmer << ": " << key << std::endl;
-    assert(kmer == core::decode_kmer(key, kmer.size()));
+    auto alphabet = std::vector<char>{ 'A', 'C', 'G', 'T' };
+    const size_t kmer_size = 3;
+
+    for_each_combination(alphabet, kmer_size,
+                         [&](std::vector<char>& bases) {
+                             const auto kmer = std::string{ bases.begin(), bases.end() };
+                             const auto key = core::encode_kmer(kmer);
+                             std::cout << kmer << ": " << key << std::endl;
+                             assert(kmer == core::decode_kmer(key, kmer.size()));
+                         });
+}
+
+void encode_string_views()
+{
+    std::cout << "\nIteration: " << std::endl;
+
+    const auto long_read = std::string{ "AAAATGCAAA" };
+    const size_t kmer_size = 4;
+
+    /// Iterate over k-mers of a string_view (implicitly created from long_read).
+    /// This is more effective than calling core::encode_kmer for every k-mer of a string,
+    /// because core::to_kmers calculates codes in a rolling fashion.
+    for (const auto& [kmer, code] : core::to_kmers(long_read, kmer_size))
+    {
+        std::cout << kmer << ": " << code << " " << std::endl;
+        assert(core::encode_kmer(kmer) == code);
+    }
 }
 
 int main()
 {
-    std::vector<char> alphabet = { 'A', 'C', 'G', 'T' };
-    const size_t kmer_size = 3;
+    /// An example of core::encode_kmer and core::decode_kmer for std::string as input
+    encode_string();
 
-    for_each_combination(alphabet, kmer_size,
-        [&](std::vector<char>& bases) {
-            const auto kmer = std::string{ bases.begin(), bases.end() };
-            encode_decode(kmer);
-    });
+    /// An example of core::encode_kmer for std::string_view as input, and a iteration
+    /// over an input seqeuence
+    encode_string_views();
 }
