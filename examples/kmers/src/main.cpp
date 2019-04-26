@@ -25,15 +25,21 @@ void for_each_combination(V &v, size_t gp_sz, Callable f) {
 
 void encode_string()
 {
-    auto alphabet = std::vector<char>{ 'A', 'C', 'G', 'T' };
+    auto alphabet = std::vector<char>{ 'A', 'C', 'G', 'T', '-' };
     const size_t kmer_size = 3;
 
     for_each_combination(alphabet, kmer_size,
                          [&](std::vector<char>& bases) {
                              const auto kmer = std::string{ bases.begin(), bases.end() };
-                             const auto key = core::encode_kmer(kmer);
-                             std::cout << kmer << ": " << key << std::endl;
-                             assert(kmer == core::decode_kmer(key, kmer.size()));
+                             if (const auto key = core::encode_kmer(kmer); key)
+                             {
+                                 std::cout << kmer << ": " << *key << std::endl;
+                                 assert(kmer == core::decode_kmer(*key, kmer.size()));
+                             }
+                             else
+                             {
+                                 std::cout << kmer << " skipped" << std::endl;
+                             }
                          });
 }
 
@@ -41,12 +47,12 @@ void encode_string_views()
 {
     std::cout << "\nIteration: " << std::endl;
 
-    const auto long_read = std::string{ "AAAATGCAAA" };
+    const auto long_read = std::string{ "--TTTAT-AAATGNNNN-CAAAN.NNTTTT---" };
     const size_t kmer_size = 4;
 
     /// Iterate over k-mers of a string_view (implicitly created from long_read).
     /// This is more effective than calling core::encode_kmer for every k-mer of a string,
-    /// because core::to_kmers calculates codes in a rolling fashion.
+    /// because core::to_kmers calculates codes in a rolling fashion, if possible.
     for (const auto& [kmer, code] : core::to_kmers(long_read, kmer_size))
     {
         std::cout << kmer << ": " << code << " " << std::endl;

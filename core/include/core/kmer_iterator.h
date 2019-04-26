@@ -32,6 +32,9 @@ namespace core
 
         value_type operator*() const noexcept;
     private:
+        std::pair<std::pair<phylo_kmer::key_type, size_t>, bool> encode_from(size_t position) const;
+        std::pair<std::pair<phylo_kmer::key_type, size_t>, bool> next_kmer() const;
+
         /// String view of the original sequence
         std::string_view _sequence_view;
         size_t _kmer_position;
