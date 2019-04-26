@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <optional>
 
 namespace core
 {
@@ -39,22 +40,22 @@ namespace core
         /// For example for DNA and k==3 the k-mer "AAA" == 000ul if kmer_t is unsigned long.
         using key_type = uint64_t;
 
-        static constexpr uint8_t key_to_code(char_type base)
+        static constexpr std::optional<uint8_t> key_to_code(char_type base)
         {
             switch (base)
             {
                 case 'A':
                     [[fallthrough]];
                 case 'a':
-                    return 0;
+                    return { 0 };
                 case 'C':
                     [[fallthrough]];
                 case 'c':
-                    return 1;
+                    return { 1 };
                 case 'G':
                     [[fallthrough]];
                 case 'g':
-                    return 2;
+                    return { 2 };
                 case 'T':
                     [[fallthrough]];
                 case 't':
@@ -62,17 +63,17 @@ namespace core
                 case 'U':
                     [[fallthrough]];
                 case 'u':
-                    return 3;
+                    return { 3 };
                 case 'N':
                     [[fallthrough]];
                 case 'n':
-                    return 4;
+                    [[fallthrough]];
                 case '-':
-                    return 5;
+                    [[fallthrough]];
                 case '.':
-                    return 6;
+                    [[fallthrough]];
                 default:
-                    return 5;
+                    return std::nullopt;
             }
         };
 
@@ -162,7 +163,7 @@ namespace core
     }
 
     template<typename SeqTraits>
-    constexpr uint8_t encode_impl(typename SeqTraits::char_type key)
+    constexpr std::optional<uint8_t> encode_impl(typename SeqTraits::char_type key)
     {
         return SeqTraits::key_to_code(key);
     }

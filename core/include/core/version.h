@@ -10,12 +10,12 @@ namespace core
     {
         static constexpr auto major = "0";
         static constexpr auto minor = "1";
-        static constexpr auto revision = "0";
+        static constexpr auto revision = "2";
 
         /// \brief Returns the core version number as a string
-        static constexpr std::string as_string() const
+        static std::string as_string()
         {
-            return major + "." + minor + "." + revision;
+            return major + std::string{ "." } + minor + std::string{ "." } + revision;
         }
     };
 }

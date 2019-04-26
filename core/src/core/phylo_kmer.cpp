@@ -44,17 +44,25 @@ phylo_kmer::score_type core::score_threshold(size_t kmer_size)
     return std::log10(powf(1.0f / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
 }
 
-phylo_kmer::key_type core::encode_kmer(std::string_view kmer)
+std::optional<phylo_kmer::key_type> core::encode_kmer(std::string_view kmer)
 {
     phylo_kmer::key_type key = 0;
     for (const auto base : kmer)
     {
-        key = (key << core::bit_length<core::seq_type>()) | core::encode(base);
+        if (const auto& base_code = core::encode(base); base_code)
+        {
+            key <<= core::bit_length<core::seq_type>();
+            key |= *base_code;
+        }
+        else
+        {
+            return std::nullopt;
+        }
     }
     return key;
 }
 
-phylo_kmer::key_type core::encode_kmer(const std::string& kmer)
+std::optional<phylo_kmer::key_type> core::encode_kmer(const std::string& kmer)
 {
     return encode_kmer(std::string_view{ kmer });
 }

@@ -1,14 +1,15 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+project(rappas_core LANGUAGES CXX VERSION 0.1.1)
 
 # WARNING: some dependencies are not listed here. See the top-level CMake file
 # for more details
 
 ##########################################################################################
 # PROTEINS
-# WARNING: SEQ_TYPE_PROTEIN is not supported yet. We declare a target for this,
-# but it will not compile. We also define this target EXCLUDE_FROM_ALL for a while
+# WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
+# but it can not be compiled. We also define this target EXCLUDE_FROM_ALL for a while
 # to not build this target by default
-add_library(core_p STATIC EXCLUDE_FROM_ALL)
+add_library(core_p STATIC EXCLUDE_FROM_ALL "")
 add_library(rappas::core_p ALIAS core_p)
 
 target_compile_definitions(core_p
@@ -66,12 +67,13 @@ target_sources(core_n
             src/core/kmer_iterator.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization)
+find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
 
 target_link_libraries(core_n
         PUBLIC
             skarupke::flat_hash_map
             Boost::serialization
+            Catch2::Catch2
         )
 
 target_include_directories(core_n
@@ -92,7 +94,6 @@ target_compile_features(core_n
             cxx_std_17
         )
 
-
 ######################################################################################################
 # Library installation
 include(GNUInstallDirs)
@@ -108,6 +109,6 @@ install(TARGETS core_n
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 export(TARGETS core_n
-        FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
+       FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
 
 export(PACKAGE rappas)
