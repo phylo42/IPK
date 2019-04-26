@@ -1,6 +1,6 @@
 [submodule "skarupke"]
 	path = skarupke
 	url = git@gite.lirmm.fr:rappas-team/skarupke.git
-[submodule "frozen"]
-	path = frozen
-	url = git@github.com:serge-sans-paille/frozen.git
+[submodule "catch2"]
+	path = catch2
+	url = git@github.com:catchorg/Catch2.git

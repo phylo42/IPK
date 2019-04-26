@@ -2,6 +2,10 @@
 
 using namespace core;
 
+phylo_kmer_db::phylo_kmer_db(size_t kmer_size) noexcept
+    : _kmer_size{ kmer_size }
+{}
+
 void phylo_kmer_db::put(key_type key, inner_key_type branch, value_type score)
 {
     if (auto it = _map.find(key); it != _map.end())
@@ -51,6 +55,11 @@ phylo_kmer_db::const_iterator phylo_kmer_db::end() const
 size_t phylo_kmer_db::size() const
 {
     return _map.size();
+}
+
+size_t phylo_kmer_db::kmer_size() const
+{
+    return _kmer_size;
 }
 
 impl::search_result::search_result() noexcept

@@ -1,10 +1,11 @@
 #include <iostream>
+#include <boost/filesystem.hpp>
 #include <core/phylo_kmer_db.h>
 #include <core/serialization.h>
 
 core::phylo_kmer_db create_db()
 {
-    core::phylo_kmer_db db;
+    core::phylo_kmer_db db { 3 };
 
     /// branch 0
     db.put(0, 0, 0.00f);
@@ -39,9 +40,10 @@ std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
 
 int main()
 {
-    const auto filename = "/tmp/rappas_load_example.dat";
+    const auto filename = boost::filesystem::unique_path().string();
     core::save(create_db(), filename);
 
     const auto db = core::load(filename);
+    std::cout << "K-mer size: " << db.kmer_size() << std::endl;
     std::cout << db;
 }

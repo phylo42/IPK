@@ -8,9 +8,12 @@ target_sources(core_example_load
             src/main.cpp
         )
 
+find_package(Boost REQUIRED COMPONENTS filesystem)
+
 target_link_libraries(core_example_load
         PRIVATE
             rappas::core_n
+            Boost::filesystem
         )
 
 # Turn on the warnings and treat them as errors
