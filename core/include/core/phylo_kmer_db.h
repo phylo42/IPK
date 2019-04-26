@@ -6,6 +6,20 @@
 
 namespace core
 {
+    class phylo_kmer_db;
+}
+
+namespace boost
+{
+    namespace serialization
+    {
+        template<class Archive>
+        inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
+    }
+}
+
+namespace core
+{
     namespace impl {
         class search_result;
     }
@@ -13,6 +27,11 @@ namespace core
     /// \brief Phylo-kmer database class, that stores all the phylo-kmers.
     class phylo_kmer_db
     {
+        /// We can get rid of this friend declaration if we provide a public set_kmer_size method.
+        /// I thinks it is better to inject an invasive dependency here than provide public access to this
+        /// variable.
+        template<class Archive>friend void boost::serialization::load(Archive& ar,
+            ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
     public:
         using key_type = phylo_kmer::key_type;
         using inner_key_type = phylo_kmer::branch_type;

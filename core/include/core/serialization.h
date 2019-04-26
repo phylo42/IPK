@@ -13,9 +13,7 @@ namespace core
         std::ifstream ifs(filename);
         boost::archive::binary_iarchive ia(ifs);
 
-        size_t kmer_size;
-        ia & kmer_size;
-        ::core::phylo_kmer_db db { kmer_size };
+        ::core::phylo_kmer_db db { 0 };
         ia & db;
         return db;
     }
@@ -54,8 +52,9 @@ namespace boost {
         template<class Archive>
         inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
         {
-            /// Note:
-            /// k-mer size is already loaded
+            size_t kmer_size = 0;
+            ar & kmer_size;
+            db._kmer_size = kmer_size;
 
             size_t table_size = 0;
             ar & table_size;

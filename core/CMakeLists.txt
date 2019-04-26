@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+project(rappas_core LANGUAGES CXX VERSION 0.1.1)
 
 # WARNING: some dependencies are not listed here. See the top-level CMake file
 # for more details
@@ -72,6 +73,7 @@ target_link_libraries(core_n
         PUBLIC
             skarupke::flat_hash_map
             Boost::serialization
+            Catch2::Catch2
         )
 
 target_include_directories(core_n
@@ -93,10 +95,6 @@ target_compile_features(core_n
         )
 
 ######################################################################################################
-# Tests
-enable_testing()
-
-######################################################################################################
 # Library installation
 include(GNUInstallDirs)
 
@@ -111,6 +109,6 @@ install(TARGETS core_n
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 export(TARGETS core_n
-        FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
+       FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
 
 export(PACKAGE rappas)
