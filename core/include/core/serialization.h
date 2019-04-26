@@ -10,10 +10,12 @@ namespace core
 {
     ::core::phylo_kmer_db load(const std::string& filename)
     {
-        ::core::phylo_kmer_db db;
         std::ifstream ifs(filename);
         boost::archive::binary_iarchive ia(ifs);
 
+        size_t kmer_size;
+        ia & kmer_size;
+        ::core::phylo_kmer_db db { kmer_size };
         ia & db;
         return db;
     }
@@ -32,8 +34,12 @@ namespace boost {
         template<class Archive>
         inline void save(Archive& ar, const ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
         {
+            size_t kmer_size = db.kmer_size();
+            ar & kmer_size;
+
             size_t table_size = db.size();
             ar & table_size;
+
             for (const auto& [key, entries] : db)
             {
                 size_t entries_size = entries.size();
@@ -48,6 +54,9 @@ namespace boost {
         template<class Archive>
         inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
         {
+            /// Note:
+            /// k-mer size is already loaded
+
             size_t table_size = 0;
             ar & table_size;
             for (size_t i = 0; i < table_size; ++i)

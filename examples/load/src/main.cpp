@@ -4,7 +4,7 @@
 
 core::phylo_kmer_db create_db()
 {
-    core::phylo_kmer_db db;
+    core::phylo_kmer_db db { 3 };
 
     /// branch 0
     db.put(0, 0, 0.00f);

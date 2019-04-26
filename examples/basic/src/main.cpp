@@ -1,9 +1,10 @@
 #include <iostream>
 #include <core/phylo_kmer_db.h>
+#include <core/version.h>
 
 core::phylo_kmer_db create_db()
 {
-    core::phylo_kmer_db db;
+    core::phylo_kmer_db db { 3 };
 
     /// branch 0
     db.put(0, 0, 0.00f);
@@ -38,6 +39,9 @@ std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
 
 int main()
 {
+    std::cout << "Core version: " << core::version::as_string() << std::endl;
     const auto db = create_db();
+    std::cout << "Total number of keys: " << db.size() << std::endl;
+    std::cout << "K-mer size: " << db.kmer_size() << std::endl;
     std::cout << db;
 }

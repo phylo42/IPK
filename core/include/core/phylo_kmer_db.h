@@ -25,7 +25,7 @@ namespace core
         using storage = ska::flat_hash_map<key_type, inner_storage>;
         using const_iterator = storage::const_iterator;
 
-        phylo_kmer_db() = default;
+        explicit phylo_kmer_db(size_t kmer_size) noexcept;
         phylo_kmer_db(const phylo_kmer_db&) = delete;
         phylo_kmer_db(phylo_kmer_db&&) noexcept = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
@@ -34,17 +34,36 @@ namespace core
 
         /// \brief Puts a phylo-kmer in the database.
         /// \details Here we assume that all the parameters are small enough to be passed by value.
+        /// WARNING: This method does not know how the key was calculated. Here we assume it represents
+        /// a string of size _kmer_size.
+        /// \sa _kmer_size
         void put(key_type key, inner_key_type branch, value_type score);
 
         /// \brief Searches for a key against the database.
+        /// \details WARNING: This method does not know how the key was calculated. It is required
+        /// to provide keys of substrings of size _kmer_size to get correct results.
+        /// \sa _kmer_size
         std::optional<impl::search_result> search(key_type key) const;
 
         const_iterator begin() const;
         const_iterator end() const;
 
+        /// \brief Returns the number of keys
         size_t size() const;
+
+        /// \brief Returns the k-mer size.
+        size_t kmer_size() const;
     private:
         storage _map;
+
+        /// \brief K-mer size.
+        /// \details This number is given by user to the constructor. We can not guarantee
+        /// that the keys stored in hash tables actually correspond to substrings of the size _kmer_size.
+        /// Example: DNA ('A', 'C', 'G', 'T")
+        ///     key('AAA') == key('AA') == 0
+        /// e.g. putting 0 in hashtable, we assume it corresponds to 'AAA', but we can not guarantee it
+        /// was not calculated for another k-mer size by mistake.
+        size_t _kmer_size;
     };
 
     namespace impl
