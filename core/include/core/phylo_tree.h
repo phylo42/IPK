@@ -174,10 +174,13 @@ namespace core
         const_iterator begin() const;
         const_iterator end() const;
 
+        size_t get_node_count() const;
+
     private:
-        phylo_tree(phylo_node* root) noexcept;
+        phylo_tree(phylo_node* root, size_t node_count) noexcept;
 
         phylo_node* _root;
+        size_t _node_count;
     };
 
     /// A factory function to construct a phylo_tree from a newick file
