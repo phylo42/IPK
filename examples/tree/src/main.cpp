@@ -11,6 +11,7 @@ void write_test_tree(const std::string& filename)
 
 std::ostream& operator<<(std::ostream& out, const core::phylo_tree& tree)
 {
+    std::cout << "Nodes: " << tree.get_node_count() << '\n';
     for (const auto& node : tree)
     {
         out << node.get_label() << ": " << node.get_branch_length() << '\n';
