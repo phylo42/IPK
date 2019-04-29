@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(rappas_core LANGUAGES CXX VERSION 0.1.1)
+project(rappas_core LANGUAGES CXX VERSION 0.1.3)
 
 # WARNING: some dependencies are not listed here. See the top-level CMake file
 # for more details
@@ -21,6 +21,7 @@ target_sources(core_p
             src/core/phylo_kmer.cpp
             src/core/phylo_kmer_db.cpp
             src/core/kmer_iterator.cpp
+            src/core/phylo_tree.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization)
@@ -29,6 +30,8 @@ target_link_libraries(core_p
         PUBLIC
             skarupke::flat_hash_map
             Boost::serialization
+        PRIVATE
+            rappas::utils
         )
 
 target_include_directories(core_p
@@ -65,12 +68,14 @@ target_sources(core_n
             src/core/phylo_kmer.cpp
             src/core/phylo_kmer_db.cpp
             src/core/kmer_iterator.cpp
+            src/core/phylo_tree.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
 
 target_link_libraries(core_n
         PUBLIC
+            rappas::utils
             skarupke::flat_hash_map
             Boost::serialization
             Catch2::Catch2
