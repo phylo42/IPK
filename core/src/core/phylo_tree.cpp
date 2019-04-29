@@ -82,8 +82,8 @@ void phylo_node::_add_children(phylo_node* node)
     _children.push_back(node);
 }
 
-core::phylo_tree::phylo_tree(core::phylo_node* root) noexcept
-    : _root{ root }
+core::phylo_tree::phylo_tree(core::phylo_node* root, size_t node_count) noexcept
+    : _root{ root }, _node_count{ node_count }
 {}
 
 core::phylo_tree::~phylo_tree() noexcept
@@ -110,9 +110,13 @@ core::phylo_tree::const_iterator core::phylo_tree::end() const
     return phylo_tree_iterator<true>(nullptr);
 }
 
+size_t core::phylo_tree::get_node_count() const
+{
+    return _node_count;
+}
+
 namespace core
 {
-
 ///
 /// \brief A class for parsing .newick-formatted files.
 /// \details This class parses phylogenetic trees in the newick format. It designed to support
@@ -338,5 +342,5 @@ core::phylo_tree core::load_newick(const string& file_name)
     }
 
     cout << "Loaded a tree of " << parser.get_node_count() << " nodes." << endl << endl;
-    return { parser.get_root() };
+    return { parser.get_root(), parser.get_node_count() };
 }
