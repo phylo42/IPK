@@ -8,6 +8,8 @@
 
 namespace core
 {
+    static const unsigned int protocol_version = 1;
+
     ::core::phylo_kmer_db load(const std::string& filename)
     {
         std::ifstream ifs(filename);
@@ -30,7 +32,7 @@ namespace boost {
     namespace serialization
     {
         template<class Archive>
-        inline void save(Archive& ar, const ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
+        inline void save(Archive& ar, const ::core::phylo_kmer_db& db, const unsigned int /*version*/)
         {
             size_t kmer_size = db.kmer_size();
             ar & kmer_size;
@@ -50,8 +52,13 @@ namespace boost {
         }
 
         template<class Archive>
-        inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */)
+        inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int version)
         {
+            if (version < ::core::protocol_version)
+            {
+                throw std::runtime_error("Failed to load database: this database was built with older version of RAPPAS.");
+            }
+
             size_t kmer_size = 0;
             ar & kmer_size;
             db._kmer_size = kmer_size;
@@ -83,5 +90,7 @@ namespace boost {
         }
     }
 }
+
+BOOST_CLASS_VERSION(::core::phylo_kmer_db, ::core::protocol_version)
 
 #endif //RAPPAS_CORE_SERIALIZATION_H
