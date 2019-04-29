@@ -6,11 +6,10 @@
 #include <algorithm>
 #include <utils/meta.h>
 
-class newick_parser;
-class phylo_tree;
-
 namespace core
 {
+    class newick_parser;
+
     template<bool IsConst>
     class phylo_tree_iterator;
 

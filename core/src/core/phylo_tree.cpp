@@ -110,66 +110,70 @@ core::phylo_tree::const_iterator core::phylo_tree::end() const
     return phylo_tree_iterator<true>(nullptr);
 }
 
+namespace core
+{
+
 ///
 /// \brief A class for parsing .newick-formatted files.
 /// \details This class parses phylogenetic trees in the newick format. It designed to support
 ///  a buffered reading from disk.
 ///
-class newick_parser
-{
-public:
-    newick_parser();
-    newick_parser(const newick_parser&) = delete;
-    newick_parser(newick_parser&&) = delete;
-    ~newick_parser() = default;
+    class newick_parser
+    {
+    public:
+        newick_parser();
+        newick_parser(const newick_parser&) = delete;
+        newick_parser(newick_parser&&) = delete;
+        ~newick_parser() = default;
 
-    /// Parse an input buffer. This function can be called more than once,
-    /// during the buffered reading from disk.
-    /// \param data A string variable containing the current buffer data to parse.
-    void parse(const string_view& data);
+        /// Parse an input buffer. This function can be called more than once,
+        /// during the buffered reading from disk.
+        /// \param data A string variable containing the current buffer data to parse.
+        void parse(const string_view& data);
 
-    phylo_node* get_root() const;
-    size_t get_node_count() const;
+        phylo_node* get_root() const;
+        size_t get_node_count() const;
 
-private:
-    /// Parse next symbol of input data.
-    /// \param ch A character to parse
-    void _parse_character(char ch);
+    private:
+        /// Parse next symbol of input data.
+        /// \param ch A character to parse
+        void _parse_character(char ch);
 
-    /// \brief Handles a left parenthesis in input data.
-    /// \details A left parenthesis indicates that a new node with children should be created.
-    /// We will create it later though, during the _handle_right_parenthesis call
-    /// because the phylo_node class has no default constructor for some design reasons.
-    /// \sa phylo_node::phylo_node, _handle_right_parenthesis
-    void _handle_left_parenthesis();
+        /// \brief Handles a left parenthesis in input data.
+        /// \details A left parenthesis indicates that a new node with children should be created.
+        /// We will create it later though, during the _handle_right_parenthesis call
+        /// because the phylo_node class has no default constructor for some design reasons.
+        /// \sa phylo_node::phylo_node, _handle_right_parenthesis
+        void _handle_left_parenthesis();
 
-    /// \details The list of children for "current" parent node is over.
-    /// The next symbols are referred to the parent node
-    void _handle_right_parenthesis();
+        /// \details The list of children for "current" parent node is over.
+        /// The next symbols are referred to the parent node
+        void _handle_right_parenthesis();
 
-    /// \details Node delimiter, we create a node from the text content we collected so far
-    void _handle_comma();
+        /// \details Node delimiter, we create a node from the text content we collected so far
+        void _handle_comma();
 
-    /// \details End of file, we take last node as root
-    void _handle_semicolon();
+        /// \details End of file, we take last node as root
+        void _handle_semicolon();
 
-    /// \details Keep reading the current node description
-    /// \param ch A character to parse
-    void _handle_text(char ch);
+        /// \details Keep reading the current node description
+        /// \param ch A character to parse
+        void _handle_text(char ch);
 
-    void _start_node();
-    phylo_node* _finish_node();
-    void _parse_node_text();
+        void _start_node();
+        phylo_node* _finish_node();
+        void _parse_node_text();
 
-private:
-    stack<phylo_node*> _node_stack;
-    phylo_node* _root;
-    int _node_index;
-    string _node_text;
+    private:
+        stack<phylo_node*> _node_stack;
+        phylo_node* _root;
+        int _node_index;
+        string _node_text;
 
-    bool _parsing_node;
-    bool _end_of_file;
-};
+        bool _parsing_node;
+        bool _end_of_file;
+    };
+}
 
 newick_parser::newick_parser()
     : _root(nullptr)
