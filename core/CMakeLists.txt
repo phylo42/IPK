@@ -76,9 +76,17 @@ find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
 target_link_libraries(core_n
         PUBLIC
             rappas::utils
-            skarupke::flat_hash_map
             Boost::serialization
             Catch2::Catch2
+
+            # hash maps
+            skarupke::flat_hash_map
+            absl::flat_hash_map
+            folly_base
+            phmap
+            tsl::robin_map
+            tsl::hopscotch_map
+            martinus::robin_hood_map
         )
 
 target_include_directories(core_n
@@ -89,7 +97,7 @@ target_include_directories(core_n
 # Turn on the warnings and treat them as errors
 target_compile_options(core_n
         PRIVATE
-            -Wall -Wextra -Wpedantic -Werror
+            -Wall -Wextra -Werror #-Wpedantic
         )
 
 # explicitly require c++17 standart

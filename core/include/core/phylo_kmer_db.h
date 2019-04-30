@@ -2,6 +2,14 @@
 #define RAPPAS_CORE_PHYLO_KMER_DB_H
 
 #include <flat_hash_map/flat_hash_map.hpp>
+#include <flat_hash_map/bytell_hash_map.hpp>
+#include <absl/container/flat_hash_map.h>
+#include <folly/container/F14Map.h>
+#include <parallel_hashmap/phmap.h>
+#include <tsl/robin_map.h>
+#include <tsl/hopscotch_map.h>
+#include <robin_hood.h>
+
 #include "phylo_kmer.h"
 
 namespace core
@@ -20,6 +28,19 @@ namespace boost
 
 namespace core
 {
+    template<typename... Args>
+    using hash_map = ska::flat_hash_map<Args...>;
+    //using hash_map = ska::bytell_hash_map<Args...>;
+    //using hash_map = absl::flat_hash_map<Args...>;
+    //using hash_map = folly::F14FastMap<Args...>;
+    //using hash_map = phmap::flat_hash_map<Args...>;
+    //using hash_map = tsl::robin_map<Args...>;
+    //using hash_map = tsl::hopscotch_map<Args...>;
+
+    /// requires manual intervention (does not support noexcept destructor and can not be defined this way)
+    ///using hash_map = robin_hood::unordered_flat_map<Args...>;
+    ///using hash_map = robin_hood::unordered_map<Args...>;
+
     namespace impl {
         class search_result;
     }
@@ -40,13 +61,13 @@ namespace core
         /// \brief A storage of a phylo-kmer information.
         /// \details Note that phylo-kmers are not stored as objects of phylo_kmer,
         /// which is just a temporary storage for a phylo-kmer information.
-        using inner_storage = ska::flat_hash_map<inner_key_type, value_type>;
-        using storage = ska::flat_hash_map<key_type, inner_storage>;
+        using inner_storage = hash_map<inner_key_type, value_type>;
+        using storage = hash_map<key_type, inner_storage>;
         using const_iterator = storage::const_iterator;
 
         explicit phylo_kmer_db(size_t kmer_size) noexcept;
-        phylo_kmer_db(const phylo_kmer_db&) = delete;
-        phylo_kmer_db(phylo_kmer_db&&) noexcept = default;
+        phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
+        phylo_kmer_db(phylo_kmer_db&&) = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
         phylo_kmer_db& operator=(phylo_kmer_db&&) noexcept = default;
         ~phylo_kmer_db() noexcept = default;
