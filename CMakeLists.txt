@@ -1,18 +1,38 @@
 cmake_minimum_required(VERSION 3.10)
 
+# default build type Release
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
+endif()
+
+# define a hash map
+if(NOT HASH_MAP)
+    set(HASH_MAP "USE_SKA_FLAT_HASH_MAP")
+endif()
+
+message("-- Hash map option: " ${HASH_MAP})
+
+if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
+    add_subdirectory(skarupke)
+elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
+    add_subdirectory(skarupke)
+elseif(${HASH_MAP} STREQUAL USE_ABSL_FLAT_HASH_MAP)
+    set(BUILD_TESTING OFF)
+    add_subdirectory(abseil-cpp)
+elseif(${HASH_MAP} STREQUAL USE_FOLLY_F14_FAST_MAP)
+    add_subdirectory(folly)
+elseif(${HASH_MAP} STREQUAL USE_PHMAP_FLAT_HASH_MAP)
+    add_subdirectory(parallel-hashmap)
+elseif(${HASH_MAP} STREQUAL USE_TSL_ROBIN_MAP)
+    add_subdirectory(robin-map)
+elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
+    add_subdirectory(hopscotch-map)
+endif()
+#add_subdirectory(martinus)
+
+# Catch2 includes
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/catch2/contrib")
 
-# exclude abseil-cpp tests
-set(BUILD_TESTING OFF)
-
-# hash maps
-add_subdirectory(abseil-cpp)
-add_subdirectory(folly)
-add_subdirectory(skarupke)
-add_subdirectory(parallel-hashmap)
-add_subdirectory(robin-map)
-add_subdirectory(hopscotch-map)
-add_subdirectory(martinus)
 
 add_subdirectory(catch2)
 add_subdirectory(core)

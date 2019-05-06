@@ -61,6 +61,7 @@ add_library(rappas::core_n ALIAS core_n)
 
 target_compile_definitions(core_n
         PUBLIC
+            ${HASH_MAP}
             SEQ_TYPE_DNA)
 
 target_sources(core_n
@@ -73,20 +74,29 @@ target_sources(core_n
 
 find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
 
+if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
+    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_ABSL_FLAT_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION absl::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_FOLLY_F14_FAST_MAP)
+    set(HASH_MAP_IMPLEMENTATION folly_base)
+elseif(${HASH_MAP} STREQUAL USE_PHMAP_FLAT_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION phmap)
+elseif(${HASH_MAP} STREQUAL USE_TSL_ROBIN_MAP)
+    set(HASH_MAP_IMPLEMENTATION tsl::robin_map)
+elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
+    set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
+endif()
+
+
 target_link_libraries(core_n
         PUBLIC
             rappas::utils
             Boost::serialization
-            Catch2::Catch2
-
-            # hash maps
-            skarupke::flat_hash_map
-            absl::flat_hash_map
-            folly_base
-            phmap
-            tsl::robin_map
-            tsl::hopscotch_map
-            martinus::robin_hood_map
+            ${HASH_MAP_IMPLEMENTATION}
+            #martinus::robin_hood_map
         )
 
 target_include_directories(core_n
