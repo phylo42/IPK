@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(rappas_core LANGUAGES CXX VERSION 0.1.3)
 
-# WARNING: some dependencies are not listed here. See the top-level CMake file
-# for more details
-
 ##########################################################################################
 # PROTEINS
 # WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
@@ -24,34 +21,11 @@ target_sources(core_p
             src/core/phylo_tree.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization)
-
-target_link_libraries(core_p
-        PUBLIC
-            skarupke::flat_hash_map
-            Boost::serialization
-        PRIVATE
-            rappas::utils
-        )
-
-target_include_directories(core_p
-        PUBLIC
-            $<INSTALL_INTERFACE:include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
 # Turn on the warnings and treat them as errors
 target_compile_options(core_p
         PRIVATE
             -Wall -Wextra -Wpedantic -Werror
         )
-
-# explicitly require c++17 standart
-# TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
-target_compile_features(core_p
-        PUBLIC
-            cxx_std_17
-        )
-
 
 ##########################################################################################
 # DNA
@@ -61,6 +35,7 @@ add_library(rappas::core_n ALIAS core_n)
 
 target_compile_definitions(core_n
         PUBLIC
+            ${HASH_MAP}
             SEQ_TYPE_DNA)
 
 target_sources(core_n
@@ -69,16 +44,34 @@ target_sources(core_n
             src/core/phylo_kmer_db.cpp
             src/core/kmer_iterator.cpp
             src/core/phylo_tree.cpp
+
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
 
+if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
+    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_ABSL_FLAT_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION absl::flat_hash_map)
+elseif(${HASH_MAP} STREQUAL USE_FOLLY_F14_FAST_MAP)
+    set(HASH_MAP_IMPLEMENTATION folly_base)
+elseif(${HASH_MAP} STREQUAL USE_PHMAP_FLAT_HASH_MAP)
+    set(HASH_MAP_IMPLEMENTATION phmap)
+elseif(${HASH_MAP} STREQUAL USE_TSL_ROBIN_MAP)
+    set(HASH_MAP_IMPLEMENTATION tsl::robin_map)
+elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
+    set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
+endif()
+
+
 target_link_libraries(core_n
         PUBLIC
             rappas::utils
-            skarupke::flat_hash_map
             Boost::serialization
-            Catch2::Catch2
+            ${HASH_MAP_IMPLEMENTATION}
+            #martinus::robin_hood_map
         )
 
 target_include_directories(core_n
@@ -89,7 +82,7 @@ target_include_directories(core_n
 # Turn on the warnings and treat them as errors
 target_compile_options(core_n
         PRIVATE
-            -Wall -Wextra -Wpedantic -Werror
+            -Wall -Wextra -Werror #-Wpedantic
         )
 
 # explicitly require c++17 standart
