@@ -9,6 +9,7 @@ target_sources(utils
         PRIVATE
             src/utils/file_io.cpp
             src/utils/meta.cpp
+            src/utils/fasta.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS iostreams)

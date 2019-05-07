@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(rappas_core LANGUAGES CXX VERSION 0.1.3)
 
-# WARNING: some dependencies are not listed here. See the top-level CMake file
-# for more details
-
 ##########################################################################################
 # PROTEINS
 # WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
@@ -24,34 +21,11 @@ target_sources(core_p
             src/core/phylo_tree.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization)
-
-target_link_libraries(core_p
-        PUBLIC
-            skarupke::flat_hash_map
-            Boost::serialization
-        PRIVATE
-            rappas::utils
-        )
-
-target_include_directories(core_p
-        PUBLIC
-            $<INSTALL_INTERFACE:include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
 # Turn on the warnings and treat them as errors
 target_compile_options(core_p
         PRIVATE
             -Wall -Wextra -Wpedantic -Werror
         )
-
-# explicitly require c++17 standart
-# TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
-target_compile_features(core_p
-        PUBLIC
-            cxx_std_17
-        )
-
 
 ##########################################################################################
 # DNA
@@ -70,6 +44,7 @@ target_sources(core_n
             src/core/phylo_kmer_db.cpp
             src/core/kmer_iterator.cpp
             src/core/phylo_tree.cpp
+
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
