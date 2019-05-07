@@ -1,15 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
 
-# default build type Release
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-endif()
-
-# define a hash map
-if(NOT HASH_MAP)
-    set(HASH_MAP "USE_SKA_FLAT_HASH_MAP")
-endif()
-
 message("-- Hash map option: " ${HASH_MAP})
 
 if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
@@ -32,7 +22,6 @@ endif()
 
 # Catch2 includes
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/catch2/contrib")
-
 
 add_subdirectory(catch2)
 add_subdirectory(core)
