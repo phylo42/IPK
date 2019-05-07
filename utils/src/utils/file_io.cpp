@@ -3,7 +3,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 
-using namespace core::utils;
+using namespace utils;
 namespace bio = boost::iostreams;
 using std::string;
 using std::fpos;

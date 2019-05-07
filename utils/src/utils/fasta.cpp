@@ -4,10 +4,12 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <utils/fasta.h>
 
+using namespace utils;
 using std::vector;
 using std::string;
 using std::cout, std::endl;
 using std::move;
+
 
 fasta::fasta(string&& header, string&& sequence) noexcept
     : _header(move(header)), _sequence(move(sequence))
@@ -26,7 +28,7 @@ string fasta::get_sequence() const noexcept
 //------------------------------------------------------------------------------------
 namespace bio = boost::iostreams;
 
-vector<fasta> read_fasta(const string& file_name)
+vector<fasta> utils::read_fasta(const string& file_name)
 {
     cout << "Loading fasta: " + file_name << endl;
     bio::mapped_file_source mmap(file_name);
