@@ -6,7 +6,7 @@
 
 using namespace utils;
 using std::vector;
-using std::string;
+using std::string, std::string_view;
 using std::cout, std::endl;
 using std::move;
 
@@ -15,12 +15,12 @@ fasta::fasta(string&& header, string&& sequence) noexcept
     : _header(move(header)), _sequence(move(sequence))
 {}
 
-string fasta::get_header() const noexcept
+string_view fasta::get_header() const noexcept
 {
     return _header;
 }
 
-string fasta::get_sequence() const noexcept
+string_view fasta::get_sequence() const noexcept
 {
     return _sequence;
 }

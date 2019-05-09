@@ -15,8 +15,8 @@ namespace utils
         fasta(const fasta&) = delete;
         ~fasta() = default;
 
-        std::string get_header() const noexcept;
-        std::string get_sequence() const noexcept;
+        std::string_view get_header() const noexcept;
+        std::string_view get_sequence() const noexcept;
     private:
         std::string _header;
         std::string _sequence;
