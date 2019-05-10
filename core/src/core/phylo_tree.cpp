@@ -1,6 +1,6 @@
-#include "core/phylo_tree.h"
-#include "core/phylo_kmer.h"
-#include <utils/file_io.h>
+#include <core/phylo_tree.h>
+#include <core/phylo_kmer.h>
+#include <io/file_io.h>
 #include <iostream>
 #include <stack>
 #include <string_view>
@@ -327,7 +327,7 @@ core::phylo_tree core::load_newick(const string& file_name)
     cout << "Loading newick: " + file_name << endl;
 
     newick_parser parser;
-    utils::buffered_reader reader(file_name);
+    rappas::io::buffered_reader reader(file_name);
     if (reader.good())
     {
         while (!reader.empty())

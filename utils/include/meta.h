@@ -1,7 +1,7 @@
 #ifndef RAPPAS_CORE_META_H
 #define RAPPAS_CORE_META_H
 
-namespace utils
+namespace rappas
 {
     template <bool flag, class IsTrue, class IsFalse>
     struct choose;

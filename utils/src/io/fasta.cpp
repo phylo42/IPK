@@ -2,7 +2,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-#include <utils/fasta.h>
+#include <io/fasta.h>
 
 using namespace rappas::io;
 using std::vector;

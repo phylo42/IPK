@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <utils/meta.h>
+#include <meta.h>
 
 namespace core
 {
@@ -62,8 +62,8 @@ namespace core
     {
     public:
         using iterator_category = std::forward_iterator_tag;
-        using reference = typename utils::choose<IsConst, const phylo_node&, phylo_node&>::type;
-        using pointer = typename utils::choose<IsConst, const phylo_node*, phylo_node*>::type;
+        using reference = typename rappas::choose<IsConst, const phylo_node&, phylo_node&>::type;
+        using pointer = typename rappas::choose<IsConst, const phylo_node*, phylo_node*>::type;
 
     public:
         phylo_tree_iterator()

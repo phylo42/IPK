@@ -1,9 +1,9 @@
-#include "utils/file_io.h"
+#include "io/file_io.h"
 #include <fstream>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 
-using namespace utils;
+using namespace rappas::io;
 namespace bio = boost::iostreams;
 using std::string;
 using std::fpos;
