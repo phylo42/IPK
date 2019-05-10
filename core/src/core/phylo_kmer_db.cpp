@@ -8,27 +8,8 @@ phylo_kmer_db::phylo_kmer_db(size_t kmer_size) noexcept
 
 void phylo_kmer_db::put(key_type key, inner_key_type branch, value_type score)
 {
-    if (auto it = _map.find(key); it != _map.end())
-    {
-        if (auto inner_it = it->second.find(branch); inner_it != it->second.end())
-        {
-            if (inner_it->second < score)
-            {
-                _map[key][branch] = score;
-            }
-        }
-        else
-        {
-            _map[key][branch] = score;
-        }
-    }
-    else
-    {
-        _map[key][branch] = score;
-    }
+    _map[key][branch] = score;
 }
-
-#include <iostream>
 
 std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const
 {
