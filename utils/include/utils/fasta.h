@@ -4,26 +4,28 @@
 #include <string>
 #include <vector>
 
-namespace utils
+namespace rappas
 {
-    class fasta
+    namespace io
     {
-    public:
-        fasta() = delete;
-        fasta(std::string&& header, std::string&& sequence) noexcept;
-        fasta(fasta&& other) noexcept = default;
-        fasta(const fasta&) = delete;
-        ~fasta() = default;
+        class fasta
+        {
+        public:
+            fasta() = delete;
+            fasta(std::string&& header, std::string&& sequence) noexcept;
+            fasta(fasta&& other) noexcept = default;
+            fasta(const fasta&) = delete;
+            ~fasta() = default;
 
-        std::string_view get_header() const noexcept;
-        std::string_view get_sequence() const noexcept;
-    private:
-        std::string _header;
-        std::string _sequence;
-    };
+            std::string_view header() const noexcept;
+            std::string_view sequence() const noexcept;
+        private:
+            std::string _header;
+            std::string _sequence;
+        };
 
-    std::vector<fasta> read_fasta(const std::string& filename);
-
+        std::vector<fasta> read_fasta(const std::string& filename);
+    }
 }
 
 #endif //RAPPAS_CORE_FASTA_H
