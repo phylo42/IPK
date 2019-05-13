@@ -118,14 +118,14 @@ namespace core
         /// that the keys stored in hash tables actually correspond to substrings of the size _kmer_size.
         /// Example: DNA ('A', 'C', 'G', 'T")
         ///     key('AAA') == key('AA') == 0
-        /// e.g. putting 0 in hashtable, we assume it corresponds to 'AAA', but we can not guarantee it
-        /// was not calculated for another k-mer size by mistake.
+        /// e.g. putting 0 in hashtable, we assume it corresponds to 'AAA' having _kmer_size == 3,
+        /// but we can not guarantee that it was not calculated for another k-mer size by mistake.
         size_t _kmer_size;
     };
 
     namespace impl
     {
-        /// \brief A wrapper around a collection of pairs [branch, score] for a search result
+        /// \brief A search result wrapper around a collection of pairs [branch, score]
         /// to iterate over.
         class search_result
         {
