@@ -7,7 +7,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/tokenizer.hpp>
 
-using namespace core;
+using namespace core::impl;
 using std::vector, std::stack;
 using std::string;
 using std::move;
@@ -82,7 +82,7 @@ void phylo_node::_add_children(phylo_node* node)
     _children.push_back(node);
 }
 
-core::phylo_tree::phylo_tree(core::phylo_node* root, size_t node_count) noexcept
+core::phylo_tree::phylo_tree(core::impl::phylo_node* root, size_t node_count) noexcept
     : _root{ root }, _node_count{ node_count }
 {}
 
@@ -91,7 +91,7 @@ core::phylo_tree::~phylo_tree() noexcept
     delete _root;
 }
 
-phylo_node* core::get_leftmost_child(phylo_node* root)
+phylo_node* core::impl::get_leftmost_child(phylo_node* root)
 {
     while (!root->get_children().empty())
     {
@@ -102,12 +102,12 @@ phylo_node* core::get_leftmost_child(phylo_node* root)
 
 core::phylo_tree::const_iterator core::phylo_tree::begin() const
 {
-    return phylo_tree_iterator<true>{ core::get_leftmost_child(_root) };
+    return postorder_tree_iterator<true>{ core::impl::get_leftmost_child(_root) };
 }
 
 core::phylo_tree::const_iterator core::phylo_tree::end() const
 {
-    return phylo_tree_iterator<true>(nullptr);
+    return postorder_tree_iterator<true>(nullptr);
 }
 
 size_t core::phylo_tree::get_node_count() const
@@ -115,69 +115,74 @@ size_t core::phylo_tree::get_node_count() const
     return _node_count;
 }
 
-namespace core
+namespace rappas
 {
-///
-/// \brief A class for parsing .newick-formatted files.
-/// \details This class parses phylogenetic trees in the newick format. It designed to support
-///  a buffered reading from disk.
-///
-    class newick_parser
+    namespace io
     {
-    public:
-        newick_parser();
-        newick_parser(const newick_parser&) = delete;
-        newick_parser(newick_parser&&) = delete;
-        ~newick_parser() = default;
+        ///
+        /// \brief A class for parsing .newick-formatted files.
+        /// \details This class parses phylogenetic trees in the newick format. It designed to support
+        ///  a buffered reading from disk.
+        ///
+        class newick_parser
+        {
+        public:
+            newick_parser();
+            newick_parser(const newick_parser&) = delete;
+            newick_parser(newick_parser&&) = delete;
+            ~newick_parser() = default;
 
-        /// Parse an input buffer. This function can be called more than once,
-        /// during the buffered reading from disk.
-        /// \param data A string variable containing the current buffer data to parse.
-        void parse(const string_view& data);
+            /// Parse an input buffer. This function can be called more than once,
+            /// during the buffered reading from disk.
+            /// \param data A string variable containing the current buffer data to parse.
+            void parse(const string_view& data);
 
-        phylo_node* get_root() const;
-        size_t get_node_count() const;
+            phylo_node* get_root() const;
+            size_t get_node_count() const;
 
-    private:
-        /// Parse next symbol of input data.
-        /// \param ch A character to parse
-        void _parse_character(char ch);
+        private:
+            /// Parse next symbol of input data.
+            /// \param ch A character to parse
+            void _parse_character(char ch);
 
-        /// \brief Handles a left parenthesis in input data.
-        /// \details A left parenthesis indicates that a new node with children should be created.
-        /// We will create it later though, during the _handle_right_parenthesis call
-        /// because the phylo_node class has no default constructor for some design reasons.
-        /// \sa phylo_node::phylo_node, _handle_right_parenthesis
-        void _handle_left_parenthesis();
+            /// \brief Handles a left parenthesis in input data.
+            /// \details A left parenthesis indicates that a new node with children should be created.
+            /// We will create it later though, during the _handle_right_parenthesis call
+            /// because the phylo_node class has no default constructor for some design reasons.
+            /// \sa phylo_node::phylo_node, _handle_right_parenthesis
+            void _handle_left_parenthesis();
 
-        /// \details The list of children for "current" parent node is over.
-        /// The next symbols are referred to the parent node
-        void _handle_right_parenthesis();
+            /// \details The list of children for "current" parent node is over.
+            /// The next symbols are referred to the parent node
+            void _handle_right_parenthesis();
 
-        /// \details Node delimiter, we create a node from the text content we collected so far
-        void _handle_comma();
+            /// \details Node delimiter, we create a node from the text content we collected so far
+            void _handle_comma();
 
-        /// \details End of file, we take last node as root
-        void _handle_semicolon();
+            /// \details End of file, we take last node as root
+            void _handle_semicolon();
 
-        /// \details Keep reading the current node description
-        /// \param ch A character to parse
-        void _handle_text(char ch);
+            /// \details Keep reading the current node description
+            /// \param ch A character to parse
+            void _handle_text(char ch);
 
-        void _start_node();
-        phylo_node* _finish_node();
-        void _parse_node_text();
+            void _start_node();
+            phylo_node* _finish_node();
+            void _parse_node_text();
 
-    private:
-        stack<phylo_node*> _node_stack;
-        phylo_node* _root;
-        int _node_index;
-        string _node_text;
+        private:
+            stack<phylo_node*> _node_stack;
+            phylo_node* _root;
+            int _node_index;
+            string _node_text;
 
-        bool _parsing_node;
-        bool _end_of_file;
-    };
+            bool _parsing_node;
+            bool _end_of_file;
+        };
+    }
 }
+
+using rappas::io::newick_parser;
 
 newick_parser::newick_parser()
     : _root(nullptr)
@@ -322,7 +327,7 @@ void newick_parser::_parse_node_text()
     _node_text.clear();
 }
 
-core::phylo_tree core::load_newick(const string& file_name)
+core::phylo_tree rappas::io::load_newick(const string& file_name)
 {
     cout << "Loading newick: " + file_name << endl;
 
