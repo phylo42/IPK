@@ -62,25 +62,38 @@ namespace core
         class search_result;
     }
 
-    /// \brief Phylo-kmer database class, that stores all the phylo-kmers.
+    /// \brief A value of phylo-kmer stored in phylo_kmer_db.
+    /// \details One k-mer can correspond to multiple values, so the key of a k-mer is not stored here.
+    struct pkdb_value
+    {
+        phylo_kmer::branch_type branch;
+        phylo_kmer::score_type score;
+        ///phylo_kmer::pos_type position;
+    };
+
+    /// \brief A Phylo-kmer database, that stores all the phylo-kmers.
     class phylo_kmer_db
     {
         /// We can get rid of this friend declaration if we provide a public set_kmer_size method.
-        /// I thinks it is better to inject an invasive dependency here than provide public access to this
+        /// I thinks it is better to inject an invasive dependency here than to provide a public access to this
         /// variable.
         template<class Archive>friend void boost::serialization::load(Archive& ar,
             ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
     public:
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Member types
+
         using key_type = phylo_kmer::key_type;
-        using inner_key_type = phylo_kmer::branch_type;
-        using value_type = phylo_kmer::score_type;
+        using value_type = std::vector<pkdb_value>;
 
         /// \brief A storage of a phylo-kmer information.
         /// \details Note that phylo-kmers are not stored as objects of phylo_kmer,
         /// which is just a temporary storage for a phylo-kmer information.
-        using inner_storage = hash_map<inner_key_type, value_type>;
-        using storage = hash_map<key_type, inner_storage>;
+        using storage = hash_map<key_type, value_type>;
         using const_iterator = storage::const_iterator;
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Ctors, dtor and operator=
 
         explicit phylo_kmer_db(size_t kmer_size) noexcept;
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
@@ -89,27 +102,39 @@ namespace core
         phylo_kmer_db& operator=(phylo_kmer_db&&) noexcept = default;
         ~phylo_kmer_db() noexcept = default;
 
-        /// \brief Puts a phylo-kmer in the database.
-        /// \details Here we assume that all the parameters are small enough to be passed by value.
-        /// WARNING: This method does not know how the key was calculated. Here we assume it represents
-        /// a string of size _kmer_size.
-        /// \sa _kmer_size
-        void put(key_type key, inner_key_type branch, value_type score);
-
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Access
         /// \brief Searches for a key against the database.
         /// \details WARNING: This method does not know how the key was calculated. It is required
         /// to provide keys of substrings of size _kmer_size to get correct results.
         /// \sa _kmer_size
-        std::optional<impl::search_result> search(key_type key) const;
+        std::optional<impl::search_result> search(key_type key) const noexcept;
 
-        const_iterator begin() const;
-        const_iterator end() const;
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Iterators
+        /// \brief Returns an iterator to the beginning
+        const_iterator begin() const noexcept;
+        /// \brief Returns an iterator to the end
+        const_iterator end() const noexcept;
 
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Capacity
         /// \brief Returns the number of keys
-        size_t size() const;
-
+        size_t size() const noexcept;
         /// \brief Returns the k-mer size.
-        size_t kmer_size() const;
+        size_t kmer_size() const noexcept;
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////
+        /// Modifiers
+        /// \brief Puts a phylo-kmer information in the database.
+        /// \details This method is unsafe, which means it does not control if the value has
+        /// a correct branch id, the score is maximal etc. All of this checks must be done before calling
+        /// this method. It just puts the value in a hash map.
+        /// WARNING: This method does not know how the key was calculated. Here we assume it represents
+        /// a string of size _kmer_size.
+        /// \sa _kmer_size
+        void insert(key_type key, const pkdb_value& value);
+
     private:
         storage _map;
 
@@ -130,15 +155,15 @@ namespace core
         class search_result
         {
         public:
-            using const_iterator = phylo_kmer_db::inner_storage::const_iterator;
+            using const_iterator = phylo_kmer_db::value_type::const_iterator;
 
             search_result() noexcept;
             search_result(const_iterator begin, const_iterator end) noexcept;
             search_result(const search_result&) noexcept = default;
             ~search_result() noexcept = default;
 
-            const_iterator begin() const;
-            const_iterator end() const;
+            const_iterator begin() const noexcept;
+            const_iterator end() const noexcept;
 
         private:
             const_iterator _begin;

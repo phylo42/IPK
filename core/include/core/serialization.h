@@ -76,7 +76,7 @@ namespace boost {
                     ::core::phylo_kmer::branch_type branch = ::core::phylo_kmer::nan_branch;
                     ::core::phylo_kmer::score_type score = ::core::phylo_kmer::nan_score;
                     ar & branch & score;
-                    db.put(key, branch, score);
+                    db.insert(key, { branch, score });
                 }
             }
         }
