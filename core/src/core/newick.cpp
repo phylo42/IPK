@@ -170,7 +170,7 @@ void newick_parser::_start_node()
     ++_node_index;
     phylo_node* parent = _node_stack.empty() ? nullptr : _node_stack.top();
     _node_stack.push(new phylo_node());
-    _node_stack.top()->_postorder_id = _node_index;
+    _node_stack.top()->_preorder_id = _node_index;
     _node_stack.top()->_parent = parent;
 }
 
@@ -221,6 +221,7 @@ core::phylo_tree rappas::io::load_newick(const string& file_name)
 {
     std::cout << "Loading newick: " + file_name << std::endl;
 
+    /// Load a tree from file
     newick_parser parser;
     rappas::io::buffered_reader reader(file_name);
     if (reader.good())
@@ -236,6 +237,15 @@ core::phylo_tree rappas::io::load_newick(const string& file_name)
         throw std::runtime_error("Cannot open file: " + file_name);
     }
 
+    /// Assign post-order ids to the phylo_node's
+    auto tree = core::phylo_tree{ parser.get_root(), parser.get_node_count() };
+    phylo_node::id_type postorder_id = 0;
+    for (auto& node : tree)
+    {
+        node._postorder_id = postorder_id;
+        ++postorder_id;
+    }
+
     std::cout << "Loaded a tree of " << parser.get_node_count() << " nodes.\n\n" << std::flush;
-    return { parser.get_root(), parser.get_node_count() };
+    return tree;
 }

@@ -80,9 +80,8 @@ namespace core
         template<class Archive>friend void boost::serialization::load(Archive& ar,
             ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
     public:
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Member types
 
+        /// Member types
         using key_type = phylo_kmer::key_type;
         using value_type = std::vector<pkdb_value>;
 
@@ -92,9 +91,8 @@ namespace core
         using storage = hash_map<key_type, value_type>;
         using const_iterator = storage::const_iterator;
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        /// Ctors, dtor and operator=
 
+        /// Ctors, dtor and operator=
         explicit phylo_kmer_db(size_t kmer_size) noexcept;
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
         phylo_kmer_db(phylo_kmer_db&&) = default;
@@ -102,7 +100,7 @@ namespace core
         phylo_kmer_db& operator=(phylo_kmer_db&&) noexcept = default;
         ~phylo_kmer_db() noexcept = default;
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
+
         /// Access
         /// \brief Searches for a key against the database.
         /// \details WARNING: This method does not know how the key was calculated. It is required
@@ -110,21 +108,21 @@ namespace core
         /// \sa _kmer_size
         std::optional<impl::search_result> search(key_type key) const noexcept;
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
+
         /// Iterators
         /// \brief Returns an iterator to the beginning
         const_iterator begin() const noexcept;
         /// \brief Returns an iterator to the end
         const_iterator end() const noexcept;
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
+
         /// Capacity
         /// \brief Returns the number of keys
         size_t size() const noexcept;
         /// \brief Returns the k-mer size.
         size_t kmer_size() const noexcept;
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
+
         /// Modifiers
         /// \brief Puts a phylo-kmer information in the database.
         /// \details This method is unsafe, which means it does not control if the value has
