@@ -25,7 +25,7 @@ namespace core
         using branch_type = uint16_t;
 
         /// The type of a phylokmer's position in the alignment
-        using pos_type = uint32_t;
+        using pos_type = int32_t;
 
         static constexpr key_type nan_key = std::numeric_limits<phylo_kmer::key_type>::max();
         static constexpr score_type nan_score = std::numeric_limits<phylo_kmer::score_type>::quiet_NaN();
