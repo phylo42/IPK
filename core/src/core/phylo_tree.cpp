@@ -13,17 +13,7 @@ phylo_node::phylo_node()
 {
     _clean();
 }
-/*
-phylo_node::phylo_node(id_type postorder_id, const string& label, float branch_length,
-    const vector<phylo_node*>& children, phylo_node* parent)
-    : _preorder_id{ postorder_id }
-    , _label{ label }
-    , _branch_length{ branch_length }
-    , _children{ children }
-    , _parent{ parent }
-{
-}
-*/
+
 phylo_node::~phylo_node() noexcept
 {
     for (auto child : _children)
@@ -62,7 +52,7 @@ phylo_node::id_type phylo_node::get_postorder_id() const noexcept
     return _postorder_id;
 }
 
-float phylo_node::get_branch_length() const noexcept
+phylo_node::branch_length_type phylo_node::get_branch_length() const noexcept
 {
     return _branch_length;
 }
@@ -77,7 +67,7 @@ void phylo_node::_clean()
     _preorder_id = -1;
     _postorder_id = -1;
     _label = "";
-    _branch_length = 0;
+    _branch_length = 0.0;
     _children.clear();
     _parent = nullptr;
 }

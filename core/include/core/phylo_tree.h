@@ -29,12 +29,15 @@ namespace core
         friend core::phylo_tree;
 
     public:
+        /// Member types
+
+        /// \brief Node post-/pre-order id type
         using id_type = int;
 
-        phylo_node();
+        /// \brief Branch length type
+        using branch_length_type = double;
 
-        /*explicit phylo_node(id_type postorder_id, const std::string& label, float branch_length,
-                            const std::vector<phylo_node*>& children, phylo_node* parent);*/
+        phylo_node();
         phylo_node(const phylo_node& other) = delete;
         phylo_node& operator=(const phylo_node&) = delete;
         ~phylo_node() noexcept;
@@ -47,7 +50,7 @@ namespace core
         phylo_node* get_parent() const noexcept;
         id_type get_preorder_id() const noexcept;
         id_type get_postorder_id() const noexcept;
-        float get_branch_length() const noexcept;
+        branch_length_type get_branch_length() const noexcept;
 
         std::vector<phylo_node*> get_children() const;
 
@@ -60,9 +63,9 @@ namespace core
     private:
         id_type _preorder_id;
         id_type _postorder_id;
-
         std::string _label;
-        float _branch_length;
+        branch_length_type _branch_length;
+
         std::vector<phylo_node*> _children;
         phylo_node* _parent;
     };

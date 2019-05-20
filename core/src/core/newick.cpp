@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <stack>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/tokenizer.hpp>
@@ -6,6 +7,7 @@
 #include <core/phylo_tree.h>
 #include <core/phylo_kmer.h>
 #include <utils/io/file_io.h>
+#include <iomanip>
 
 using std::string, std::string_view;
 using core::phylo_node;
@@ -249,4 +251,34 @@ core::phylo_tree rappas::io::parse_newick(std::string_view newick_string)
     newick_parser parser;
     parser.parse(newick_string);
     return core::phylo_tree{ parser.get_root(), parser.get_node_count() };
+}
+
+std::ostream& operator<<(std::ostream& out, const core::phylo_node& node)
+{
+    const auto num_children = node.get_children().size();
+    if (num_children > 0)
+    {
+        out << "(";
+        size_t i = 0;
+        for (; i < num_children - 1; ++i)
+        {
+            out << *node.get_children()[i] << ",";
+        }
+        out << *node.get_children()[num_children - 1] << ")";
+    }
+
+    if (!node.get_label().empty())
+    {
+        out << node.get_label();
+    }
+    out << ":" << std::setprecision(10) << node.get_branch_length();
+    out << "{" << node.get_postorder_id() << "}";
+    return out;
+}
+
+std::string rappas::io::to_newick(const core::phylo_tree& tree)
+{
+    std::ostringstream stream;
+    stream << *tree.get_root() << ";";
+    return stream.str();
 }

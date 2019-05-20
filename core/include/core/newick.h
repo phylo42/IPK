@@ -18,6 +18,9 @@ namespace rappas
 
         /// \brief Parses a phylogenetic tree from a newick formatted string.
         core::phylo_tree parse_newick(std::string_view newick_string);
+
+        /// \brief Constructs a newick-formatted string from a tree (post-order traversal)
+        std::string to_newick(const core::phylo_tree& tree);
     }
 }
 
