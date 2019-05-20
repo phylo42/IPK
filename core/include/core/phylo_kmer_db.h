@@ -10,6 +10,7 @@
 #include <absl/container/flat_hash_map.h>
 #elif USE_FOLLY_F14_FAST_MAP
 #include <folly/container/F14Map.h>
+#include <folly/hash/Hash.h>
 #elif USE_PHMAP_FLAT_HASH_MAP
 #include <parallel_hashmap/phmap.h>
 #elif USE_TSL_ROBIN_MAP
@@ -17,8 +18,6 @@
 #elif USE_TSL_HOPSCOTCH_MAP
 #include <tsl/hopscotch_map.h>
 #endif
-
-//#include <robin_hood.h>
 
 #include "phylo_kmer.h"
 
@@ -93,11 +92,11 @@ namespace core
 
 
         /// Ctors, dtor and operator=
-        explicit phylo_kmer_db(size_t kmer_size) noexcept;
+        phylo_kmer_db(size_t kmer_size, const std::string& tree);
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
         phylo_kmer_db(phylo_kmer_db&&) = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
-        phylo_kmer_db& operator=(phylo_kmer_db&&) noexcept = default;
+        phylo_kmer_db& operator=(phylo_kmer_db&&) = default;
         ~phylo_kmer_db() noexcept = default;
 
 
@@ -121,6 +120,8 @@ namespace core
         size_t size() const noexcept;
         /// \brief Returns the k-mer size.
         size_t kmer_size() const noexcept;
+        /// \brief Returns a view to the newick formatted phylogenetic tree
+        std::string_view tree() const noexcept;
 
 
         /// Modifiers
@@ -144,6 +145,9 @@ namespace core
         /// e.g. putting 0 in hashtable, we assume it corresponds to 'AAA' having _kmer_size == 3,
         /// but we can not guarantee that it was not calculated for another k-mer size by mistake.
         size_t _kmer_size;
+
+        /// \brief Newick formatted phylogenetic tree
+        std::string _tree;
     };
 
     namespace impl

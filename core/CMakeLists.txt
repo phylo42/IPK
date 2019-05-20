@@ -71,7 +71,6 @@ target_link_libraries(core_n
             rappas::utils
             Boost::serialization
             ${HASH_MAP_IMPLEMENTATION}
-            #martinus::robin_hood_map
         )
 
 target_include_directories(core_n

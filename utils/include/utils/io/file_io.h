@@ -41,6 +41,9 @@ namespace rappas
             static constexpr size_t _buffer_size = 4096;
             char _buffer[_buffer_size];
         };
+
+        /// \brief Reads the whole file in a string
+        std::string read_as_string(const std::string& filename);
     }
 }
 

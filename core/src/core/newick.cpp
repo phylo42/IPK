@@ -1,7 +1,7 @@
 #include <core/newick.h>
 #include <core/phylo_tree.h>
 #include <core/phylo_kmer.h>
-#include <io/file_io.h>
+#include <utils/io/file_io.h>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/tokenizer.hpp>
 #include <iostream>

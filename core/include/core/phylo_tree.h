@@ -148,10 +148,14 @@ namespace core
         size_t get_node_count() const noexcept;
         /// \brief Returns a pointer to the root node.
         value_pointer get_root() const noexcept;
-        /// \brief Returns an iterator that points to a phylo_node with a given name, if presented.
+        /// \brief Returns a pointer to a phylo_node with a given preorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
-        std::optional<const_iterator> operator[](phylo_node::id_type preorder_id) const noexcept;
-
+        /// \sa get_by_postorder_id
+        std::optional<core::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
+        /// \brief Returns a pointer to a phylo_node with a given postorder_id, if presented.
+        /// \details This operation does not require any traversal and implemented in O(1).
+        /// \sa get_by_preorder_id
+        std::optional<core::phylo_node*> get_by_postorder_id(phylo_node::id_type preorder_id) const noexcept;
     private:
         /// \brief A root node.
         value_pointer _root;
@@ -161,8 +165,10 @@ namespace core
         /// number of nodes, it is just passed as an argument in the constructor.
         size_t _node_count;
 
-        /// \brief A map for phylo_node label -> phylo_node for fast access
-        std::unordered_map<phylo_node::id_type, core::phylo_node*> _node_mapping;
+        /// \brief A map for phylo_node_preorder_id-> phylo_node for fast access
+        std::unordered_map<phylo_node::id_type, core::phylo_node*> _preorder_id_node_mapping;
+        /// \brief A map for phylo_node_postorder_id-> phylo_node for fast access
+        std::unordered_map<phylo_node::id_type, core::phylo_node*> _postorder_id_node_mapping;
     };
 }
 

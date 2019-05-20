@@ -2,8 +2,8 @@
 
 using namespace core;
 
-phylo_kmer_db::phylo_kmer_db(size_t kmer_size) noexcept
-    : _kmer_size{ kmer_size }
+phylo_kmer_db::phylo_kmer_db(size_t kmer_size, const std::string& tree)
+    : _kmer_size{ kmer_size }, _tree { tree }
 {}
 
 void phylo_kmer_db::insert(key_type key, const pkdb_value& value)
@@ -41,6 +41,11 @@ size_t phylo_kmer_db::size() const noexcept
 size_t phylo_kmer_db::kmer_size() const noexcept
 {
     return _kmer_size;
+}
+
+std::string_view phylo_kmer_db::tree() const noexcept
+{
+    return _tree;
 }
 
 impl::search_result::search_result() noexcept

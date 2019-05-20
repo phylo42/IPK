@@ -188,27 +188,17 @@ phylo_node::id_type postorder_tree_iterator::_id_in_parent(const phylo_node* nod
     return -1;
 }
 
-/// \brief Constructs a mapping phylo_node_label -> postorder_id
-std::unordered_map<phylo_node::id_type, phylo_node*> create_node_mapping(phylo_node* root, size_t size)
+phylo_tree::phylo_tree(phylo_node* root, size_t node_count)
+    : _root{ root } , _node_count{ node_count }
 {
-    std::unordered_map<phylo_node::id_type, phylo_node*> mapping;
-    mapping.reserve(size);
-
     auto it = postorder_tree_iterator{ core::impl::get_leftmost_leaf(root) };
     const auto end = postorder_tree_iterator{ nullptr };
     for (; it != end; ++it)
     {
-        mapping[it->get_preorder_id()] = it;
+        _preorder_id_node_mapping[it->get_preorder_id()] = it;
+        _postorder_id_node_mapping[it->get_postorder_id()] = it;
     }
-
-    return mapping;
 }
-
-phylo_tree::phylo_tree(phylo_node* root, size_t node_count)
-    : _root{ root }
-    , _node_count{ node_count }
-    , _node_mapping { create_node_mapping(root, node_count) }
-{}
 
 phylo_tree::~phylo_tree() noexcept
 {
@@ -235,11 +225,23 @@ phylo_tree::value_pointer phylo_tree::get_root() const noexcept
     return _root;
 }
 
-std::optional<phylo_tree::const_iterator> phylo_tree::operator[](phylo_node::id_type preorder_id) const noexcept
+std::optional<phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept
 {
-    if (const auto it = _node_mapping.at(preorder_id); it)
+    if (const auto it = _preorder_id_node_mapping.at(preorder_id); it)
     {
-        return { postorder_tree_iterator(it) };
+        return { it };
+    }
+    else
+    {
+        return { std::nullopt };
+    }
+}
+
+std::optional<phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_type preorder_id) const noexcept
+{
+    if (const auto it = _postorder_id_node_mapping.at(preorder_id); it)
+    {
+        return { it };
     }
     else
     {

@@ -7,9 +7,9 @@ add_library(rappas::utils ALIAS utils)
 
 target_sources(utils
         PRIVATE
-        src/io/file_io.cpp
-        src/io/fasta.cpp
-        src/meta.cpp
+            src/utils/io/file_io.cpp
+            src/utils/io/fasta.cpp
+            src/utils/meta.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS iostreams)
