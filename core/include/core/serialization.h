@@ -8,7 +8,7 @@
 
 namespace core
 {
-    static const unsigned int protocol_version = 1;
+    static const unsigned int protocol_version = 2;
 
     ::core::phylo_kmer_db load(const std::string& filename)
     {
