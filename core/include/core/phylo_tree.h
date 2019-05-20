@@ -26,7 +26,7 @@ namespace core
     class phylo_node
     {
         friend rappas::io::newick_parser;
-        friend core::phylo_tree rappas::io::load_newick(const std::string&);
+        friend core::phylo_tree;
 
     public:
         using id_type = int;

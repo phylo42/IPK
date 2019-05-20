@@ -1,8 +1,8 @@
 #ifndef RAPPAS_CORE_NEWICK_H
 #define RAPPAS_CORE_NEWICK_H
 
-#include <stack>
 #include <string>
+#include <string_view>
 
 namespace core
 {
@@ -15,6 +15,9 @@ namespace rappas
     {
         /// \brief Loads a phylogenetic tree from a newick formatted file.
         core::phylo_tree load_newick(const std::string& file_name);
+
+        /// \brief Parses a phylogenetic tree from a newick formatted string.
+        core::phylo_tree parse_newick(std::string_view newick_string);
     }
 }
 

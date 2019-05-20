@@ -193,10 +193,14 @@ phylo_tree::phylo_tree(phylo_node* root, size_t node_count)
 {
     auto it = postorder_tree_iterator{ core::impl::get_leftmost_leaf(root) };
     const auto end = postorder_tree_iterator{ nullptr };
+    phylo_node::id_type postorder_id = 0;
     for (; it != end; ++it)
     {
         _preorder_id_node_mapping[it->get_preorder_id()] = it;
-        _postorder_id_node_mapping[it->get_postorder_id()] = it;
+
+        it->_postorder_id = postorder_id;
+        _postorder_id_node_mapping[postorder_id] = it;
+        ++postorder_id;
     }
 }
 

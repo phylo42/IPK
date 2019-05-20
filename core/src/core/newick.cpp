@@ -1,10 +1,11 @@
+#include <iostream>
+#include <stack>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/tokenizer.hpp>
 #include <core/newick.h>
 #include <core/phylo_tree.h>
 #include <core/phylo_kmer.h>
 #include <utils/io/file_io.h>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/tokenizer.hpp>
-#include <iostream>
 
 using std::string, std::string_view;
 using core::phylo_node;
@@ -27,7 +28,7 @@ namespace rappas
             /// \brief Parses an input buffer. This function can be called more than once,
             /// during the buffered reading from disk.
             /// \param data A string variable containing the current buffer data to parse.
-            void parse(const std::string_view& data);
+            void parse(std::string_view data);
 
             core::phylo_node* get_root() const;
             size_t get_node_count() const;
@@ -82,7 +83,7 @@ newick_parser::newick_parser()
     , _end_of_file(false)
 {}
 
-void newick_parser::parse(const string_view& data)
+void newick_parser::parse(string_view data)
 {
     for (char c : data)
     {
@@ -239,13 +240,13 @@ core::phylo_tree rappas::io::load_newick(const string& file_name)
 
     /// Assign post-order ids to the phylo_node's
     auto tree = core::phylo_tree{ parser.get_root(), parser.get_node_count() };
-    phylo_node::id_type postorder_id = 0;
-    for (auto& node : tree)
-    {
-        node._postorder_id = postorder_id;
-        ++postorder_id;
-    }
-
     std::cout << "Loaded a tree of " << parser.get_node_count() << " nodes.\n\n" << std::flush;
     return tree;
+}
+
+core::phylo_tree rappas::io::parse_newick(std::string_view newick_string)
+{
+    newick_parser parser;
+    parser.parse(newick_string);
+    return core::phylo_tree{ parser.get_root(), parser.get_node_count() };
 }
