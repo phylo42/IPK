@@ -1,5 +1,7 @@
-#include "io/file_io.h"
+#include <utils/io/file_io.h>
 #include <fstream>
+#include <string>
+#include <streambuf>
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 
@@ -79,4 +81,11 @@ void buffered_reader::_read_next_chunk()
         _buffer[size_to_read] = '\0';
         _read += size_to_read;
     }
+}
+
+std::string rappas::io::read_as_string(const std::string& filename)
+{
+    /// FIXME: error handling
+    std::ifstream stream(filename);
+    return std::string{ std::istreambuf_iterator<char>(stream), std::istreambuf_iterator<char>() };
 }

@@ -2,16 +2,16 @@
 
 using namespace core;
 
-phylo_kmer_db::phylo_kmer_db(size_t kmer_size) noexcept
-    : _kmer_size{ kmer_size }
+phylo_kmer_db::phylo_kmer_db(size_t kmer_size, const std::string& tree)
+    : _kmer_size{ kmer_size }, _tree { tree }
 {}
 
-void phylo_kmer_db::put(key_type key, inner_key_type branch, value_type score)
+void phylo_kmer_db::insert(key_type key, const pkdb_value& value)
 {
-    _map[key][branch] = score;
+    _map[key].push_back(value);
 }
 
-std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const
+std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const noexcept
 {
     if (auto it = _map.find(key); it != _map.end())
     {
@@ -23,24 +23,29 @@ std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const
     }
 }
 
-phylo_kmer_db::const_iterator phylo_kmer_db::begin() const
+phylo_kmer_db::const_iterator phylo_kmer_db::begin() const noexcept
 {
     return std::begin(_map);
 }
 
-phylo_kmer_db::const_iterator phylo_kmer_db::end() const
+phylo_kmer_db::const_iterator phylo_kmer_db::end() const noexcept
 {
     return std::end(_map);
 }
 
-size_t phylo_kmer_db::size() const
+size_t phylo_kmer_db::size() const noexcept
 {
     return _map.size();
 }
 
-size_t phylo_kmer_db::kmer_size() const
+size_t phylo_kmer_db::kmer_size() const noexcept
 {
     return _kmer_size;
+}
+
+std::string_view phylo_kmer_db::tree() const noexcept
+{
+    return _tree;
 }
 
 impl::search_result::search_result() noexcept
@@ -52,12 +57,12 @@ impl::search_result::search_result(
     : _begin{ begin }, _end{ end }
 {}
 
-impl::search_result::const_iterator impl::search_result::begin() const
+impl::search_result::const_iterator impl::search_result::begin() const noexcept
 {
     return _begin;
 }
 
-impl::search_result::const_iterator impl::search_result::end() const
+impl::search_result::const_iterator impl::search_result::end() const noexcept
 {
     return _end;
 }
