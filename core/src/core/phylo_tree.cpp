@@ -91,7 +91,7 @@ postorder_tree_iterator::postorder_tree_iterator() noexcept
 {}
 
 postorder_tree_iterator::postorder_tree_iterator(phylo_node* node) noexcept
-    : _current{ node }, _postorder_id{ 0 }
+    : _current{ node }
 {}
 
 postorder_tree_iterator& postorder_tree_iterator::operator=(const postorder_tree_iterator& rhs) noexcept

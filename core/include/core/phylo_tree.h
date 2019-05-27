@@ -113,7 +113,6 @@ namespace core
 
         private:
             phylo_node* _current;
-            phylo_node::id_type _postorder_id;
         };
     }
 
