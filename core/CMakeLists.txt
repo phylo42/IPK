@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(rappas_core LANGUAGES CXX VERSION 0.1.3)
+project(rappas_core LANGUAGES CXX VERSION 0.1.4)
 
 ##########################################################################################
 # PROTEINS

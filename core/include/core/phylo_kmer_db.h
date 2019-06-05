@@ -120,6 +120,8 @@ namespace core
         size_t size() const noexcept;
         /// \brief Returns the k-mer size.
         size_t kmer_size() const noexcept;
+        /// \brief Returns omega (score threshold parameter)
+        core::phylo_kmer::score_type omega() const noexcept;
         /// \brief Returns a view to the newick formatted phylogenetic tree
         std::string_view tree() const noexcept;
 

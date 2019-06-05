@@ -43,6 +43,11 @@ size_t phylo_kmer_db::kmer_size() const noexcept
     return _kmer_size;
 }
 
+core::phylo_kmer::score_type phylo_kmer_db::omega() const noexcept
+{
+    return 1.0f;
+}
+
 std::string_view phylo_kmer_db::tree() const noexcept
 {
     return _tree;
