@@ -84,7 +84,7 @@ namespace core
         /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
         /// same code, which counts only once.
         static constexpr size_t alphabet_size = 4;
-        static constexpr size_t max_kmer_length = 16;
+        static constexpr size_t max_kmer_length = 12;
     };
 
 #elif SEQ_TYPE_AA
