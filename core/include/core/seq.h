@@ -33,7 +33,7 @@ namespace core
     struct seq_traits_impl<dna>
     {
         /// \brief The type used to store one base of a sequence.
-        using char_type = char;
+        using char_type = unsigned char;
 
         /// \brief The type used to store a k-mer value.
         /// \details K-mers are not stored as strings or char* values, but as values of this type instead.
