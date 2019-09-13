@@ -22,7 +22,7 @@ namespace core
         using score_type = float;
 
         /// The type of a branch node id, that a phylokmer is mapped to.
-        using branch_type = uint16_t;
+        using branch_type = uint32_t;
 
         /// The type of a phylokmer's position in the alignment
         using pos_type = int32_t;
