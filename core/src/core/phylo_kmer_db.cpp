@@ -53,8 +53,10 @@ std::string_view phylo_kmer_db::tree() const noexcept
     return _tree;
 }
 
-impl::search_result::search_result() noexcept
-{}
+phylo_kmer_db::storage::hasher phylo_kmer_db::hash_function() const noexcept
+{
+    return _map.hash_function();
+}
 
 impl::search_result::search_result(
     impl::search_result::const_iterator begin,
