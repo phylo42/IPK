@@ -1,3 +1,9 @@
+v0.1.5
+- seq_traits_impl<dna>::char_type is now unsigned char
+- seq_traits_impl<dna>::max_kmer_length is now 12 (due to static memory accesses of size ~4**k)
+- Added phylo_kmer_db::hash_function
+- phylo_kmer_db::branch_type is now uint32_t
+
 v0.1.4
 - Added phylo_kmer_db::omega (score threshold parameter)
 - Updated serialization
