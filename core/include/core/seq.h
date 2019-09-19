@@ -33,7 +33,7 @@ namespace core
     struct seq_traits_impl<dna>
     {
         /// \brief The type used to store one base of a sequence.
-        using char_type = char;
+        using char_type = unsigned char;
 
         /// \brief The type used to store a k-mer value.
         /// \details K-mers are not stored as strings or char* values, but as values of this type instead.
@@ -84,7 +84,7 @@ namespace core
         /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
         /// same code, which counts only once.
         static constexpr size_t alphabet_size = 4;
-        static constexpr size_t max_kmer_length = 16;
+        static constexpr size_t max_kmer_length = 12;
     };
 
 #elif SEQ_TYPE_AA

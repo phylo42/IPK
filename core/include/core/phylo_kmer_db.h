@@ -92,7 +92,7 @@ namespace core
 
 
         /// Ctors, dtor and operator=
-        phylo_kmer_db(size_t kmer_size, const std::string& tree);
+        phylo_kmer_db(size_t kmer_size, core::phylo_kmer::score_type omega, const std::string& tree);
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
         phylo_kmer_db(phylo_kmer_db&&) = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
@@ -120,9 +120,12 @@ namespace core
         size_t size() const noexcept;
         /// \brief Returns the k-mer size.
         size_t kmer_size() const noexcept;
+        /// \brief Returns omega (core::score_threshold parameter)
+        phylo_kmer::score_type omega() const noexcept;
         /// \brief Returns a view to the newick formatted phylogenetic tree
         std::string_view tree() const noexcept;
-
+        /// \brief Returns a hash function used to hash kmers
+        storage::hasher hash_function() const noexcept;
 
         /// Modifiers
         /// \brief Puts a phylo-kmer information in the database.
@@ -146,6 +149,10 @@ namespace core
         /// but we can not guarantee that it was not calculated for another k-mer size by mistake.
         size_t _kmer_size;
 
+        /// \brief Score threshold paramenter.
+        /// \sa core::score_threshold
+        core::phylo_kmer::score_type _omega;
+
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;
     };
@@ -159,7 +166,7 @@ namespace core
         public:
             using const_iterator = phylo_kmer_db::value_type::const_iterator;
 
-            search_result() noexcept;
+            search_result() noexcept = default;
             search_result(const_iterator begin, const_iterator end) noexcept;
             search_result(const search_result&) noexcept = default;
             ~search_result() noexcept = default;
