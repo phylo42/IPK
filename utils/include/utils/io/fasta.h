@@ -25,6 +25,10 @@ namespace rappas
         };
 
         std::vector<fasta> read_fasta(const std::string& filename);
+
+        /// Clean an input sequence from gaps. Characters '*', '!', '.' are also skipped
+        /// and ignored
+        std::string clean_sequence(std::string sequence);
     }
 }
 

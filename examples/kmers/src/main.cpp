@@ -6,6 +6,7 @@
 #include <core/seq.h>
 #include <core/phylo_kmer.h>
 #include <core/kmer_iterator.h>
+#include <utils/io/fasta.h>
 
 /// Iterate over all the combinations with repetition
 /// http://shoaib-ahmed.com/2018/for-each-combination-with-repetetion-c++/
@@ -70,13 +71,13 @@ void encode_ambiguous_string()
 
     std::cout << "\nIteration: " << std::endl;
 
-    auto read = std::string{ "T--ATAWAABTGTNCAAA.TT-----TTY" };
     const size_t kmer_size = 4;
 
+    auto sequence = std::string{ "T--ATAWAABTGTNCAAA.TT-----TTY" };
     /// TODO: This is not the best way to delete gaps, since it requires changing the input
     /// string and copy data. We need a transparent gap-skipping iterator over a string/string_view
     /// that should be taken as an input argument in the core::encode/core::to_kmers functions
-    read.erase(std::remove(read.begin(), read.end(), '-'), read.end());
+    const auto clean_sequence = rappas::io::clean_sequence(sequence);
 
     /// Iterate over k-mers of a string_view (implicitly created from long_read).
     /// This is more effective than calling core::encode_kmer for every k-mer of a string,
@@ -86,7 +87,7 @@ void encode_ambiguous_string()
     /// It does not return resolved strings that correspond to the codes, because it requires copying
     /// of strings (there is no way to return it as std::string_view).
     size_t position = 0;
-    for (const auto& [kmer, codes] : to_kmers<one_ambiguity_policy>(read, kmer_size))
+    for (const auto& [kmer, codes] : to_kmers<one_ambiguity_policy>(clean_sequence, kmer_size))
     {
         std::cout << position << " " << kmer << ": ";
         for (const auto code : codes)
