@@ -37,7 +37,7 @@ bool core::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
 
 phylo_kmer::score_type core::score_threshold(phylo_kmer::score_type omega, size_t kmer_size)
 {
-    return std::log10(powf(omega / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
+    return std::pow(omega / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size));
 }
 
 template<>
