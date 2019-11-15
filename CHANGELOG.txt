@@ -1,3 +1,11 @@
+v0.1.6
+- core::to_kmers and core::encode now have ambiguity policy. The old behaviour implemented in the core::no_ambiguity_policy
+- Implemented core::one_ambiguity_policy which allows one ambiguous base pair per k-mer
+- With the core::one_ambiguity policy enabled, core::to_kmers now returns another type
+- Added rappas::io::clean_sequence to filter gaps in the sequence (requires copying of the input string)
+- core::score_threshold is not log10 anymore
+- Updated examples
+
 v0.1.5
 - seq_traits_impl<dna>::char_type is now unsigned char
 - seq_traits_impl<dna>::max_kmer_length is now 12 (due to static memory accesses of size ~4**k)
