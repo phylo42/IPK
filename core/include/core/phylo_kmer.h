@@ -42,10 +42,16 @@ namespace core
     /// Returns a minumum score
     phylo_kmer::score_type score_threshold(phylo_kmer::score_type omega, size_t kmer_size);
 
-    /// \brief Returns a code of input k-mer.
+    /// \brief Returns one or more codes of the input k-mer (depending on the policy)
     /// \details Assumes that the size of input sequence equals k
-    std::optional<phylo_kmer::key_type> encode_kmer(const std::string& kmer);
-    std::optional<phylo_kmer::key_type> encode_kmer(std::string_view kmer);
+    template<typename AmbiguityPolicy>
+    std::optional<typename AmbiguityPolicy::value_type> encode_kmer(std::string_view kmer);
+
+    template<typename AmbiguityPolicy>
+    std::optional<phylo_kmer::key_type> encode_kmer(const std::string& kmer)
+    {
+        return encode_kmer<AmbiguityPolicy>(std::string_view{ kmer });
+    }
 
     /// Creates a string of size kmer_size by given key
     std::string decode_kmer(phylo_kmer::key_type key, size_t kmer_size);

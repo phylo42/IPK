@@ -2,6 +2,7 @@
 #include "core/seq.h"
 #include <cmath>
 #include <vector>
+#include <core/kmer_iterator.h>
 
 using namespace core;
 
@@ -39,14 +40,15 @@ phylo_kmer::score_type core::score_threshold(phylo_kmer::score_type omega, size_
     return std::log10(powf(omega / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size)));
 }
 
-std::optional<phylo_kmer::key_type> core::encode_kmer(std::string_view kmer)
+template<>
+std::optional<no_ambiguity_policy::value_type> core::encode_kmer<core::no_ambiguity_policy>(std::string_view kmer)
 {
-    phylo_kmer::key_type key = 0;
+    no_ambiguity_policy::value_type key = 0;
     for (const auto base : kmer)
     {
-        if (const auto& base_code = core::encode(base); base_code)
+        if (const auto& base_code = core::encode<no_ambiguity_policy>(base); base_code)
         {
-            key <<= core::bit_length<core::seq_type>();
+            key <<= bit_length<seq_type>();
             key |= *base_code;
         }
         else
@@ -57,10 +59,57 @@ std::optional<phylo_kmer::key_type> core::encode_kmer(std::string_view kmer)
     return key;
 }
 
-std::optional<phylo_kmer::key_type> core::encode_kmer(const std::string& kmer)
+template<>
+std::optional<one_ambiguity_policy::value_type> core::encode_kmer<core::one_ambiguity_policy>(std::string_view kmer)
 {
-    return encode_kmer(std::string_view{ kmer });
+    auto keys = one_ambiguity_policy::value_type();
+    keys.push_back(0);
+
+    size_t num_ambiguities = 0;
+
+    for (const auto base : kmer)
+    {
+        if (const auto& base_codes = core::encode<one_ambiguity_policy>(base); base_codes)
+        {
+            /// if the character is ambiguous
+            if (base_codes->size() > 1)
+            {
+                /// allow only one ambiguity per k-mer
+                if (num_ambiguities > 0)
+                {
+                    return std::nullopt;
+                }
+                else
+                {
+                    auto old_key = keys.back();
+                    keys.pop_back();
+                    for (const auto base_code : *base_codes)
+                    {
+                        auto new_key = old_key;
+                        new_key <<= bit_length<seq_type>();
+                        new_key |= base_code;
+                        keys.push_back(new_key);
+                    }
+                }
+            }
+            /// if not ambiguous
+            else if (base_codes->size() == 1)
+            {
+                for (auto& key : keys)
+                {
+                    key <<= bit_length<seq_type>();
+                    key |= (*base_codes)[0];
+                }
+            }
+        }
+        else
+        {
+            return std::nullopt;
+        }
+    }
+    return keys;
 }
+
 
 std::string core::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
 {

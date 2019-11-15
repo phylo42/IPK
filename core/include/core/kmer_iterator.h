@@ -8,18 +8,6 @@
 
 namespace core
 {
-    struct no_ambiguity_policy
-    {
-        /// a k-mer code
-        using value_type = phylo_kmer::key_type;
-    };
-
-    struct one_ambiguity_policy
-    {
-        /// a vector of k-mer codes
-        using value_type = std::vector<phylo_kmer::key_type>;
-    };
-
     /// \brief An iterator class for k-mers of an input sequence.
     /// \details Iterates over all the k-mers of a given sequence and encodes them
     /// in a rolling fashion. Returns a lightweight std::string_view to a current k-mer
@@ -68,8 +56,32 @@ namespace core
             return !(*this == rhs);
         }
 
-        value_type operator*() const noexcept;
+        value_type operator*() const noexcept
+        {
+            return { _sequence_view.substr(_kmer_position, _kmer_size), _kmer_value };
+        }
+
     private:
+        void init()
+        {
+            /// _kmer_size == 0 means npos
+            if (_kmer_size == 0)
+            {
+                _kmer_position = std::string_view::npos;
+            }
+            else
+            {
+                /// calculate the code of the first valid k-mer
+                bool stop = false;
+                while (!stop)
+                {
+                    bool is_valid = false;
+                    std::tie(_kmer_value, _kmer_position, is_valid) = encode_kmer();
+                    stop = is_valid || (_kmer_position == std::string_view::npos);
+                }
+            }
+        }
+
         std::tuple<typename AmbiguityPolicy::value_type, pos_t, bool> encode_kmer();
         std::tuple<typename AmbiguityPolicy::value_type, pos_t, bool> encode_kmer_from_previous() const;
 
@@ -86,16 +98,33 @@ namespace core
     };
 
     /// \brief A little proxy class that just creates a k-mer iterator over a sequence.
-    /// Usage: for (const auto& [kmer, code] : to_kmers(sequence_view, kmer_size)) { ... }
+    /// Example: for (const auto& [kmer, code] : to_kmers<no_ambiguity_policy>(sequence_view, kmer_size)) { ... }
+    template<typename AmbiguityPolicy>
     class to_kmers
     {
     public:
-        using const_iterator = kmer_iterator<no_ambiguity_policy>;
+        using const_iterator = kmer_iterator<AmbiguityPolicy>;
 
-        to_kmers(std::string_view sequence_view, size_t kmer_size) noexcept;
+        to_kmers(std::string_view sequence_view, size_t kmer_size) noexcept
+            : _sequence_view{ sequence_view }, _kmer_size{ kmer_size }
+        {
+            /// If the input string is too small for a given k, we force begin() == end()
+            /// to represent an empty set of k-mers.
+            if (_sequence_view.size() < _kmer_size)
+            {
+                _kmer_size = 0;
+            }
+        }
 
-        const_iterator begin() const;
-        const_iterator end() const;
+        const_iterator begin() const
+        {
+            return { _sequence_view, _kmer_size };
+        }
+
+        const_iterator end() const
+        {
+            return { _sequence_view, 0 };
+        }
     private:
         std::string_view _sequence_view;
         size_t _kmer_size;

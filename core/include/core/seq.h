@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstddef>
 #include <optional>
+#include <vector>
 
 namespace core
 {
@@ -40,7 +41,21 @@ namespace core
         /// For example for DNA and k==3 the k-mer "AAA" == 000ul if kmer_t is unsigned long.
         using key_type = uint32_t;
 
-        static constexpr std::optional<uint8_t> key_to_code(char_type base)
+        static constexpr char_type code_to_key[] = {'A', 'C', 'G', 'T'};
+
+        /// \brief Alphabet size
+        /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
+        /// same code, which counts only once.
+        static constexpr size_t alphabet_size = 4;
+        static constexpr size_t max_kmer_length = 12;
+
+        /// A type returned by encoding an unambiguous character
+        using unambiguous_code_t = std::optional<uint8_t>;
+
+        /// A type returned by encoding an ambiguous character
+        using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
+
+        static unambiguous_code_t key_to_code(char_type base)
         {
             switch (base)
             {
@@ -77,14 +92,102 @@ namespace core
             }
         };
 
-        static constexpr char_type code_to_key[] = {'A', 'C', 'G', 'T'};
-        static constexpr char_type ambiguous_chars[] =  {'N', '.', '-', 'R', 'Y', 'S', 'W', 'K', 'M', 'B', 'D', 'H', 'V'};
-
-        /// \brief Alphabet size
-        /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
-        /// same code, which counts only once.
-        static constexpr size_t alphabet_size = 4;
-        static constexpr size_t max_kmer_length = 12;
+        static ambiguous_code_t ambiguous_key_to_code(char_type base)
+        {
+            switch (base)
+            {
+                /// Unambiguous characters
+                case 'A':
+                    [[fallthrough]];
+                case 'a':
+                    return { { 0 } };
+                case 'C':
+                    [[fallthrough]];
+                case 'c':
+                    return { { 1 } };
+                case 'G':
+                    [[fallthrough]];
+                case 'g':
+                    return { { 2 } };
+                case 'T':
+                    [[fallthrough]];
+                case 't':
+                    [[fallthrough]];
+                case 'U':
+                    [[fallthrough]];
+                case 'u':
+                    return { { 3 } };
+                /// Purine
+                /// R = A | G
+                case 'R':
+                    [[fallthrough]];
+                case 'r':
+                    return { { 0, 2 } };
+                /// Pyrimidine
+                /// Y = C | T
+                case 'Y':
+                    [[fallthrough]];
+                case 'y':
+                    return { { 1, 3 } };
+                /// Strong
+                /// S = C | G
+                case 'S':
+                    [[fallthrough]];
+                case 's':
+                    return { { 1, 2 } };
+                /// Weak
+                /// W = A | T
+                case 'W':
+                    [[fallthrough]];
+                case 'w':
+                    return { { 0, 3 } };
+                /// Keto
+                /// K = G | T
+                case 'K':
+                    [[fallthrough]];
+                case 'k':
+                    return { { 2, 3 } };
+                /// Amino
+                /// M = A | C
+                case 'M':
+                    [[fallthrough]];
+                case 'm':
+                    return { { 0, 1 } };
+                /// Not A
+                case 'B':
+                    [[fallthrough]];
+                case 'b':
+                    return { { 1, 2, 3 } };
+                /// Not T/U
+                case 'V':
+                    [[fallthrough]];
+                case 'v':
+                    return { { 0, 1, 2 } };
+                /// Not G
+                case 'H':
+                    [[fallthrough]];
+                case 'h':
+                    return { { 0, 1, 3 } };
+                /// Not C
+                case 'D':
+                    [[fallthrough]];
+                case 'd':
+                    return { { 0, 2, 3 } };
+                /// Any
+                case 'X':
+                    [[fallthrough]];
+                case 'x':
+                    [[fallthrough]];
+                case 'N':
+                    [[fallthrough]];
+                case 'n':
+                    [[fallthrough]];
+                case '.':
+                    return { { 0, 1, 2, 3 } };
+                default:
+                    return std::nullopt;
+            }
+        };
     };
 
 #elif SEQ_TYPE_AA
@@ -113,8 +216,6 @@ namespace core
         {
             return 0;
         }
-
-        static constexpr char_type ambiguous_chars[] =  { 'A' };
 
         static constexpr size_t alphabet_size = sizeof(char_set);
         static constexpr size_t max_kmer_length = 0;
@@ -162,14 +263,38 @@ namespace core
         return SeqTraits::code_to_key[code];
     }
 
-    template<typename SeqTraits>
-    constexpr std::optional<uint8_t> encode_impl(typename SeqTraits::char_type key)
+    const auto decode = decode_impl<seq_traits>;
+
+    template<class SeqTraits>
+    struct no_ambiguity_policy_impl
     {
-        return SeqTraits::key_to_code(key);
+        /// a k-mer code
+        using value_type = typename SeqTraits::key_type;
+
+        /// an encode function
+        constexpr static auto encode = SeqTraits::key_to_code;
+    };
+
+    template<class SeqTraits>
+    struct one_ambiguity_policy_impl
+    {
+        /// a vector of k-mer codes
+        using value_type = std::vector<typename SeqTraits::key_type>;
+
+        /// an encode function
+        constexpr static auto encode = SeqTraits::ambiguous_key_to_code;
+    };
+
+    /// Encodes a character of a sequence of current used sequence type
+    template<typename AmbiguityPolicy>
+    auto encode(seq_traits::char_type key)
+    {
+        return AmbiguityPolicy::encode(key);
     }
 
-    const auto decode = decode_impl<seq_traits>;
-    const auto encode = encode_impl<seq_traits>;
+    /// Aliases of ambiguity polices for used sequence type
+    using no_ambiguity_policy = no_ambiguity_policy_impl<seq_traits>;
+    using one_ambiguity_policy = one_ambiguity_policy_impl<seq_traits>;
 }
 
 #endif
