@@ -69,35 +69,44 @@ void encode_ambiguous_string()
 {
     using namespace core;
 
-    std::cout << "\nIteration: " << std::endl;
+    const std::vector<std::string> sequences = { "T--ATAWAABTGTNCAAA.TT-----TTY",
+                                                 "AATTWGTAATCGATG",
+                                                 "AATWAGTAATCGATG",
+                                                 "AATWWGTAATCGATG",
+                                                 "ATATYATAYATYATYAY",
+                                                 "TTTWWWWWWWWWAAAAWWWWWCCC"};
+
 
     const size_t kmer_size = 4;
 
-    auto sequence = std::string{ "T--ATAWAABTGTNCAAA.TT-----TTY" };
-    /// TODO: This is not the best way to delete gaps, since it requires changing the input
-    /// string and copy data. We need a transparent gap-skipping iterator over a string/string_view
-    /// that should be taken as an input argument in the core::encode/core::to_kmers functions
-    const auto clean_sequence = rappas::io::clean_sequence(sequence);
-
-    /// Iterate over k-mers of a string_view (implicitly created from long_read).
-    /// This is more effective than calling core::encode_kmer for every k-mer of a string,
-    /// because core::to_kmers calculates codes in a rolling fashion, if possible.
-
-    /// WARNING: the amibiguous version of core::to_kmers returns a pair <ambiguous k-mer, vector of codes>
-    /// It does not return resolved strings that correspond to the codes, because it requires copying
-    /// of strings (there is no way to return it as std::string_view).
-    size_t position = 0;
-    for (const auto& [kmer, codes] : to_kmers<one_ambiguity_policy>(clean_sequence, kmer_size))
+    for (const auto& sequence : sequences)
     {
-        std::cout << position << " " << kmer << ": ";
-        for (const auto code : codes)
-        {
-            std::cout << code << " ";
-        }
-        std::cout << std::endl;
+        std::cout << std::endl << sequence << ":" << std::endl;
+        /// TODO: This is not the best way to delete gaps, since it requires changing the input
+        /// string and copy data. We need a transparent gap-skipping iterator over a string/string_view
+        /// that should be taken as an input argument in the core::encode/core::to_kmers functions
+        const auto clean_sequence = rappas::io::clean_sequence(sequence);
 
-        ++position;
+        /// Iterate over k-mers of a string_view (implicitly created from long_read).
+        /// This is more effective than calling core::encode_kmer for every k-mer of a string,
+        /// because core::to_kmers calculates codes in a rolling fashion, if possible.
+
+        /// WARNING: the amibiguous version of core::to_kmers returns a pair <ambiguous k-mer, vector of codes>
+        /// It does not return resolved strings that correspond to the codes, because it requires copying
+        /// of strings (there is no way to return it as std::string_view).
+        size_t position = 0;
+        for (const auto& [kmer, codes] : to_kmers<one_ambiguity_policy>(clean_sequence, kmer_size))
+        {
+            std::cout << position << " " << kmer << ": ";
+            for (const auto code : codes)
+            {
+                std::cout << core::decode_kmer(code, kmer_size) << " ";
+            }
+            std::cout << std::endl;
+            ++position;
+        }
     }
+
 }
 
 int main()

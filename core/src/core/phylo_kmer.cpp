@@ -91,6 +91,7 @@ std::optional<one_ambiguity_policy::value_type> core::encode_kmer<core::one_ambi
                         keys.push_back(new_key);
                     }
                 }
+                ++num_ambiguities;
             }
             /// if not ambiguous
             else if (base_codes->size() == 1)
