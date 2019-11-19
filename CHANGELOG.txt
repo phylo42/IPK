@@ -1,3 +1,7 @@
+v0.1.7
+- Fixed a bug in core::to_kmers<one_ambiguity_policy> which lead to encoding ambiguous k-mer incorrectly
+- Updated examples
+
 v0.1.6
 - core::to_kmers and core::encode now have ambiguity policy. The old behaviour implemented in the core::no_ambiguity_policy
 - Implemented core::one_ambiguity_policy which allows one ambiguous base pair per k-mer
