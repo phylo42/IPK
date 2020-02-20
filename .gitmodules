@@ -1,6 +1,6 @@
 [submodule "skarupke"]
 	path = skarupke
-	url = git@gite.lirmm.fr:rappas-team/skarupke.git
+	url = git@github.com:nromashchenko/skarupke.git
 [submodule "catch2"]
 	path = catch2
 	url = git@github.com:catchorg/Catch2.git
@@ -16,9 +16,6 @@
 [submodule "hopscotch-map"]
 	path = hopscotch-map
 	url = git@github.com:Tessil/hopscotch-map.git
-[submodule "martinus"]
-	path = martinus
-	url = git@gite.lirmm.fr:rappas-team/martinus.git
 [submodule "abseil-cpp"]
 	path = abseil-cpp
 	url = git@github.com:abseil/abseil-cpp.git
