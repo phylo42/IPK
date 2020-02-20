@@ -31,5 +31,5 @@ HASH_MAP options:
 - USE_TSL_HOPSCOTCH_MAP
 
 ## Usage
-This library is not intended to be used stand-alone. It is used in RAPPAS2 and SHERPAS. You can build and run [examples](https://github.com/phylo42/xpas/tree/master/examples) for the use cases.
+This library is not intended to be used stand-alone. It is used in RAPPAS2 and SHERPAS. Check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) for the use cases.
 
