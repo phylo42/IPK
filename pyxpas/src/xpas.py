@@ -21,9 +21,11 @@ if __name__ == "__main__":
         db = xpas.load(db_filename)
         print(db.size())
 
+        for key, entries in db:
+            print(key, len(entries))
+            break
         # See core::encode_kmer
-        kmer_value = 45
+        #kmer_value = 45
 
-        found = db.search(kmer_value)
-        for entry in found.values:
-            print(entry.branch, entry.score)
+        #for entry in db.search(kmer_value):
+        #    print(entry.branch, entry.score)

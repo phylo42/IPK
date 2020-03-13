@@ -8,12 +8,14 @@ namespace bp = boost::python;
 /// Custom exceptions
 struct AttributeError: std::exception
 {
-    const char* what() const throw() { return "AttributeError exception"; }
+    [[nodiscard]]
+    const char* what() const noexcept override { return "AttributeError exception"; }
 };
 
 struct TypeError: std::exception
 {
-    const char* what() const throw() { return "TypeError exception"; }
+    [[nodiscard]]
+    const char* what() const noexcept override { return "TypeError exception"; }
 };
 
 /// exception translator
@@ -33,7 +35,6 @@ void translate(const std::exception& e)
 /// Convert std::optional<search_result> to a python object
 struct to_python_search_result
 {
-
     static PyObject* convert(const std::optional<core::impl::search_result>& obj)
     {
         if (obj)
@@ -49,6 +50,39 @@ struct to_python_search_result
 
             return bp::incref(bp::object(empty_result).ptr());
         }
+    }
+};
+
+#include <iostream>
+
+struct db_entry
+{
+    db_entry(core::phylo_kmer_db::key_type key, std::vector<core::pkdb_value> values)
+        : _key {key}, _values{ std::move(values) } {}
+
+    core::phylo_kmer_db::key_type _key;
+    std::vector<core::pkdb_value> _values;
+};
+
+bp::tuple db_entry_iter(db_entry& entry)
+{
+    return bp::make_tuple(entry._key, entry._values);
+}
+
+struct to_python_db_entry
+{
+    static PyObject* convert(const phylo_kmer_db::storage::const_iterator::value_type& entry)
+    {
+        db_entry copy{ entry.first, entry.second };
+        /*std::cout << entry.first;
+        for (const auto& [x, y] : entry.second)
+        {
+            std::cout << " (" << x << " " << y << " )";
+        }
+        std::cout << std::endl;*/
+
+        return bp::incref(bp::object(copy).ptr());
+        //return bp::incref(bp::object(db_entry).ptr());
     }
 };
 
@@ -71,8 +105,17 @@ BOOST_PYTHON_MODULE(xpas)
 
     /// a search result: collection of pkdb_value
     bp::class_<core::impl::search_result>("PkDbSearchResult")
-        .add_property("values", bp::range(&core::impl::search_result::begin, &core::impl::search_result::end))
+        .def("__iter__", bp::range(&core::impl::search_result::begin, &core::impl::search_result::end))
     ;
+
+    /*bp::class_<phylo_kmer_db::storage::const_iterator::value_type>( "PkDbEntry", )
+        //.def("key", &phylo_kmer_db::storage::const_iterator::value_type::first)
+        //.def("value", &phylo_kmer_db::storage::const_iterator::value_type::second)
+    ;*/
+    bp::class_<db_entry>("PkDbEntry", bp::init<core::phylo_kmer_db::key_type, std::vector<core::pkdb_value>>())
+        .def("__iter__", &db_entry_iter)
+    ;
+    bp::to_python_converter<phylo_kmer_db::storage::const_iterator::value_type, to_python_db_entry>();
 
     /// phylo k-mer database class
     bp::class_<phylo_kmer_db, boost::noncopyable, std:: shared_ptr<phylo_kmer_db>>("PhyloKmerDb", bp::init<size_t, core::phylo_kmer::score_type, std::string>())
@@ -80,6 +123,8 @@ BOOST_PYTHON_MODULE(xpas)
         .def("size", &phylo_kmer_db::size)
         .def("kmer_size", &phylo_kmer_db::kmer_size)
         .def("omega", &phylo_kmer_db::omega)
+
+        .def("__iter__", bp::range(&phylo_kmer_db::begin, &phylo_kmer_db::end))
     ;
 
     /// database deserialization
