@@ -67,7 +67,9 @@ namespace core
     {
         phylo_kmer::branch_type branch;
         phylo_kmer::score_type score;
-        ///phylo_kmer::pos_type position;
+
+        pkdb_value(phylo_kmer::branch_type _branch, phylo_kmer::score_type _score)
+            : branch{ _branch }, score{ _score } {}
     };
 
     /// \brief A Phylo-kmer database, that stores all the phylo-kmers.
@@ -180,6 +182,5 @@ namespace core
         };
     }
 }
-
 
 #endif

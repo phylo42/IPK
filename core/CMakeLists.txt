@@ -30,7 +30,7 @@ target_compile_options(core_p
 ##########################################################################################
 # DNA
 # Create a library target and set properties
-add_library(core_n STATIC "")
+add_library(core_n SHARED "")
 add_library(rappas::core_n ALIAS core_n)
 
 target_compile_definitions(core_n
@@ -64,7 +64,6 @@ elseif(${HASH_MAP} STREQUAL USE_TSL_ROBIN_MAP)
 elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
     set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
 endif()
-
 
 target_link_libraries(core_n
         PUBLIC

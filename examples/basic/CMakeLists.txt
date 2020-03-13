@@ -13,6 +13,8 @@ target_link_libraries(core_example_basic
             rappas::core_n
         )
 
+link_libraries(${PYTHON_LIBRARIES})
+
 # Turn on the warnings and treat them as errors
 target_compile_options(core_example_basic
         PRIVATE

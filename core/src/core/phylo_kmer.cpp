@@ -2,7 +2,6 @@
 #include "core/seq.h"
 #include <cmath>
 #include <vector>
-#include <core/kmer_iterator.h>
 
 using namespace core;
 
