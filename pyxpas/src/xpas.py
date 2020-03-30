@@ -10,7 +10,7 @@ __license__ = "MIT"
 
 import sys
 # Make sure that xpas.so is visible by this script
-import xpas
+import pyxpas
 
 
 if __name__ == "__main__":

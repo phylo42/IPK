@@ -1,9 +1,12 @@
 #include <boost/python.hpp>
+#include <boost/python/numpy.hpp>
+#include <boost/python/numpy/dtype.hpp>
 #include <core/phylo_kmer_db.h>
 #include <core/serialization.h>
 
 using namespace core;
 namespace bp = boost::python;
+namespace bn = boost::python::numpy;
 
 /// Custom exceptions
 struct AttributeError: std::exception
@@ -53,8 +56,6 @@ struct to_python_search_result
     }
 };
 
-#include <iostream>
-
 struct db_entry
 {
     db_entry(core::phylo_kmer_db::key_type key, std::vector<core::pkdb_value> values)
@@ -66,8 +67,54 @@ struct db_entry
 
 bp::tuple db_entry_iter(db_entry& entry)
 {
-    return bp::make_tuple(entry._key, entry._values);
+    Py_intptr_t shape[1] = { static_cast<Py_intptr_t>(entry._values.size()) };
+
+    const auto npuint = bn::dtype::get_builtin<core::phylo_kmer::branch_type>();
+    auto branches = bn::zeros(1, shape, npuint);
+
+    const auto npfloat = bn::dtype::get_builtin<float>();
+    auto scores = bn::zeros(1, shape, npfloat);
+
+    size_t i = 0;
+    for (const auto& value : entry._values)
+    {
+        branches[i] = value.branch;
+        scores[i] = value.score;
+        ++i;
+    }
+    return bp::make_tuple(entry._key, branches, scores);
 }
+
+bn::ndarray db_as_matrix(const phylo_kmer_db& db)
+{
+    /// find the number of branches
+    size_t num_branches = 0;
+    for (const auto& [key, entries] : db)
+    {
+        for (const auto& [branch, score] : entries)
+        {
+            num_branches = std::max(num_branches, static_cast<size_t>(branch) + 1);
+        }
+    }
+
+    /// find the number of k-mers
+    const size_t max_key = std::pow(core::seq_traits::alphabet_size, db.kmer_size());
+
+    const auto shape = bp::make_tuple(max_key, num_branches);
+    const auto np_score_type = bn::dtype::get_builtin<core::phylo_kmer::score_type>();
+    auto matrix = bn::zeros(shape, np_score_type);
+
+    for (const auto& [key, entries] : db)
+    {
+        for (const auto& [branch, score] : entries)
+        {
+            matrix[key][branch] = score;
+        }
+    }
+
+    return matrix;
+}
+
 
 struct to_python_db_entry
 {
@@ -78,7 +125,7 @@ struct to_python_db_entry
         for (const auto& [x, y] : entry.second)
         {
             std::cout << " (" << x << " " << y << " )";
-        }
+        };
         std::cout << std::endl;*/
 
         return bp::incref(bp::object(copy).ptr());
@@ -86,8 +133,12 @@ struct to_python_db_entry
     }
 };
 
-BOOST_PYTHON_MODULE(xpas)
+
+BOOST_PYTHON_MODULE(pyxpas)
 {
+    Py_Initialize();
+    bn::initialize();
+
     /// Exception translator
     bp::register_exception_translator<AttributeError>(&translate);
     bp::register_exception_translator<TypeError>(&translate);
@@ -113,7 +164,7 @@ BOOST_PYTHON_MODULE(xpas)
         //.def("value", &phylo_kmer_db::storage::const_iterator::value_type::second)
     ;*/
     bp::class_<db_entry>("PkDbEntry", bp::init<core::phylo_kmer_db::key_type, std::vector<core::pkdb_value>>())
-        .def("__iter__", &db_entry_iter)
+        .def("as_row", &db_entry_iter)
     ;
     bp::to_python_converter<phylo_kmer_db::storage::const_iterator::value_type, to_python_db_entry>();
 
@@ -123,6 +174,8 @@ BOOST_PYTHON_MODULE(xpas)
         .def("size", &phylo_kmer_db::size)
         .def("kmer_size", &phylo_kmer_db::kmer_size)
         .def("omega", &phylo_kmer_db::omega)
+
+        .def("as_matrix", &db_as_matrix)
 
         .def("__iter__", bp::range(&phylo_kmer_db::begin, &phylo_kmer_db::end))
     ;
