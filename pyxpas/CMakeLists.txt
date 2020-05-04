@@ -10,7 +10,6 @@ message(STATUS "PYTHON_INCLUDE_DIRS = ${PYTHON_INCLUDE_DIRS}")
 message(STATUS "Boost_LIBRARIES = ${Boost_LIBRARIES}")
 
 
-
 python_add_module(pyxpas)
 
 target_sources(pyxpas PRIVATE src/pyxpas.cpp)
@@ -24,7 +23,7 @@ target_include_directories(pyxpas PUBLIC
 )
 
 target_link_libraries(pyxpas PRIVATE
-        rappas::core_n
+        xpas::dna
         #Boost::boost
         Boost::python3
         Boost::numpy3
