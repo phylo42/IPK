@@ -223,7 +223,7 @@ xpas::phylo_tree xpas::io::load_newick(const string& file_name)
 
     /// Load a tree from file
     newick_parser parser;
-    rappas::io::buffered_reader reader(file_name);
+    xpas::io::buffered_reader reader(file_name);
     if (reader.good())
     {
         while (!reader.empty())

@@ -4,7 +4,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <utils/io/fasta.h>
 
-using namespace rappas::io;
+using namespace xpas::io;
 using std::vector;
 using std::string, std::string_view;
 using std::cout, std::endl;
@@ -29,7 +29,7 @@ string_view fasta::sequence() const noexcept
 //------------------------------------------------------------------------------------
 namespace bio = boost::iostreams;
 
-vector<fasta> rappas::io::read_fasta(const string& file_name)
+vector<fasta> xpas::io::read_fasta(const string& file_name)
 {
     cout << "Loading fasta: " + file_name << endl;
     bio::mapped_file_source mmap(file_name);
@@ -60,7 +60,7 @@ vector<fasta> rappas::io::read_fasta(const string& file_name)
     return fasta_records;
 }
 
-string rappas::io::clean_sequence(string sequence)
+string xpas::io::clean_sequence(string sequence)
 {
     sequence.erase(
         std::remove_if(sequence.begin(), sequence.end(),

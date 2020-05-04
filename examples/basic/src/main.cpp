@@ -1,14 +1,14 @@
 #include <iostream>
-#include <core/phylo_kmer_db.h>
-#include <core/version.h>
+#include <xpas/phylo_kmer_db.h>
+#include <xpas/version.h>
 
-core::phylo_kmer_db create_db()
+xpas::phylo_kmer_db create_db()
 {
     const size_t kmer_size = 3;
-    const core::phylo_kmer::score_type omega = 1.0;
+    const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
-    core::phylo_kmer_db db { kmer_size, omega, tree };
+    xpas::phylo_kmer_db db { kmer_size, omega, tree };
 
     /// branch 0
     db.insert(0, { 0, 0.00f });
@@ -28,7 +28,7 @@ core::phylo_kmer_db create_db()
     return db;
 }
 
-std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
+std::ostream& operator<<(std::ostream& out, const xpas::phylo_kmer_db& db)
 {
     for (const auto& [key, entries] : db)
     {
@@ -43,7 +43,8 @@ std::ostream& operator<<(std::ostream& out, const core::phylo_kmer_db& db)
 
 int main()
 {
-    std::cout << "Core version: " << core::version::as_string() << std::endl;
+    std::cout << "xpas version: " << xpas::version::as_string() << std::endl;
+
     const auto db = create_db();
     std::cout << "Total number of keys: " << db.size() << std::endl;
     std::cout << "K-mer size: " << db.kmer_size() << std::endl;

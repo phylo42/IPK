@@ -2,10 +2,8 @@
 #include <fstream>
 #include <string>
 #include <streambuf>
-#include <boost/iostreams/device/mapped_file.hpp>
-#include <boost/iostreams/stream.hpp>
 
-using namespace rappas::io;
+using namespace xpas::io;
 namespace bio = boost::iostreams;
 using std::string;
 using std::fpos;
@@ -83,7 +81,7 @@ void buffered_reader::_read_next_chunk()
     }
 }
 
-std::string rappas::io::read_as_string(const std::string& filename)
+std::string xpas::io::read_as_string(const std::string& filename)
 {
     /// FIXME: error handling
     std::ifstream stream(filename);

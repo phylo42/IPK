@@ -3,9 +3,9 @@
 #include <vector>
 #include <algorithm>
 #include <cmath>
-#include <core/seq.h>
-#include <core/phylo_kmer.h>
-#include <core/kmer_iterator.h>
+#include <xpas/seq.h>
+#include <xpas/phylo_kmer.h>
+#include <xpas/kmer_iterator.h>
 #include <utils/io/fasta.h>
 
 /// Iterate over all the combinations with repetition
@@ -33,7 +33,7 @@ void encode_unambiguous_string()
     for_each_combination(alphabet, kmer_size,
                          [&](std::vector<char>& bases) {
                              const auto kmer = std::string{ bases.begin(), bases.end() };
-                             if (const auto key = core::encode_kmer<core::no_ambiguity_policy>(kmer); key)
+                             if (const auto key = xpas::encode_kmer<xpas::no_ambiguity_policy>(kmer); key)
                              {
                                  std::cout << kmer << ": " << *key << std::endl;
                                  assert(kmer == core::decode_kmer(*key, kmer.size()));
@@ -52,13 +52,10 @@ void encode_unambiguous_string_view()
     const auto long_read = std::string{ "--TTTAT-AAATGNNNN-CAAAN.NNTTTT---" };
     const size_t kmer_size = 4;
 
-    /// core::to_kmers wrapper
-    const auto to_kmers = [](std::string_view read, size_t k) { return core::to_kmers<core::no_ambiguity_policy>(read, k); };
-
     /// Iterate over k-mers of a string_view (implicitly created from long_read).
     /// This is more effective than calling core::encode_kmer for every k-mer of a string,
     /// because core::to_kmers calculates codes in a rolling fashion, if possible.
-    for (const auto& [kmer, code] : to_kmers(long_read, kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>(long_read, kmer_size))
     {
         std::cout << kmer << ": " << code << " " << std::endl;
         assert(core::encode_kmer<core::no_ambiguity_policy>(kmer) == code);
@@ -67,7 +64,7 @@ void encode_unambiguous_string_view()
 
 void encode_ambiguous_string()
 {
-    using namespace core;
+    using namespace xpas;
 
     const std::vector<std::string> sequences = { "T--ATAWAABTGTNCAAA.TT-----TTY",
                                                  "AATTWGTAATCGATG",
@@ -100,7 +97,7 @@ void encode_ambiguous_string()
             std::cout << position << " " << kmer << ": ";
             for (const auto code : codes)
             {
-                std::cout << core::decode_kmer(code, kmer_size) << " ";
+                std::cout << xpas::decode_kmer(code, kmer_size) << " ";
             }
             std::cout << std::endl;
             ++position;
