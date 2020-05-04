@@ -2,16 +2,16 @@
 
 #include <boost/filesystem.hpp>
 #include <catch2/catch.hpp>
-#include <core/phylo_kmer_db.h>
-#include <core/serialization.h>
-#include <core/kmer_iterator.h>
+#include <xpas/phylo_kmer_db.h>
+#include <xpas/serialization.h>
+#include <xpas/kmer_iterator.h>
 
 namespace fs = boost::filesystem;
 
 auto create_test_map()
 {
-    std::unordered_map<core::phylo_kmer::key_type,
-        std::unordered_map<core::phylo_kmer::branch_type, core::phylo_kmer::score_type>> values =
+    std::unordered_map<xpas::phylo_kmer::key_type,
+        std::unordered_map<xpas::phylo_kmer::branch_type, xpas::phylo_kmer::score_type>> values =
         {
             {
                 0, { { 0, 0.00f } }
@@ -33,9 +33,9 @@ auto create_test_map()
 }
 
 template<typename MapType>
-core::phylo_kmer_db create_db_from_map(const MapType& values, size_t kmer_size, core::phylo_kmer::score_type omega)
+xpas::phylo_kmer_db create_db_from_map(const MapType& values, size_t kmer_size, xpas::phylo_kmer::score_type omega)
 {
-    core::phylo_kmer_db db { kmer_size, omega, "" };
+    xpas::phylo_kmer_db db { kmer_size, omega, "" };
     for (const auto& [key, entries] : values)
     {
         for (const auto& [branch, score] : entries)
@@ -55,7 +55,7 @@ TEST_CASE("Database size", "[database]")
     }
 
     {
-        const core::phylo_kmer_db db { 3, 1.0, "" };
+        const xpas::phylo_kmer_db db { 3, 1.0, "" };
         REQUIRE(db.size() == 0);
     }
 }
@@ -63,14 +63,14 @@ TEST_CASE("Database size", "[database]")
 TEST_CASE("K-mer size and omega", "[database]")
 {
     const size_t kmer_size = 5;
-    const core::phylo_kmer::score_type omega = 1.0;
-    const core::phylo_kmer_db db { kmer_size, omega, "" };
+    const xpas::phylo_kmer::score_type omega = 1.0;
+    const xpas::phylo_kmer_db db { kmer_size, omega, "" };
 
     REQUIRE(db.kmer_size() == kmer_size);
 }
 
 template<typename MapType>
-void compare_db(const MapType& values, const core::phylo_kmer_db& db)
+void compare_db(const MapType& values, const xpas::phylo_kmer_db& db)
 {
     for (const auto& [key, entries] : values)
     {
@@ -98,15 +98,15 @@ TEST_CASE("(De-)serialization", "[database]")
     const auto filename = fs::unique_path().string();
     const auto values = create_test_map();
     const size_t kmer_size = 3;
-    const core::phylo_kmer::score_type omega = 1.0;
+    const xpas::phylo_kmer::score_type omega = 1.0;
 
     {
         const auto db = create_db_from_map(values, kmer_size, omega);
-        core::save(db, filename);
+        xpas::save(db, filename);
     }
 
     {
-        const auto db = core::load(filename);
+        const auto db = xpas::load(filename);
         REQUIRE(db.size() == values.size());
         REQUIRE(db.kmer_size() == kmer_size);
         REQUIRE(db.omega() == omega);
@@ -137,90 +137,90 @@ TEST_CASE("Encoding and decoding k-mers", "[kmers]")
     for_each_combination(alphabet, kmer_size,
                          [&count](std::vector<char>& bases) {
                              const auto kmer = std::string{ bases.begin(), bases.end() };
-                             if (const auto key = core::encode_kmer(kmer); key)
+                             if (const auto key = xpas::encode_kmer<xpas::no_ambiguity_policy>(kmer); key)
                              {
-                                 REQUIRE(kmer == core::decode_kmer(*key, kmer.size()));
+                                 REQUIRE(kmer == xpas::decode_kmer(*key, kmer.size()));
                                  REQUIRE(*key == count);
                                  ++count;
                              }
                          });
 }
 
-TEST_CASE("core::to_kmers iteration", "[kmers]")
+TEST_CASE("xpas::to_kmers iteration", "[kmers]")
 {
     /// Simple iteration
     const auto long_read = std::string{ "--TTTAT-AAATGNNNN-CAAAN.NNTTTT---" };
     const size_t kmer_size = 4;
 
     size_t count = 0;
-    for (const auto& [kmer, code] : core::to_kmers(long_read, kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>(long_read, kmer_size))
     {
-        REQUIRE(core::encode_kmer(kmer) == code);
+        REQUIRE(xpas::encode_kmer<xpas::no_ambiguity_policy>(kmer) == code);
         ++count;
     }
     REQUIRE(count == 6);
 }
 
-TEST_CASE("core::to_kmers empty set", "[kmers]")
+TEST_CASE("xpas::to_kmers empty set", "[kmers]")
 {
     const size_t kmer_size = 3;
 
-    for (const auto& [kmer, code] : core::to_kmers("", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("-", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("-", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("---", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("---", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("----", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("----", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("NNN", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("NNN", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("AAN", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("AAN", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("ANA", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("ANA", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("ANA", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("ANA", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("NAA", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("NAA", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("-AA", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("-AA", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("A-A", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("A-A", kmer_size))
     {
         REQUIRE_FALSE(true);
     }
 
-    for (const auto& [kmer, code] : core::to_kmers("AA-", kmer_size))
+    for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("AA-", kmer_size))
     {
         REQUIRE_FALSE(true);
     }

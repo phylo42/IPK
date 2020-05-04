@@ -1,9 +1,9 @@
-#include <core/phylo_tree.h>
-#include <core/phylo_kmer.h>
+#include <xpas/phylo_tree.h>
+#include <xpas/phylo_kmer.h>
 #include <algorithm>
 
-using namespace core;
-using namespace core::impl;
+using namespace xpas;
+using namespace xpas::impl;
 using std::vector;
 using std::string;
 using std::move;
@@ -181,7 +181,7 @@ phylo_node::id_type postorder_tree_iterator::_id_in_parent(const phylo_node* nod
 phylo_tree::phylo_tree(phylo_node* root, size_t node_count)
     : _root{ root } , _node_count{ node_count }
 {
-    auto it = postorder_tree_iterator{ core::impl::get_leftmost_leaf(root) };
+    auto it = postorder_tree_iterator{ xpas::impl::get_leftmost_leaf(root) };
     const auto end = postorder_tree_iterator{ nullptr };
     phylo_node::id_type postorder_id = 0;
     for (; it != end; ++it)
@@ -199,12 +199,12 @@ phylo_tree::~phylo_tree() noexcept
     delete _root;
 }
 
-phylo_tree::const_iterator core::phylo_tree::begin() const noexcept
+phylo_tree::const_iterator xpas::phylo_tree::begin() const noexcept
 {
-    return postorder_tree_iterator{ core::impl::get_leftmost_leaf(_root) };
+    return postorder_tree_iterator{ xpas::impl::get_leftmost_leaf(_root) };
 }
 
-phylo_tree::const_iterator core::phylo_tree::end() const noexcept
+phylo_tree::const_iterator xpas::phylo_tree::end() const noexcept
 {
     return postorder_tree_iterator(nullptr);
 }

@@ -3,7 +3,7 @@ project(rappas_utils LANGUAGES CXX VERSION 0.1.0)
 
 # Create a library target and set properties
 add_library(utils SHARED "")
-add_library(rappas::utils ALIAS utils)
+add_library(xpas::utils ALIAS utils)
 
 target_sources(utils
         PRIVATE
@@ -51,6 +51,6 @@ install(TARGETS utils
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 export(TARGETS utils
-       FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
+       FILE ${CMAKE_BINARY_DIR}/xpasConfig.cmake)
 
-export(PACKAGE rappas)
+export(PACKAGE xpas)

@@ -1,32 +1,29 @@
-#ifndef RAPPAS_CPP_PHYLO_TREE_H
-#define RAPPAS_CPP_PHYLO_TREE_H
+#ifndef XPAS_PHYLO_TREE_H
+#define XPAS_PHYLO_TREE_H
 
 #include <string>
 #include <vector>
 #include <unordered_map>
 
-namespace core
+namespace xpas
 {
     class phylo_tree;
 }
 
-namespace rappas
+namespace xpas::io
 {
-    namespace io
-    {
-        class newick_parser;
-        core::phylo_tree load_newick(const std::string& file_name);
-    }
+    class newick_parser;
+    xpas::phylo_tree load_newick(const std::string& file_name);
 }
 
-namespace core
+namespace xpas
 {
     //////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief A node of a phylogenetic tree.
     class phylo_node
     {
-        friend rappas::io::newick_parser;
-        friend core::phylo_tree;
+        friend xpas::io::newick_parser;
+        friend xpas::phylo_tree;
 
     public:
         /// Member types
@@ -153,11 +150,11 @@ namespace core
         /// \brief Returns a pointer to a phylo_node with a given preorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_postorder_id
-        std::optional<core::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
+        std::optional<xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
         /// \brief Returns a pointer to a phylo_node with a given postorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_preorder_id
-        std::optional<core::phylo_node*> get_by_postorder_id(phylo_node::id_type preorder_id) const noexcept;
+        std::optional<xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type preorder_id) const noexcept;
     private:
         /// \brief A root node.
         value_pointer _root;
@@ -168,9 +165,9 @@ namespace core
         size_t _node_count;
 
         /// \brief A map for phylo_node_preorder_id-> phylo_node for fast access
-        std::unordered_map<phylo_node::id_type, core::phylo_node*> _preorder_id_node_mapping;
+        std::unordered_map<phylo_node::id_type, xpas::phylo_node*> _preorder_id_node_mapping;
         /// \brief A map for phylo_node_postorder_id-> phylo_node for fast access
-        std::unordered_map<phylo_node::id_type, core::phylo_node*> _postorder_id_node_mapping;
+        std::unordered_map<phylo_node::id_type, xpas::phylo_node*> _postorder_id_node_mapping;
     };
 }
 

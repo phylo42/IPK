@@ -1,12 +1,12 @@
-#ifndef RAPPAS_CORE_KMER_ITERATOR_H
-#define RAPPAS_CORE_KMER_ITERATOR_H
+#ifndef XPAS_KMER_ITERATOR_H
+#define XPAS_KMER_ITERATOR_H
 
 #include <string_view>
 #include <vector>
 #include <tuple>
 #include "phylo_kmer.h"
 
-namespace core
+namespace xpas
 {
     /// \brief An iterator class for k-mers of an input sequence.
     /// \details Iterates over all the k-mers of a given sequence and encodes them

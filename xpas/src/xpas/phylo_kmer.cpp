@@ -1,9 +1,9 @@
-#include "core/phylo_kmer.h"
-#include "core/seq.h"
+#include "xpas/phylo_kmer.h"
+#include "xpas/seq.h"
 #include <cmath>
 #include <vector>
 
-using namespace core;
+using namespace xpas;
 
 /// Compares two floats for almost equality.
 /// From: https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
@@ -22,7 +22,7 @@ bool phylo_kmer::is_nan() const
     return (key == nan_key) && (score == nan_score);
 }
 
-bool core::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
+bool xpas::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
 {
     if (lhs.is_nan() || rhs.is_nan())
     {
@@ -34,18 +34,18 @@ bool core::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
     }
 }
 
-phylo_kmer::score_type core::score_threshold(phylo_kmer::score_type omega, size_t kmer_size)
+phylo_kmer::score_type xpas::score_threshold(phylo_kmer::score_type omega, size_t kmer_size)
 {
     return std::pow(omega / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size));
 }
 
 template<>
-std::optional<no_ambiguity_policy::value_type> core::encode_kmer<core::no_ambiguity_policy>(std::string_view kmer)
+std::optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambiguity_policy>(std::string_view kmer)
 {
     no_ambiguity_policy::value_type key = 0;
     for (const auto base : kmer)
     {
-        if (const auto& base_code = core::encode<no_ambiguity_policy>(base); base_code)
+        if (const auto& base_code = xpas::encode<no_ambiguity_policy>(base); base_code)
         {
             key <<= bit_length<seq_type>();
             key |= *base_code;
@@ -59,7 +59,7 @@ std::optional<no_ambiguity_policy::value_type> core::encode_kmer<core::no_ambigu
 }
 
 template<>
-std::optional<one_ambiguity_policy::value_type> core::encode_kmer<core::one_ambiguity_policy>(std::string_view kmer)
+std::optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity_policy>(std::string_view kmer)
 {
     auto keys = one_ambiguity_policy::value_type();
     keys.push_back(0);
@@ -68,7 +68,7 @@ std::optional<one_ambiguity_policy::value_type> core::encode_kmer<core::one_ambi
 
     for (const auto base : kmer)
     {
-        if (const auto& base_codes = core::encode<one_ambiguity_policy>(base); base_codes)
+        if (const auto& base_codes = xpas::encode<one_ambiguity_policy>(base); base_codes)
         {
             /// if the character is ambiguous
             if (base_codes->size() > 1)
@@ -111,20 +111,20 @@ std::optional<one_ambiguity_policy::value_type> core::encode_kmer<core::one_ambi
 }
 
 
-std::string core::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
+std::string xpas::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
 {
     std::vector<uint8_t> result;
     result.reserve(kmer_size);
 
     while (key > 0)
     {
-        result.push_back(core::decode(key & ~core::rightest_symbol_mask<seq_type>()));
+        result.push_back(xpas::decode(key & ~xpas::rightest_symbol_mask<seq_type>()));
         key >>= bit_length<seq_type>();
     }
 
     for (size_t i = result.size(); i < kmer_size; ++i)
     {
-        result.push_back(core::decode(0));
+        result.push_back(xpas::decode(0));
     }
 
     return { result.rbegin(), result.rend() };
