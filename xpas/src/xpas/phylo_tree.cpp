@@ -55,9 +55,9 @@ phylo_node::id_type phylo_node::get_postorder_id() const noexcept
 phylo_node::branch_length_type phylo_node::get_branch_length() const noexcept
 {
     return _branch_length;
-}
+};
 
-std::vector<phylo_node*> phylo_node::get_children() const
+const std::vector<phylo_node*>& phylo_node::get_children() const
 {
     return _children;
 }
@@ -134,13 +134,13 @@ postorder_tree_iterator& postorder_tree_iterator::operator++()
     {
         _current = nullptr;
     }
-        /// visit the next sibling
+    /// visit the next sibling
     else if ((size_t) idx + 1 < temp->get_children().size())
     {
         _current = temp->get_children()[idx + 1];
         _current = get_leftmost_leaf(_current);
     }
-        /// visit the parent
+    /// visit the parent
     else
     {
         _current = temp;
@@ -178,18 +178,33 @@ phylo_node::id_type postorder_tree_iterator::_id_in_parent(const phylo_node* nod
     return -1;
 }
 
+visit_subtree::visit_subtree(value_pointer root)
+    : _root { root }
+{}
+
+visit_subtree::const_iterator visit_subtree::begin() const noexcept
+{
+    return const_iterator{ get_leftmost_leaf(_root) };
+}
+
+visit_subtree::const_iterator visit_subtree::end() const noexcept
+{
+    return const_iterator{ nullptr };
+}
+
 phylo_tree::phylo_tree(phylo_node* root, size_t node_count)
     : _root{ root } , _node_count{ node_count }
 {
-    auto it = postorder_tree_iterator{ xpas::impl::get_leftmost_leaf(root) };
-    const auto end = postorder_tree_iterator{ nullptr };
     phylo_node::id_type postorder_id = 0;
+
+    auto it = visit_subtree(_root).begin();
+    const auto end = visit_subtree(_root).end();
     for (; it != end; ++it)
     {
-        _preorder_id_node_mapping[it->get_preorder_id()] = it;
+        _preorder_id_node_mapping[it->get_preorder_id()] = (phylo_node*)it;
 
         it->_postorder_id = postorder_id;
-        _postorder_id_node_mapping[postorder_id] = it;
+        _postorder_id_node_mapping[postorder_id] = (phylo_node*)it;
         ++postorder_id;
     }
 }
@@ -201,12 +216,12 @@ phylo_tree::~phylo_tree() noexcept
 
 phylo_tree::const_iterator xpas::phylo_tree::begin() const noexcept
 {
-    return postorder_tree_iterator{ xpas::impl::get_leftmost_leaf(_root) };
+    return visit_subtree(_root).begin();
 }
 
 phylo_tree::const_iterator xpas::phylo_tree::end() const noexcept
 {
-    return postorder_tree_iterator(nullptr);
+    return visit_subtree(_root).end();
 }
 
 size_t phylo_tree::get_node_count() const noexcept

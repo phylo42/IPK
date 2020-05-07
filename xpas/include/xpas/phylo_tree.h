@@ -43,13 +43,23 @@ namespace xpas
         bool operator==(const phylo_node& rhs) const noexcept;
         bool operator!=(const phylo_node& rhs) const noexcept;
 
+        [[nodiscard]]
         std::string get_label() const noexcept;
+
+        [[nodiscard]]
         phylo_node* get_parent() const noexcept;
+
+        [[nodiscard]]
         id_type get_preorder_id() const noexcept;
+
+        [[nodiscard]]
         id_type get_postorder_id() const noexcept;
+
+        [[nodiscard]]
         branch_length_type get_branch_length() const noexcept;
 
-        std::vector<phylo_node*> get_children() const;
+        [[nodiscard]]
+        const std::vector<phylo_node*>& get_children() const;
 
     private:
         /// Clean node and fill with the default values. Used in the default constructor
@@ -92,7 +102,7 @@ namespace xpas
             ~postorder_tree_iterator() noexcept = default;
 
             /// \brief Converts an iterator to the const phylo_node* it points to.
-            operator pointer() const noexcept;
+            explicit operator pointer() const noexcept;
 
             bool operator==(const postorder_tree_iterator& rhs) const noexcept;
             bool operator!=(const postorder_tree_iterator& rhs) const noexcept;
@@ -112,6 +122,25 @@ namespace xpas
             phylo_node* _current;
         };
     }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief A wrapper for postorder_tree_iterator. Visits subtree nodes in DFS post-order.
+    class visit_subtree
+    {
+    public:
+        using const_iterator = impl::postorder_tree_iterator;
+        using value_pointer = phylo_node*;
+
+        explicit visit_subtree(value_pointer root);
+
+        [[nodiscard]]
+        const_iterator begin() const noexcept;
+
+        [[nodiscard]]
+        const_iterator end() const noexcept;
+    private:
+        value_pointer _root;
+    };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief A phylogenetic tree class
