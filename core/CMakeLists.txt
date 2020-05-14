@@ -47,7 +47,7 @@ target_sources(core_n
             src/core/newick.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
+find_package(Boost REQUIRED COMPONENTS serialization)
 
 if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
