@@ -31,7 +31,6 @@ namespace xpas::io
         void parse(std::string_view data);
 
         xpas::phylo_node* get_root() const;
-        size_t get_node_count() const;
 
     private:
         /// \brief Parses next symbol of input data.
@@ -65,7 +64,11 @@ namespace xpas::io
 
         std::stack<xpas::phylo_node*> _node_stack;
         xpas::phylo_node* _root;
-        int _node_index;
+
+
+        int _preorder_id;
+        int _postorder_id;
+
         std::string _node_text;
 
         bool _parsing_node;
@@ -76,10 +79,11 @@ namespace xpas::io
 using xpas::io::newick_parser;
 
 newick_parser::newick_parser()
-    : _root(nullptr)
-    , _node_index(-1)
-    , _parsing_node(false)
-    , _end_of_file(false)
+    : _root{ nullptr }
+    , _preorder_id{ -1 }
+    , _postorder_id{ -1 }
+    , _parsing_node{ false }
+    , _end_of_file{ false }
 {}
 
 void newick_parser::parse(string_view data)
@@ -98,11 +102,6 @@ void newick_parser::parse(string_view data)
 phylo_node* newick_parser::get_root() const
 {
     return _root;
-}
-
-size_t newick_parser::get_node_count() const
-{
-    return (size_t) _node_index + 1;
 }
 
 void newick_parser::_parse_character(char ch)
@@ -167,10 +166,10 @@ void newick_parser::_handle_text(char ch)
 
 void newick_parser::_start_node()
 {
-    ++_node_index;
+    ++_preorder_id;
     phylo_node* parent = _node_stack.empty() ? nullptr : _node_stack.top();
     _node_stack.push(new phylo_node());
-    _node_stack.top()->_preorder_id = _node_index;
+    _node_stack.top()->_preorder_id = _preorder_id;
     _node_stack.top()->_parent = parent;
 }
 
@@ -181,6 +180,12 @@ phylo_node* newick_parser::_finish_node()
     /// Add the node to its parent's list
     phylo_node* current_node = _node_stack.top();
     _node_stack.pop();
+
+    /// Fill the post-order id
+    ++_postorder_id;
+    current_node->_postorder_id = _postorder_id;
+
+    /// Add the node to its parent, if exists
     if (current_node->_parent != nullptr)
     {
         current_node->_parent->_add_children(current_node);
@@ -238,8 +243,8 @@ xpas::phylo_tree xpas::io::load_newick(const string& file_name)
     }
 
     /// Assign post-order ids to the phylo_node's
-    auto tree = xpas::phylo_tree{ parser.get_root(), parser.get_node_count() };
-    std::cout << "Loaded a tree of " << parser.get_node_count() << " nodes.\n\n" << std::flush;
+    auto tree = xpas::phylo_tree{ parser.get_root() };
+    std::cout << "Loaded a tree of " << tree.get_node_count() << " nodes.\n\n" << std::flush;
     return tree;
 }
 
@@ -247,7 +252,16 @@ xpas::phylo_tree xpas::io::parse_newick(std::string_view newick_string)
 {
     newick_parser parser;
     parser.parse(newick_string);
-    return xpas::phylo_tree{ parser.get_root(), parser.get_node_count() };
+
+    phylo_node::id_type postorder_id = 0;
+
+    for (auto& node : xpas::visit_subtree<false>(parser.get_root()))
+    {
+        node._postorder_id = postorder_id;
+        ++postorder_id;
+    }
+
+    return xpas::phylo_tree{ parser.get_root() };
 }
 
 std::ostream& operator<<(std::ostream& out, const xpas::phylo_node& node)

@@ -36,7 +36,7 @@ void encode_unambiguous_string()
                              if (const auto key = xpas::encode_kmer<xpas::no_ambiguity_policy>(kmer); key)
                              {
                                  std::cout << kmer << ": " << *key << std::endl;
-                                 assert(kmer == core::decode_kmer(*key, kmer.size()));
+                                 assert(kmer == xpas::decode_kmer(*key, kmer.size()));
                              }
                              else
                              {
@@ -58,7 +58,7 @@ void encode_unambiguous_string_view()
     for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>(long_read, kmer_size))
     {
         std::cout << kmer << ": " << code << " " << std::endl;
-        assert(core::encode_kmer<core::no_ambiguity_policy>(kmer) == code);
+        assert(xpas::encode_kmer<xpas::no_ambiguity_policy>(kmer) == code);
     }
 }
 
@@ -82,7 +82,7 @@ void encode_ambiguous_string()
         /// TODO: This is not the best way to delete gaps, since it requires changing the input
         /// string and copy data. We need a transparent gap-skipping iterator over a string/string_view
         /// that should be taken as an input argument in the core::encode/core::to_kmers functions
-        const auto clean_sequence = rappas::io::clean_sequence(sequence);
+        const auto clean_sequence = xpas::io::clean_sequence(sequence);
 
         /// Iterate over k-mers of a string_view (implicitly created from long_read).
         /// This is more effective than calling core::encode_kmer for every k-mer of a string,

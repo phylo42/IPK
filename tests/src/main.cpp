@@ -5,6 +5,8 @@
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
 #include <xpas/kmer_iterator.h>
+#include <xpas/newick.h>
+#include <xpas/phylo_tree.h>
 
 namespace fs = boost::filesystem;
 
@@ -223,5 +225,120 @@ TEST_CASE("xpas::to_kmers empty set", "[kmers]")
     for (const auto& [kmer, code] : xpas::to_kmers<xpas::no_ambiguity_policy>("AA-", kmer_size))
     {
         REQUIRE_FALSE(true);
+    }
+}
+
+TEST_CASE("xpas::io::parse_newick", "[tree]")
+{
+    std::string newick = "((A:0.05,B:0.1):0.15,(C:0.2,D:0.25):0.3):0.35;";
+    /// labels in the DFS post-order
+    const std::vector<std::string> labels = { "A", "B", "", "C", "D", "", ""};
+    /// branch lengths in the DFS post-order
+    const std::vector<double> lengths = { 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35 };
+
+    auto tree = xpas::io::parse_newick(newick);
+
+    /// iterate over nodes and check if the labels and branch lengths are correct
+    size_t i = 0;
+    for (auto& node : tree)
+    {
+        REQUIRE(node.get_label() == labels[i]);
+        REQUIRE(Approx(node.get_branch_length()) == lengths[i]);
+
+        // ensure we can not create trees from non-root nodes
+        if (node.get_parent())
+        {
+            REQUIRE_THROWS(xpas::phylo_tree{ &node });
+        }
+
+        ++i;
+    }
+
+    REQUIRE(tree.get_node_count() == 7);
+}
+
+TEST_CASE("xpas::impl::next_by_postorder", "[tree]")
+{
+    std::string newick = "((A:0.05,B:0.1):0.15,(C:0.2,D:0.25):0.3):0.35;";
+    const auto tree = xpas::io::parse_newick(newick);
+
+    for (const auto& node : tree)
+    {
+        auto next = xpas::impl::next_by_postorder(&node);
+
+        /// next can be null only for the root node
+        if (!next)
+        {
+            REQUIRE(node.get_parent() == nullptr);
+        }
+        else
+        {
+            REQUIRE(node.get_postorder_id() + 1 == next->get_postorder_id());
+        }
+    }
+}
+
+TEST_CASE("xpas::phylo_tree::get_by_postorder_id", "[tree]")
+{
+    std::string newick = "((A:0.05,B:0.1):0.15,(C:0.2,D:0.25):0.3):0.35;";
+
+    const auto tree = xpas::io::parse_newick(newick);
+
+    int iteration_count = 0;
+    /// test phylo_tree::get_post_order
+    for (const auto& node : tree)
+    {
+        // make sure this node has got the right post-order id
+        REQUIRE(node.get_postorder_id() == iteration_count);
+
+        /// find the same node in the tree by their post-order id
+        const auto postorder_id = node.get_postorder_id();
+        const auto found = tree.get_by_postorder_id(postorder_id);
+
+        // make sure we found it
+        REQUIRE(found);
+
+        const auto& node_found = *found;
+        // make sure it's not a null pointer
+        REQUIRE(node_found);
+
+        // compare fields
+        REQUIRE(node_found->get_label() == node.get_label());
+        REQUIRE(node_found->get_postorder_id() == node.get_postorder_id());
+        REQUIRE(node_found->get_preorder_id() == node.get_preorder_id());
+        REQUIRE(node_found->get_children() == node.get_children());
+        REQUIRE(node_found->get_branch_length() == node.get_branch_length());
+
+        ++iteration_count;
+    }
+}
+
+TEST_CASE("xpas::visit_tree", "[tree]")
+{
+    std::string newick = "((A:0.05,B:0.1):0.15,(C:0.2,D:0.25):0.3):0.35;";
+    auto tree = xpas::io::parse_newick(newick);
+
+    std::vector<double> total_lengths = { 0.05, 0.1, 0.3, 0.2, 0.25, 0.75, 1.4 };
+    size_t i = 0;
+
+    /// can't start visiting nullptr
+    REQUIRE_THROWS(xpas::visit_subtree(nullptr));
+
+    /// Here we also test non-const iteration
+    for (auto& node : tree)
+    {
+        /// Test if we can start visiting the subtree
+        REQUIRE_NOTHROW(xpas::visit_subtree(&node));
+
+        /// run DFS from a node, calculating the total subtree branch length
+        double total_length = 0.0;
+        for (const auto& subtree_node : xpas::visit_subtree(&node))
+        {
+            total_length += subtree_node.get_branch_length();
+        }
+
+        REQUIRE(Approx(total_length) == total_lengths[i]);
+
+        ++i;
     }
 }
