@@ -125,6 +125,7 @@ namespace xpas
         {
             return { _sequence_view, 0 };
         }
+
     private:
         std::string_view _sequence_view;
         size_t _kmer_size;

@@ -7,6 +7,7 @@
 #include <xpas/kmer_iterator.h>
 #include <xpas/newick.h>
 #include <xpas/phylo_tree.h>
+#include <utils/io/fasta.h>
 
 namespace fs = boost::filesystem;
 
@@ -339,6 +340,78 @@ TEST_CASE("xpas::visit_tree", "[tree]")
 
         REQUIRE(Approx(total_length) == total_lengths[i]);
 
+        ++i;
+    }
+}
+
+TEST_CASE("xpas::io::read_fasta", "[utils]")
+{
+    const auto fasta = std::vector<xpas::io::fasta>{
+        {"1", "AAAAA"},
+        {"2", "AAAAC"},
+        {"3", "AAAAG"},
+        {"4", "AAAAT"},
+        {"5", "AAACA"},
+        {"6", "AAACC"},
+        {"7", "AAACG"},
+        {"8", "AAACT"},
+        {"9", "AAAGA"},
+        {"10", "AAAGC"},
+        {"11", "AAAGG"},
+        {"12", "AAAGT"},
+    };
+
+    /// write sequences to a temporary file
+    const auto filename = fs::unique_path().string();
+    std::ofstream out(filename);
+    for (const auto& seq : fasta)
+    {
+        out << ">" << seq.header() << std::endl << seq.sequence() << std::endl;
+    }
+
+    /// read with default batch size
+    size_t i = 0;
+    for (const auto& seq : xpas::io::read_fasta(filename))
+    {
+        REQUIRE(seq == fasta[i]);
+        ++i;
+    }
+
+    /// batch_size < fasta.size()
+    /// fasta.size() % batch_size == 0
+    size_t batch_size = 4;
+    i = 0;
+    for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
+    {
+        REQUIRE(seq == fasta[i]);
+        ++i;
+    }
+
+    /// batch_size < fasta.size()
+    /// fasta.size() % batch_size != 0
+    batch_size = 5;
+    i = 0;
+    for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
+    {
+        REQUIRE(seq == fasta[i]);
+        ++i;
+    }
+
+    /// batch_size == fasta.size()
+    batch_size = fasta.size();
+    i = 0;
+    for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
+    {
+        REQUIRE(seq == fasta[i]);
+        ++i;
+    }
+
+    /// batch_size > fasta.size()
+    batch_size = 2 * fasta.size();
+    i = 0;
+    for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
+    {
+        REQUIRE(seq == fasta[i]);
         ++i;
     }
 }
