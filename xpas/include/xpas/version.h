@@ -3,7 +3,7 @@
 
 namespace xpas
 {
-    /// \brief Core version class. Follows the semantic versioning 2.0 rules.
+    /// \brief xpas version class. Follows the rules of semantic versioning 2.0.
     /// \sa Semantic versioning 2.0: https://semver.org/
     /// TODO: fill this automatically with the CMakeLists.txt definitions
     struct version
@@ -20,4 +20,4 @@ namespace xpas
     };
 }
 
-#endif //RAPPAS_CORE_VERSION_H
+#endif // XPAS_VERSION_H

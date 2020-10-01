@@ -118,7 +118,7 @@ std::string xpas::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
 
     while (key > 0)
     {
-        result.push_back(xpas::decode(key & ~xpas::rightest_symbol_mask<seq_type>()));
+        result.push_back(xpas::decode(key & ~xpas::rightmost_symbol_mask<seq_type>()));
         key >>= bit_length<seq_type>();
     }
 
