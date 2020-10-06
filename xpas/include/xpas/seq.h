@@ -55,7 +55,7 @@ namespace xpas
         /// A type returned by encoding an ambiguous character
         using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
 
-        static unambiguous_code_t key_to_code(char_type base)
+        static constexpr unambiguous_code_t key_to_code(char_type base)
         {
             switch (base)
             {
@@ -230,7 +230,7 @@ namespace xpas
         /// A type returned by encoding an ambiguous character
         using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
 
-        static unambiguous_code_t key_to_code(char_type base)
+        static constexpr unambiguous_code_t key_to_code(char_type base)
         {
             switch (base)
             {
