@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(xpas LANGUAGES CXX VERSION 0.1.7)
 
+# xpas can be compiled to either store phylo k-mer positions or not.
+# Add this line uncommented in the CMakeLists.txt of your main project, if you
+# want to keep positions. Do not add it otherwise.
+# WARNING! Setting it to 0, false or whatever else would still enable positions,
+# xpas checks if the variable is DEFINED no matter what is the value.
+#set(KEEP_POSITIONS 1)
+
 if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
 elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)

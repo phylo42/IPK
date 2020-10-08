@@ -377,6 +377,15 @@ namespace xpas {
             _map[key].push_back(value);
         }
 
+        /// \brief Replace a phylo-kmer in the database.
+        /// \details This method will remove all values associated to the given key,
+        /// and will add a new value.
+        void replace(key_type key, const pkdb_value_type& value)
+        {
+            _map[key].clear();
+            _map[key].push_back(value);
+        }
+
     private:
         storage _map;
     };
