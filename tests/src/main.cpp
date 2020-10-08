@@ -42,7 +42,7 @@ xpas::phylo_kmer_db create_db_from_map(const MapType& values, size_t kmer_size, 
     {
         for (const auto& [branch, score] : entries)
         {
-            db.insert(key, { branch, score });
+            db.unsafe_insert(key, { branch, score });
         }
     }
     return db;

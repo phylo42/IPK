@@ -31,7 +31,9 @@ namespace xpas
 namespace boost::serialization
 {
     template<class Archive>
-    inline void save(Archive& ar, const xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db, unsigned int version)
+    inline void save(Archive& ar,
+                     const xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
+                     unsigned int version)
     {
         (void)version;
 
@@ -60,7 +62,9 @@ namespace boost::serialization
     }
 
     template<class Archive>
-    inline void save(Archive& ar, const xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db, unsigned int /*version*/)
+    inline void save(Archive& ar,
+                     const xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
+                     unsigned int /*version*/)
     {
         const auto original_tree_view = std::string{ db.tree() };
         ar & original_tree_view;
@@ -87,7 +91,9 @@ namespace boost::serialization
     }
 
     template<class Archive>
-    inline void load(Archive& ar, xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db, const unsigned int version)
+    inline void load(Archive& ar,
+                     xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
+                     const unsigned int version)
     {
         if (version < xpas::protocol_version)
         {
@@ -126,7 +132,9 @@ namespace boost::serialization
     }
 
     template<class Archive>
-    inline void load(Archive& ar, xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db, const unsigned int version)
+    inline void load(Archive& ar,
+                     xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
+                     const unsigned int version)
     {
         if (version < xpas::protocol_version)
         {
