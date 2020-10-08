@@ -18,6 +18,23 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_
 }
 
 template <>
+positioned_pkdb_value xpas::make_pkdb_value<positioned_phylo_kmer>(phylo_kmer::branch_type branch,
+                                                                   phylo_kmer::score_type score,
+                                                                   phylo_kmer::pos_type position)
+{
+    return { branch, score, position };
+}
+
+template <>
+unpositioned_pkdb_value xpas::make_pkdb_value<unpositioned_phylo_kmer>(phylo_kmer::branch_type branch,
+                                                                       phylo_kmer::score_type score,
+                                                                       phylo_kmer::pos_type position)
+{
+    (void)position;
+    return { branch, score };
+}
+
+template <>
 positioned_phylo_kmer xpas::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
                                             phylo_kmer::pos_type position)
 {

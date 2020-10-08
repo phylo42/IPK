@@ -118,6 +118,13 @@ namespace xpas
         using type = positioned_pkdb_value;
     };
 
+    /// A templated factory function that unifies the interface of creating pkdb_values with
+    /// and without positions.
+    template <typename PhyloKmerType,
+              typename PkDbValue = typename get_pkdb_value_type<PhyloKmerType>::type>
+    PkDbValue make_pkdb_value(phylo_kmer::branch_type branch, phylo_kmer::score_type score,
+                              phylo_kmer::pos_type position);
+
     /// A templated factory function that unifies the interface of creating phylo k-mers with
     /// and without positions.
     template <typename PhyloKmerType>
