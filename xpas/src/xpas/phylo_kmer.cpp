@@ -17,12 +17,35 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_
            || std::abs(x - y) < std::numeric_limits<T>::min();
 }
 
-bool phylo_kmer::is_nan() const
+template <>
+positioned_phylo_kmer xpas::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
+                                            phylo_kmer::pos_type position)
 {
-    return (key == nan_key) && (score == nan_score);
+    return { key, score, position };
 }
 
-bool xpas::operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept
+template <>
+unpositioned_phylo_kmer xpas::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
+                                              phylo_kmer::pos_type position)
+{
+    (void)position;
+    return { key, score };
+}
+
+bool xpas::operator==(const positioned_phylo_kmer& lhs, const positioned_phylo_kmer& rhs) noexcept
+{
+    if (lhs.is_nan() || rhs.is_nan())
+    {
+        return false;
+    }
+    else
+    {
+        return (lhs.key == rhs.key) && (almost_equal<phylo_kmer::score_type>(lhs.score, rhs.score)) &&
+            lhs.position == rhs.position;
+    }
+}
+
+bool xpas::operator==(const unpositioned_phylo_kmer& lhs, const unpositioned_phylo_kmer& rhs) noexcept
 {
     if (lhs.is_nan() || rhs.is_nan())
     {

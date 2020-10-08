@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.10)
 
-if(NOT HASH_MAP)
+if(NOT DEFINED HASH_MAP)
     message(FATAL_ERROR "Please define a hash map library to compile against.")
 else()
-    message("-- Hash map option: " ${HASH_MAP})
+    message(STATUS "Hash map option: ${HASH_MAP}")
+    message(STATUS "Keep positions: ${KEEP_POSITIONS}")
 
     if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
         add_subdirectory(skarupke)
@@ -21,7 +22,6 @@ else()
     elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
         add_subdirectory(hopscotch-map)
     endif()
-    #add_subdirectory(martinus)
 
     # Catch2 includes
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/catch2/contrib")
@@ -31,5 +31,5 @@ else()
     add_subdirectory(examples)
     add_subdirectory(tests)
     add_subdirectory(utils)
-    add_subdirectory(pyxpas)
+    #add_subdirectory(pyxpas)
 endif()

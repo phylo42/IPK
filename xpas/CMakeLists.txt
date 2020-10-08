@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(xpas LANGUAGES CXX VERSION 0.1.7)
 
-if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
+if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
 elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
@@ -30,13 +30,17 @@ target_compile_definitions(xpas_aa
             ${HASH_MAP}
             SEQ_TYPE_AA)
 
+if(DEFINED KEEP_POSITIONS)
+    target_compile_definitions(xpas_aa PUBLIC KEEP_POSITIONS)
+endif()
+
 target_sources(xpas_aa
         PRIVATE
         src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
-        src/xpas/phylo_kmer_db.cpp include/xpas/phylo_kmer_db.h
         src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
         src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
         src/xpas/newick.cpp include/xpas/newick.h
+        include/xpas/phylo_kmer_db.h
         include/xpas/serialization.h
         include/xpas/version.h
         )
@@ -78,13 +82,17 @@ target_compile_definitions(xpas_dna
             ${HASH_MAP}
             SEQ_TYPE_DNA)
 
+if(DEFINED KEEP_POSITIONS)
+    target_compile_definitions(xpas_dna PUBLIC KEEP_POSITIONS)
+endif()
+
 target_sources(xpas_dna
         PRIVATE
             src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
-            src/xpas/phylo_kmer_db.cpp include/xpas/phylo_kmer_db.h
             src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
             src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
             src/xpas/newick.cpp include/xpas/newick.h
+            include/xpas/phylo_kmer_db.h
             include/xpas/serialization.h
             include/xpas/version.h
         )

@@ -12,7 +12,9 @@ namespace xpas
     /// \details A key-value pair for a phylo-kmer, where key is a key_type value of a k-mer, and value is
     /// posterior probability score of this k-mer. Branch node id, position etc. omitted here, because these values
     /// are shared among multiple phylo k-mers and can be stored more effectively.
-    struct phylo_kmer
+    //template <bool KeepPositions> struct _phylo_kmer
+    //    : std::conditional<KeepPositions, impl::_positioned_phylo_kmer, impl::_unpositioned_phylo_kmer>::type
+    struct unpositioned_phylo_kmer
     {
         /// The same type used to store a k-mer value
         /// (essentially we do not distinguish between "k-mer value" and "phylo-kmer value")
@@ -25,19 +27,47 @@ namespace xpas
         using branch_type = uint32_t;
 
         /// The type of a phylokmer's position in the alignment
-        using pos_type = int32_t;
+        using pos_type = uint16_t;
 
-        static constexpr key_type nan_key = std::numeric_limits<phylo_kmer::key_type>::max();
-        static constexpr score_type nan_score = std::numeric_limits<phylo_kmer::score_type>::quiet_NaN();
-        static constexpr branch_type nan_branch = std::numeric_limits<phylo_kmer::branch_type>::max();
+        static constexpr key_type na_key = std::numeric_limits<key_type>::max();
+        static constexpr score_type na_score = std::numeric_limits<score_type>::quiet_NaN();
+        static constexpr branch_type na_branch = std::numeric_limits<branch_type>::max();
+        static constexpr pos_type na_pos = std::numeric_limits<pos_type>::max();;
 
-        bool is_nan() const;
+        [[nodiscard]]
+        bool is_nan() const
+        {
+            return (key == na_key) && (score == na_score);
+        }
 
         key_type key;
         score_type score;
     };
 
-    bool operator==(const phylo_kmer& lhs, const phylo_kmer& rhs) noexcept;
+    struct positioned_phylo_kmer : public unpositioned_phylo_kmer
+    {
+        positioned_phylo_kmer(key_type key, score_type score, pos_type pos)
+            : unpositioned_phylo_kmer{ key, score }, position{ pos }
+        {}
+
+        pos_type position;
+    };
+
+#ifdef KEEP_POSITIONS
+    using phylo_kmer = positioned_phylo_kmer;
+#else
+    using phylo_kmer = unpositioned_phylo_kmer;
+#endif
+
+    /// A templated factory function that unifies the interface of creating phylo k-mers with
+    /// and without positions.
+    template <typename PhyloKmerType>
+    PhyloKmerType make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
+                                  phylo_kmer::pos_type position);
+
+
+    bool operator==(const positioned_phylo_kmer& lhs, const positioned_phylo_kmer& rhs) noexcept;
+    bool operator==(const unpositioned_phylo_kmer& lhs, const unpositioned_phylo_kmer& rhs) noexcept;
 
     /// Returns a minumum score
     phylo_kmer::score_type score_threshold(phylo_kmer::score_type omega, size_t kmer_size);
