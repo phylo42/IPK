@@ -11,13 +11,6 @@ target_sources(utils
             src/utils/io/fasta.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS iostreams)
-
-target_link_libraries(utils
-        PUBLIC
-            Boost::iostreams
-        )
-
 target_include_directories(utils
         PUBLIC
             $<INSTALL_INTERFACE:include>

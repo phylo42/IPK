@@ -10,7 +10,7 @@ namespace xpas
     {
         static constexpr auto major = "0";
         static constexpr auto minor = "1";
-        static constexpr auto revision = "7";
+        static constexpr auto revision = "8";
 
         /// \brief Returns the core version number as a string
         static std::string as_string()

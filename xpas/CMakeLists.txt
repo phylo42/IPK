@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(xpas LANGUAGES CXX VERSION 0.1.7)
+project(xpas LANGUAGES CXX VERSION 0.1.8)
 
 ##########################################################################################
 # PROTEINS
@@ -49,7 +49,7 @@ target_sources(xpas_dna
             include/xpas/version.h
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization)
+find_package(Boost REQUIRED COMPONENTS serialization iostreams)
 
 if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
@@ -71,6 +71,7 @@ target_link_libraries(xpas_dna
         PUBLIC
             xpas::utils
             Boost::serialization
+            Boost::iostreams
             ${HASH_MAP_IMPLEMENTATION}
         )
 
