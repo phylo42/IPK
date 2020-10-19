@@ -1,11 +1,9 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
 # Tests
-include(CTest)
-include(Catch)
 enable_testing()
 
-add_executable(test_dna EXCLUDE_FROM_ALL "")
+add_executable(test_dna)
 
 target_sources(test_dna
         PRIVATE
@@ -21,4 +19,8 @@ target_link_libraries(test_dna
             Boost::filesystem
         )
 
-catch_discover_tests(test_dna)
+include(CTest)
+include(Catch)
+include(ParseAndAddCatchTests)
+#catch_discover_tests(test_dna)
+ParseAndAddCatchTests(test_dna)
