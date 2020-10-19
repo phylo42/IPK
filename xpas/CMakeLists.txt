@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(xpas LANGUAGES CXX VERSION 0.1.7)
+project(xpas LANGUAGES CXX VERSION 0.1.8)
 
 ##########################################################################################
 # PROTEINS

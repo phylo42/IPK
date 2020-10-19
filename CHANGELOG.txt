@@ -1,3 +1,11 @@
+v0.1.8
+- Renamed the library and the namespace to xpas
+- Changing submodule remotes to https for public releases
+- Added an alpha version of the python binding, pyxpas (not ready for production use)
+- xpas::io::read_fasta is now batched
+- xpas::phylo_tree and the newick parser are reworked. Added xpas::visit_subtree for iteration over a phylogenetic subtree
+- Update examples and tests
+
 v0.1.7
 - Fixed a bug in core::to_kmers<one_ambiguity_policy> which lead to encoding ambiguous k-mer incorrectly
 - Updated examples
