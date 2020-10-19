@@ -10,13 +10,14 @@ target_sources(test_dna
             src/main.cpp
         )
 
-find_package(Boost REQUIRED COMPONENTS filesystem)
+find_package(Boost REQUIRED COMPONENTS filesystem iostreams)
 
 target_link_libraries(test_dna
         PRIVATE
             xpas::dna
             Catch2::Catch2
             Boost::filesystem
+            Boost::iostreams
         )
 
 include(CTest)
