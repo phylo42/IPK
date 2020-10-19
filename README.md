@@ -23,8 +23,8 @@ sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serializat
 git clone --recursive https://github.com/phylo42/xpas.git
 
 # Build xpas
-mkdir bin; cd bin
-cmake -DHASH_MAP="USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
+cd xpas; mkdir bin; cd bin
+cmake -DHASH_MAP=USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
 make -j4
 ```
 
