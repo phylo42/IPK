@@ -1,23 +1,23 @@
-# xpas, phylo k-mers library
+# xpas, the phylo k-mer database construction library
 
 
 This is a core library used in RAPPAS2 and SHERPAS.
 
 ## Dependencies
 xpas depends on:
-- boost, must be installed in your system
+- boost v1.67+ must be installed in your system
 - third-party libraries included as submodules in the repository
 
 ## Install
 
-1. Make sure boost installed in your system.
+1. Make sure boost v1.67+ is installed in your system.
 2. Clone this repository with submodules.
 3. Build it with one of hashmaps enabled (see below).
 
 Example:
 ```
 mkdir bin; cd bin
-cmake -DHASH_MAP="USE_TSL_HOPSCOTCH_MAP -DCMAKE_CXX_FLAGS="-O3" ..
+cmake -DHASH_MAP="USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
 make
 ```
 
