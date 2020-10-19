@@ -30,7 +30,6 @@ bool fasta::operator==(const fasta& rhs) const noexcept
 }
 
 //------------------------------------------------------------------------------------
-namespace bio = boost::iostreams;
 
 impl::fasta_iterator::fasta_iterator(const std::string& filename, size_t batch_size)
     : _mmap{ filename }

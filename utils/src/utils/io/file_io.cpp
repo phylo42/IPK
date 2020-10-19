@@ -4,7 +4,6 @@
 #include <streambuf>
 
 using namespace xpas::io;
-namespace bio = boost::iostreams;
 using std::string;
 using std::fpos;
 using std::ifstream;
