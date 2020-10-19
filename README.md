@@ -5,7 +5,7 @@ This is a core library used in RAPPAS2 and SHERPAS.
 
 ## Dependencies
 xpas depends on:
-- boost v1.67+, boost-serialization
+- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams
 - third-party libraries included as submodules in the repository
 
 ## Install
@@ -17,7 +17,7 @@ xpas depends on:
 Example:
 ```
 # Install boost
-sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev
+sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev
 
 # Clone the repo
 git clone --recursive https://github.com/phylo42/xpas.git
