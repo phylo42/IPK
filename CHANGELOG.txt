@@ -4,6 +4,7 @@ v0.1.8
 - Added an alpha version of the python binding, pyxpas (not ready for production use)
 - xpas::io::read_fasta is now batched
 - xpas::phylo_tree and the newick parser are reworked. Added xpas::visit_subtree for iteration over a phylogenetic subtree
+- Added Github Actions integration
 - Update examples and tests
 
 v0.1.7
