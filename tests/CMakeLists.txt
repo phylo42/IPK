@@ -5,20 +5,20 @@ include(CTest)
 include(Catch)
 enable_testing()
 
-add_executable(tests_n EXCLUDE_FROM_ALL "")
+add_executable(test_dna EXCLUDE_FROM_ALL "")
 
-target_sources(tests_n
+target_sources(test_dna
         PRIVATE
             src/main.cpp
         )
 
 find_package(Boost REQUIRED COMPONENTS filesystem)
 
-target_link_libraries(tests_n
+target_link_libraries(test_dna
         PRIVATE
-            rappas::core_n
+            xpas::dna
             Catch2::Catch2
             Boost::filesystem
         )
 
-catch_discover_tests(tests_n)
+catch_discover_tests(test_dna)

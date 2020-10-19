@@ -1,28 +1,28 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(rappas_core LANGUAGES CXX VERSION 0.1.7)
+project(xpas LANGUAGES CXX VERSION 0.1.7)
 
 ##########################################################################################
 # PROTEINS
 # WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
 # but it can not be compiled. We also define this target EXCLUDE_FROM_ALL for a while
 # to not build this target by default
-add_library(core_p STATIC EXCLUDE_FROM_ALL "")
-add_library(rappas::core_p ALIAS core_p)
+add_library(xpas_aa STATIC EXCLUDE_FROM_ALL "")
+add_library(xpas::aa ALIAS xpas_aa)
 
-target_compile_definitions(core_p
+target_compile_definitions(xpas_aa
         PUBLIC
             SEQ_TYPE_AA)
 
-target_sources(core_p
+target_sources(xpas_aa
         PRIVATE
-            src/core/phylo_kmer.cpp
-            src/core/phylo_kmer_db.cpp
-            src/core/kmer_iterator.cpp
-            src/core/phylo_tree.cpp
+            src/xpas/phylo_kmer.cpp
+            src/xpas/phylo_kmer_db.cpp
+            src/xpas/kmer_iterator.cpp
+            src/xpas/phylo_tree.cpp
         )
 
 # Turn on the warnings and treat them as errors
-target_compile_options(core_p
+target_compile_options(xpas_aa
         PRIVATE
             -Wall -Wextra -Wpedantic -Werror
         )
@@ -30,21 +30,23 @@ target_compile_options(core_p
 ##########################################################################################
 # DNA
 # Create a library target and set properties
-add_library(core_n STATIC "")
-add_library(rappas::core_n ALIAS core_n)
+add_library(xpas_dna SHARED "")
+add_library(xpas::dna ALIAS xpas_dna)
 
-target_compile_definitions(core_n
+target_compile_definitions(xpas_dna
         PUBLIC
             ${HASH_MAP}
             SEQ_TYPE_DNA)
 
-target_sources(core_n
+target_sources(xpas_dna
         PRIVATE
-            src/core/phylo_kmer.cpp
-            src/core/phylo_kmer_db.cpp
-            src/core/kmer_iterator.cpp
-            src/core/phylo_tree.cpp
-            src/core/newick.cpp
+            src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
+            src/xpas/phylo_kmer_db.cpp include/xpas/phylo_kmer_db.h
+            src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
+            src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
+            src/xpas/newick.cpp include/xpas/newick.h
+            include/xpas/serialization.h
+            include/xpas/version.h
         )
 
 find_package(Boost REQUIRED COMPONENTS serialization)
@@ -65,28 +67,27 @@ elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
     set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
 endif()
 
-
-target_link_libraries(core_n
+target_link_libraries(xpas_dna
         PUBLIC
-            rappas::utils
+            xpas::utils
             Boost::serialization
             ${HASH_MAP_IMPLEMENTATION}
         )
 
-target_include_directories(core_n
+target_include_directories(xpas_dna
         PUBLIC
             $<INSTALL_INTERFACE:include>
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 # Turn on the warnings and treat them as errors
-target_compile_options(core_n
+target_compile_options(xpas_dna
         PRIVATE
             -Wall -Wextra -Werror #-Wpedantic
         )
 
-# explicitly require c++17 standart
+# explicitly require c++17 standard
 # TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
-target_compile_features(core_n
+target_compile_features(xpas_dna
         PUBLIC
             cxx_std_17
         )
@@ -98,14 +99,14 @@ include(GNUInstallDirs)
 # Exporting the core target
 # 'make install' to the correct locations (provided by GNUInstallDirs)
 # TODO: check if it works with 'make install'
-install(TARGETS core_n
-        EXPORT coreNTargets
+install(TARGETS xpas_dna
+        EXPORT xpasDnaTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-export(TARGETS core_n
-       FILE ${CMAKE_BINARY_DIR}/rappasConfig.cmake)
+export(TARGETS xpas_dna
+       FILE ${CMAKE_BINARY_DIR}/xpasConfig.cmake)
 
-export(PACKAGE rappas)
+export(PACKAGE xpas)

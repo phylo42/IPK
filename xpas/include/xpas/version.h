@@ -1,7 +1,7 @@
-#ifndef RAPPAS_CORE_VERSION_H
-#define RAPPAS_CORE_VERSION_H
+#ifndef XPAS_VERSION_H
+#define XPAS_VERSION_H
 
-namespace core
+namespace xpas
 {
     /// \brief Core version class. Follows the semantic versioning 2.0 rules.
     /// \sa Semantic versioning 2.0: https://semver.org/

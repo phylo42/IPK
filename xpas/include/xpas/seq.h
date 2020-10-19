@@ -1,12 +1,12 @@
-#ifndef RAPPAS_CORE_SEQ_H
-#define RAPPAS_CORE_SEQ_H
+#ifndef XPAS_SEQ_H
+#define XPAS_SEQ_H
 
 #include <cstdint>
 #include <cstddef>
 #include <optional>
 #include <vector>
 
-namespace core
+namespace xpas
 {
     /// \brief Sequence traits type.
     /// \details Describes all the properties based on the size of an alphabet, the alphabet itself etc.

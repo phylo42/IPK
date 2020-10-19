@@ -1,8 +1,8 @@
-#include "core/phylo_kmer_db.h"
+#include "xpas/phylo_kmer_db.h"
 
-using namespace core;
+using namespace xpas;
 
-phylo_kmer_db::phylo_kmer_db(size_t kmer_size, core::phylo_kmer::score_type omega, const std::string& tree)
+phylo_kmer_db::phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree)
     : _kmer_size{ kmer_size }, _omega{ omega }, _tree { tree }
 {}
 
@@ -43,7 +43,7 @@ size_t phylo_kmer_db::kmer_size() const noexcept
     return _kmer_size;
 }
 
-core::phylo_kmer::score_type phylo_kmer_db::omega() const noexcept
+xpas::phylo_kmer::score_type phylo_kmer_db::omega() const noexcept
 {
     return _omega;
 }

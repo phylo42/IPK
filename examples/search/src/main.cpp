@@ -1,13 +1,13 @@
 #include <iostream>
-#include <core/phylo_kmer_db.h>
+#include <xpas/phylo_kmer_db.h>
 
-core::phylo_kmer_db create_db()
+xpas::phylo_kmer_db create_db()
 {
     const size_t kmer_size = 3;
-    const core::phylo_kmer::score_type omega = 1.0;
+    const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
-    core::phylo_kmer_db db { kmer_size, omega, tree };
+    xpas::phylo_kmer_db db { kmer_size, omega, tree };
 
     /// branch 0
     db.insert(0, { 0, 0.00f });
@@ -27,7 +27,7 @@ core::phylo_kmer_db create_db()
     return db;
 }
 
-void search(const core::phylo_kmer_db& db, core::phylo_kmer_db::key_type key)
+void search(const xpas::phylo_kmer_db& db, xpas::phylo_kmer_db::key_type key)
 {
     if (auto entries = db.search(key); entries)
     {

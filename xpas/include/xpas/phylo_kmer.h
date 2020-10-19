@@ -1,12 +1,12 @@
-#ifndef RAPPAS_CORE_PHYLO_KMER_H
-#define RAPPAS_CORE_PHYLO_KMER_H
+#ifndef XPAS_PHYLO_KMER_H
+#define XPAS_PHYLO_KMER_H
 
 #include "seq.h"
 #include <limits>
 #include <string>
 #include <optional>
 
-namespace core
+namespace xpas
 {
     /// \brief A phylo k-mer structure.
     /// \details A key-value pair for a phylo-kmer, where key is a key_type value of a k-mer, and value is

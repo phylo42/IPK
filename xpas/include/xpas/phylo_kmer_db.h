@@ -1,5 +1,5 @@
-#ifndef RAPPAS_CORE_PHYLO_KMER_DB_H
-#define RAPPAS_CORE_PHYLO_KMER_DB_H
+#ifndef XPAS_PHYLO_KMER_DB_H
+#define XPAS_PHYLO_KMER_DB_H
 
 
 #ifdef USE_SKA_FLAT_HASH_MAP
@@ -21,21 +21,18 @@
 
 #include "phylo_kmer.h"
 
-namespace core
+namespace xpas
 {
     class phylo_kmer_db;
 }
 
-namespace boost
+namespace boost::serialization
 {
-    namespace serialization
-    {
-        template<class Archive>
-        inline void load(Archive& ar, ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
-    }
+    template<class Archive>
+    inline void load(Archive& ar, xpas::phylo_kmer_db& db, unsigned int /* file_version */);
 }
 
-namespace core
+namespace xpas
 {
     template<typename... Args>
 #ifdef USE_SKA_FLAT_HASH_MAP
@@ -67,7 +64,9 @@ namespace core
     {
         phylo_kmer::branch_type branch;
         phylo_kmer::score_type score;
-        ///phylo_kmer::pos_type position;
+
+        pkdb_value(phylo_kmer::branch_type _branch, phylo_kmer::score_type _score)
+            : branch{ _branch }, score{ _score } {}
     };
 
     /// \brief A Phylo-kmer database, that stores all the phylo-kmers.
@@ -77,7 +76,7 @@ namespace core
         /// I thinks it is better to inject an invasive dependency here than to provide a public access to this
         /// variable.
         template<class Archive>friend void boost::serialization::load(Archive& ar,
-            ::core::phylo_kmer_db& db, const unsigned int /* file_version */);
+            xpas::phylo_kmer_db& db, unsigned int /* file_version */);
     public:
 
         /// Member types
@@ -92,7 +91,7 @@ namespace core
 
 
         /// Ctors, dtor and operator=
-        phylo_kmer_db(size_t kmer_size, core::phylo_kmer::score_type omega, const std::string& tree);
+        phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree);
         phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
         phylo_kmer_db(phylo_kmer_db&&) = default;
         phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
@@ -151,7 +150,7 @@ namespace core
 
         /// \brief Score threshold paramenter.
         /// \sa core::score_threshold
-        core::phylo_kmer::score_type _omega;
+        xpas::phylo_kmer::score_type _omega;
 
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;
@@ -180,6 +179,5 @@ namespace core
         };
     }
 }
-
 
 #endif
