@@ -52,7 +52,7 @@ target_sources(xpas_aa
         include/xpas/version.h
         )
 
-find_package(Boost REQUIRED COMPONENTS serialization unit_test_framework)
+find_package(Boost REQUIRED COMPONENTS serialization)
 
 target_link_libraries(xpas_aa
         PUBLIC
