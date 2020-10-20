@@ -24,59 +24,63 @@ elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
     set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
 endif()
 
-##########################################################################################
-# PROTEINS
-# WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
-# but it can not be compiled. We also define this target EXCLUDE_FROM_ALL for a while
-# to not build this target by default
-add_library(xpas_aa STATIC "")
-add_library(xpas::aa ALIAS xpas_aa)
 
-target_compile_definitions(xpas_aa
-        PUBLIC
-            ${HASH_MAP}
-            SEQ_TYPE_AA)
+find_package(Boost REQUIRED COMPONENTS serialization iostreams)
 
-if(DEFINED KEEP_POSITIONS)
-    target_compile_definitions(xpas_aa PUBLIC KEEP_POSITIONS)
-endif()
-
-target_sources(xpas_aa
-        PRIVATE
+set(SOURCES
         src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
         src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
         src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
         src/xpas/newick.cpp include/xpas/newick.h
         include/xpas/phylo_kmer_db.h
         include/xpas/serialization.h
-        include/xpas/version.h
-        )
+        include/xpas/version.h)
 
-find_package(Boost REQUIRED COMPONENTS serialization)
-
-target_link_libraries(xpas_aa
-        PUBLIC
+set(LINK_LIBRARIES
         xpas::utils
         Boost::serialization
-        ${HASH_MAP_IMPLEMENTATION}
-        )
+        ${HASH_MAP_IMPLEMENTATION})
 
-target_include_directories(xpas_aa
-        PUBLIC
-        $<INSTALL_INTERFACE:include>
+set(INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 # Turn on the warnings and treat them as errors
-target_compile_options(xpas_aa
-        PRIVATE
-        -Wall -Wextra -Werror #-Wpedantic
-        )
+set(COMPILE_OPTIONS -Wall -Wextra -Werror) #-Wpedantic)
 
 # explicitly require c++17 standard
-target_compile_features(xpas_aa
+# TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
+set(COMPILE_FEATURES cxx_std_17)
+
+##########################################################################################
+# Proteins
+add_library(xpas_aa STATIC "")
+add_library(xpas::aa ALIAS xpas_aa)
+
+target_sources(xpas_aa PRIVATE ${SOURCES})
+target_link_libraries(xpas_aa PUBLIC ${LINK_LIBRARIES})
+target_include_directories(xpas_aa PUBLIC ${INCLUDE_DIRECTORIES})
+target_compile_options(xpas_aa PRIVATE ${COMPILE_OPTIONS})
+target_compile_features(xpas_aa PUBLIC ${COMPILE_FEATURES})
+target_compile_definitions(xpas_aa
         PUBLIC
-        cxx_std_17
-        )
+            ${HASH_MAP}
+            SEQ_TYPE_AA)
+
+##########################################################################################
+# Proteins, positions included
+add_library(xpas_aa_pos STATIC "")
+add_library(xpas::aa_pos ALIAS xpas_aa_pos)
+
+target_sources(xpas_aa_pos PRIVATE ${SOURCES})
+target_link_libraries(xpas_aa_pos PUBLIC ${LINK_LIBRARIES})
+target_include_directories(xpas_aa_pos PUBLIC ${INCLUDE_DIRECTORIES})
+target_compile_options(xpas_aa_pos PRIVATE ${COMPILE_OPTIONS})
+target_compile_features(xpas_aa_pos PUBLIC ${COMPILE_FEATURES})
+target_compile_definitions(xpas_aa_pos
+        PUBLIC
+            ${HASH_MAP}
+            SEQ_TYPE_AA
+            KEEP_POSITIONS)
 
 ##########################################################################################
 # DNA
@@ -84,54 +88,15 @@ target_compile_features(xpas_aa
 add_library(xpas_dna STATIC "")
 add_library(xpas::dna ALIAS xpas_dna)
 
+target_sources(xpas_dna PRIVATE ${SOURCES})
+target_link_libraries(xpas_dna PUBLIC ${LINK_LIBRARIES})
+target_include_directories(xpas_dna PUBLIC ${INCLUDE_DIRECTORIES})
+target_compile_options(xpas_dna PRIVATE ${COMPILE_OPTIONS})
+target_compile_features(xpas_dna PUBLIC ${COMPILE_FEATURES})
 target_compile_definitions(xpas_dna
         PUBLIC
-            ${HASH_MAP}
-            SEQ_TYPE_DNA)
-
-if(DEFINED KEEP_POSITIONS)
-    target_compile_definitions(xpas_dna PUBLIC KEEP_POSITIONS)
-endif()
-
-target_sources(xpas_dna
-        PRIVATE
-            src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
-            src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
-            src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
-            src/xpas/newick.cpp include/xpas/newick.h
-            include/xpas/phylo_kmer_db.h
-            include/xpas/serialization.h
-            include/xpas/version.h
-        )
-
-find_package(Boost REQUIRED COMPONENTS serialization iostreams)
-
-
-target_link_libraries(xpas_dna
-        PUBLIC
-            xpas::utils
-            Boost::serialization
-            Boost::iostreams
-            ${HASH_MAP_IMPLEMENTATION}
-        )
-
-target_include_directories(xpas_dna
-        PUBLIC
-            $<INSTALL_INTERFACE:include>
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
-# Turn on the warnings and treat them as errors
-target_compile_options(xpas_dna
-        PRIVATE
-            -Wall -Wextra -Werror #-Wpedantic
-        )
-
-# explicitly require c++17 standard
-# TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
-target_compile_features(xpas_dna
-        PUBLIC
-            cxx_std_17
-        )
+        ${HASH_MAP}
+        SEQ_TYPE_DNA)
 
 ######################################################################################################
 # Library installation

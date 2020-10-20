@@ -4,7 +4,6 @@ if(NOT DEFINED HASH_MAP)
     message(FATAL_ERROR "Please define a hash map library to compile against.")
 else()
     message(STATUS "Hash map option: ${HASH_MAP}")
-    message(STATUS "Keep positions: ${KEEP_POSITIONS}")
 
     if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
         add_subdirectory(skarupke)
