@@ -1,12 +1,11 @@
 #include <iostream>
-#include <boost/filesystem.hpp>
 #include <xpas/phylo_kmer_db.h>
-#include <xpas/serialization.h>
-#include <iomanip>
+#include <xpas/version.h>
+
+const size_t kmer_size = 3;
 
 xpas::phylo_kmer_db create_db()
 {
-    const size_t kmer_size = 3;
     const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
@@ -34,7 +33,7 @@ std::ostream& operator<<(std::ostream& out, const xpas::phylo_kmer_db& db)
 {
     for (const auto& [key, entries] : db)
     {
-        out << key << ":\n";
+        out << key << " (" << xpas::decode_kmer(key, kmer_size) << "):" << std::endl;
         for (const auto& [branch, score] : entries)
         {
             out << '\t' << branch << ": " << score << '\n';
@@ -45,11 +44,10 @@ std::ostream& operator<<(std::ostream& out, const xpas::phylo_kmer_db& db)
 
 int main()
 {
-    const auto filename = boost::filesystem::unique_path().string();
-    xpas::save(create_db(), filename);
+    std::cout << "xpas version: " << xpas::version::as_string() << std::endl;
 
-    const auto db = xpas::load(filename);
+    const auto db = create_db();
+    std::cout << "Total number of keys: " << db.size() << std::endl;
     std::cout << "K-mer size: " << db.kmer_size() << std::endl;
-    std::cout << "Omega: " << std::setprecision(2) << std::fixed << db.omega() << std::endl;
     std::cout << db;
 }

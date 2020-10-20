@@ -21,16 +21,6 @@
 
 #include "phylo_kmer.h"
 
-namespace xpas
-{
-    class phylo_kmer_db;
-}
-
-namespace boost::serialization
-{
-    template<class Archive>
-    inline void load(Archive& ar, xpas::phylo_kmer_db& db, unsigned int /* file_version */);
-}
 
 namespace xpas
 {
@@ -55,76 +45,124 @@ namespace xpas
     ///using hash_map = robin_hood::unordered_map<Args...>;
 
     namespace impl {
+        template <typename PhyloKmer>
         class search_result;
+
+        template <>
+        class search_result<unpositioned_phylo_kmer>;
     }
 
-    /// \brief A value of phylo-kmer stored in phylo_kmer_db.
-    /// \details One k-mer can correspond to multiple values, so the key of a k-mer is not stored here.
-    struct pkdb_value
-    {
-        phylo_kmer::branch_type branch;
-        phylo_kmer::score_type score;
 
-        pkdb_value(phylo_kmer::branch_type _branch, phylo_kmer::score_type _score)
-            : branch{ _branch }, score{ _score } {}
-    };
-
-    /// \brief A Phylo-kmer database, that stores all the phylo-kmers.
-    class phylo_kmer_db
+    /// \brief A phylo-kmer database that stores all phylo-kmers.
+    template <typename PhyloKmer>
+    class _phylo_kmer_db
     {
-        /// We can get rid of this friend declaration if we provide a public set_kmer_size method.
-        /// I thinks it is better to inject an invasive dependency here than to provide a public access to this
-        /// variable.
-        template<class Archive>friend void boost::serialization::load(Archive& ar,
-            xpas::phylo_kmer_db& db, unsigned int /* file_version */);
     public:
-
         /// Member types
         using key_type = phylo_kmer::key_type;
-        using value_type = std::vector<pkdb_value>;
+        using pkdb_value_type = typename get_pkdb_value_type<PhyloKmer>::type;
+        using value_type = std::vector<pkdb_value_type>;
 
         /// \brief A storage of a phylo-kmer information.
         /// \details Note that phylo-kmers are not stored as objects of phylo_kmer,
         /// which is just a temporary storage for a phylo-kmer information.
         using storage = hash_map<key_type, value_type>;
-        using const_iterator = storage::const_iterator;
-
+        using const_iterator = typename storage::const_iterator;
 
         /// Ctors, dtor and operator=
-        phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree);
-        phylo_kmer_db(const phylo_kmer_db&) noexcept = delete;
-        phylo_kmer_db(phylo_kmer_db&&) = default;
-        phylo_kmer_db& operator=(const phylo_kmer_db&) = delete;
-        phylo_kmer_db& operator=(phylo_kmer_db&&) = default;
-        ~phylo_kmer_db() noexcept = default;
+        _phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree)
+            : _kmer_size{ kmer_size }, _omega{ omega }, _tree { tree }
+        {}
+        _phylo_kmer_db(const _phylo_kmer_db&) noexcept = delete;
+        _phylo_kmer_db(_phylo_kmer_db&&) noexcept = default;
+        _phylo_kmer_db& operator=(const _phylo_kmer_db&) = delete;
+        _phylo_kmer_db& operator=(_phylo_kmer_db&&) noexcept = default;
+        ~_phylo_kmer_db() noexcept = default;
 
+
+        /// \brief Returns the k-mer size.
+        [[nodiscard]]
+        size_t kmer_size() const noexcept
+        {
+            return _kmer_size;
+        }
+
+        void set_kmer_size(size_t kmer_size) noexcept
+        {
+            _kmer_size = kmer_size;
+        }
+
+        /// \brief Returns omega (the parameter of xpas::score_threshold)
+        [[nodiscard]]
+        phylo_kmer::score_type omega() const noexcept
+        {
+            return _omega;
+        }
+
+        void set_omega(phylo_kmer::score_type omega)
+        {
+            _omega = omega;
+        }
+
+        /// \brief Returns a view to the newick formatted phylogenetic tree
+        [[nodiscard]]
+        std::string_view tree() const noexcept
+        {
+            return _tree;
+        }
+
+        void set_tree(const std::string& tree)
+        {
+            _tree = tree;
+        }
 
         /// Access
         /// \brief Searches for a key against the database.
         /// \details WARNING: This method does not know how the key was calculated. It is required
         /// to provide keys of substrings of size _kmer_size to get correct results.
         /// \sa _kmer_size
-        std::optional<impl::search_result> search(key_type key) const noexcept;
-
+        [[nodiscard]]
+        std::optional<impl::search_result<value_type>> search(key_type key) const noexcept
+        {
+            if (auto it = _map.find(key); it != _map.end())
+            {
+                return impl::search_result<value_type>{ it->second.begin(), it->second.end() };
+            }
+            else
+            {
+                return std::nullopt;
+            }
+        }
 
         /// Iterators
         /// \brief Returns an iterator to the beginning
-        const_iterator begin() const noexcept;
-        /// \brief Returns an iterator to the end
-        const_iterator end() const noexcept;
+        [[nodiscard]]
+        const_iterator begin() const noexcept
+        {
+            return std::begin(_map);
+        }
 
+        /// \brief Returns an iterator to the end
+        [[nodiscard]]
+        const_iterator end() const noexcept
+        {
+            return std::end(_map);
+        }
 
         /// Capacity
         /// \brief Returns the number of keys
-        size_t size() const noexcept;
-        /// \brief Returns the k-mer size.
-        size_t kmer_size() const noexcept;
-        /// \brief Returns omega (core::score_threshold parameter)
-        phylo_kmer::score_type omega() const noexcept;
-        /// \brief Returns a view to the newick formatted phylogenetic tree
-        std::string_view tree() const noexcept;
+        [[nodiscard]]
+        size_t size() const noexcept
+        {
+            return _map.size();
+        }
+
         /// \brief Returns a hash function used to hash kmers
-        storage::hasher hash_function() const noexcept;
+        [[nodiscard]]
+        typename storage::hasher hash_function() const noexcept
+        {
+            return _map.hash_function();
+        }
 
         /// Modifiers
         /// \brief Puts a phylo-kmer information in the database.
@@ -134,7 +172,19 @@ namespace xpas
         /// WARNING: This method does not know how the key was calculated. Here we assume it represents
         /// a string of size _kmer_size.
         /// \sa _kmer_size
-        void insert(key_type key, const pkdb_value& value);
+        void unsafe_insert(key_type key, const pkdb_value_type& value)
+        {
+            _map[key].push_back(value);
+        }
+
+        /// \brief Replace a phylo-kmer in the database.
+        /// \details This method will remove all values associated to the given key,
+        /// and will add a new value.
+        void replace(key_type key, const pkdb_value_type& value)
+        {
+            _map[key].clear();
+            _map[key].push_back(value);
+        }
 
     private:
         storage _map;
@@ -156,28 +206,44 @@ namespace xpas
         std::string _tree;
     };
 
+    using phylo_kmer_db = _phylo_kmer_db<phylo_kmer>;
+
     namespace impl
     {
         /// \brief A search result wrapper around a collection of pairs [branch, score]
         /// to iterate over.
+
+        template <typename ValueType>
         class search_result
         {
         public:
-            using const_iterator = phylo_kmer_db::value_type::const_iterator;
+            using const_iterator = typename ValueType::const_iterator;
 
             search_result() noexcept = default;
-            search_result(const_iterator begin, const_iterator end) noexcept;
+            search_result(const_iterator begin, const_iterator end) noexcept
+                : _begin{ begin }, _end{ end }
+            {}
+
             search_result(const search_result&) noexcept = default;
             ~search_result() noexcept = default;
 
-            const_iterator begin() const noexcept;
-            const_iterator end() const noexcept;
+            [[nodiscard]]
+            const_iterator begin() const noexcept
+            {
+                return _begin;
+            }
 
+            [[nodiscard]]
+            const_iterator end() const noexcept
+            {
+                return _end;
+            }
         private:
             const_iterator _begin;
             const_iterator _end;
         };
     }
+
 }
 
 #endif

@@ -10,7 +10,7 @@ std::tuple<no_ambiguity_policy::value_type,
     kmer_iterator<no_ambiguity_policy>::pos_t,
     bool> kmer_iterator<no_ambiguity_policy>::encode_kmer()
 {
-    phylo_kmer::key_type key = phylo_kmer::nan_key;
+    phylo_kmer::key_type key = phylo_kmer::na_key;
     bool success = false;
 
     /// string is too small to start from _kmer_position
@@ -44,7 +44,7 @@ std::tuple<no_ambiguity_policy::value_type,
 
 template <>
 kmer_iterator<no_ambiguity_policy>::kmer_iterator(std::string_view sequence_view, size_t kmer_size) noexcept
-    : _sequence_view{ sequence_view }, _kmer_size{ kmer_size }, _kmer_value{ phylo_kmer::nan_key }, _kmer_position{ 0 }
+    : _sequence_view{ sequence_view }, _kmer_size{ kmer_size }, _kmer_value{ phylo_kmer::na_key }, _kmer_position{ 0 }
 {
    init();
 }
