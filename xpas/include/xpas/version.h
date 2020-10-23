@@ -18,6 +18,14 @@ namespace xpas
             return major + std::string{ "." } + minor + std::string{ "." } + revision;
         }
     };
+
+
+#ifdef KEEP_POSITIONS
+    inline static const bool keep_positions = true;
+#else
+    inline static const bool keep_positions = false;
+#endif
+
 }
 
 #endif // XPAS_VERSION_H

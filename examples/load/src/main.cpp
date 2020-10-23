@@ -10,7 +10,7 @@ xpas::phylo_kmer_db create_db()
     const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
-    xpas::phylo_kmer_db db { kmer_size, omega, tree };
+    xpas::phylo_kmer_db db { kmer_size, omega, xpas::seq_type::name, tree };
 
     /// branch 0
     db.unsafe_insert(0, { 0, 0.00f });
@@ -49,7 +49,12 @@ int main()
     xpas::save(create_db(), filename);
 
     const auto db = xpas::load(filename);
-    std::cout << "K-mer size: " << db.kmer_size() << std::endl;
-    std::cout << "Omega: " << std::setprecision(2) << std::fixed << db.omega() << std::endl;
+    std::cout << "Database parameters:" << std::endl
+              << "\tSequence type: " << db.sequence_type() << std::endl
+              << "\tk: " << db.kmer_size() << std::endl
+              << "\tomega: " << db.omega() << std::endl
+              << "\tKeep positions: " << (db.positions_loaded() ? "true" : "false") << std::endl << std::endl;
+    std::cout << "Loaded a database of " << db.size() << " phylo-kmers. " << std::endl << std::endl;
+
     std::cout << db;
 }

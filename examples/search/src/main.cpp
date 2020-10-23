@@ -9,7 +9,7 @@ xpas::phylo_kmer_db create_db()
     const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
-    xpas::phylo_kmer_db db { kmer_size, omega, tree };
+    xpas::phylo_kmer_db db { kmer_size, omega, xpas::seq_type::name, tree };
 
     /// branch 0
     db.unsafe_insert(0, make_pkdb_value<phylo_kmer>(0, 0.00f, 0));

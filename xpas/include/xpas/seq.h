@@ -24,7 +24,9 @@ namespace xpas
     /// \brief Auxiliary structure to define the seq_type.
     /// \sa seq_type
     struct dna
-    {};
+    {
+        inline static const char* name = "DNA";
+    };
 
     /// \brief A compile-time constant for a current sequence type.
     /// \details Sequence type is determined at compile time for efficiency reasons.
@@ -195,7 +197,9 @@ namespace xpas
     /// \brief Auxiliary structure to define the seq_type.
     /// \sa seq_type
     struct aa
-    {};
+    {
+        inline static const char* name = "Proteins";
+    };
 
     /// \brief A compile-time constant for a current sequence type.
     /// \details Sequence type is determined at compile time for efficiency reasons.

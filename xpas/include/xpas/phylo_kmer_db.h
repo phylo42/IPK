@@ -70,8 +70,12 @@ namespace xpas
         using const_iterator = typename storage::const_iterator;
 
         /// Ctors, dtor and operator=
-        _phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, const std::string& tree)
-            : _kmer_size{ kmer_size }, _omega{ omega }, _tree { tree }
+        _phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, std::string seq_type,
+                       std::string tree)
+            : _kmer_size{ kmer_size }
+            , _omega{ omega }
+            , _sequence_type(std::move(seq_type))
+            , _tree(std::move(tree))
         {}
         _phylo_kmer_db(const _phylo_kmer_db&) noexcept = delete;
         _phylo_kmer_db(_phylo_kmer_db&&) noexcept = default;
@@ -79,6 +83,17 @@ namespace xpas
         _phylo_kmer_db& operator=(_phylo_kmer_db&&) noexcept = default;
         ~_phylo_kmer_db() noexcept = default;
 
+        /// \brief Returns the sequence type: DNA or Protein
+        [[nodiscard]]
+        std::string_view sequence_type() const noexcept
+        {
+            return _sequence_type;
+        }
+
+        void set_sequence_type(std::string sequence_type)
+        {
+            _sequence_type = std::move(sequence_type);
+        }
 
         /// \brief Returns the k-mer size.
         [[nodiscard]]
@@ -99,9 +114,21 @@ namespace xpas
             return _omega;
         }
 
-        void set_omega(phylo_kmer::score_type omega)
+        void set_omega(phylo_kmer::score_type omega) noexcept
         {
             _omega = omega;
+        }
+
+        /// \brief Returns if the positional information was loaded during deserialization.
+        [[nodiscard]]
+        bool positions_loaded() const noexcept
+        {
+            return _positions_loaded;
+        }
+
+        void set_positions_loaded(bool value) noexcept
+        {
+            _positions_loaded = value;
         }
 
         /// \brief Returns a view to the newick formatted phylogenetic tree
@@ -111,9 +138,9 @@ namespace xpas
             return _tree;
         }
 
-        void set_tree(const std::string& tree)
+        void set_tree(std::string tree)
         {
-            _tree = tree;
+            _tree = std::move(tree);
         }
 
         /// Access
@@ -201,6 +228,16 @@ namespace xpas
         /// \brief Score threshold paramenter.
         /// \sa core::score_threshold
         xpas::phylo_kmer::score_type _omega;
+
+        /// \brief Sequence type: DNA or Proteins.
+        /// \details Serialized within the database, needed to ensure
+        /// we work with the correct sequence type.
+        std::string _sequence_type;
+
+        /// KEEP_POSITIONS is a compile-time constant, and the serialization
+        /// protocol depends on it. This variable is true if during the deserialization
+        /// of a database with positions we loaded them.
+        bool _positions_loaded;
 
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;
