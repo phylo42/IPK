@@ -38,7 +38,7 @@ auto create_test_map()
 template<typename MapType>
 xpas::phylo_kmer_db create_db_from_map(const MapType& values, size_t kmer_size, xpas::phylo_kmer::score_type omega)
 {
-    xpas::phylo_kmer_db db { kmer_size, omega, "" };
+    xpas::phylo_kmer_db db { kmer_size, omega, xpas::seq_type::name, "" };
     for (const auto& [key, entries] : values)
     {
         for (const auto& [branch, score] : entries)
@@ -58,7 +58,7 @@ TEST_CASE("Database size", "[database]")
     }
 
     {
-        const xpas::phylo_kmer_db db { 3, 1.0, "" };
+        const xpas::phylo_kmer_db db { 3, 1.0, xpas::seq_type::name, "" };
         REQUIRE(db.size() == 0);
     }
 }
@@ -67,7 +67,7 @@ TEST_CASE("K-mer size and omega", "[database]")
 {
     const size_t kmer_size = 5;
     const xpas::phylo_kmer::score_type omega = 1.0;
-    const xpas::phylo_kmer_db db { kmer_size, omega, "" };
+    const xpas::phylo_kmer_db db { kmer_size, omega, xpas::seq_type::name, "" };
 
     REQUIRE(db.kmer_size() == kmer_size);
 }
