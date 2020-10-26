@@ -31,13 +31,14 @@ bool fasta::operator==(const fasta& rhs) const noexcept
 
 //------------------------------------------------------------------------------------
 
-impl::fasta_iterator::fasta_iterator(const std::string& filename, size_t batch_size)
+impl::fasta_iterator::fasta_iterator(const std::string& filename, size_t batch_size, bool clean_sequences)
     : _mmap{ filename }
     , _is{ _mmap, std::ios::in }
     , _batch_size{ batch_size }
     , _seq_id{ 0 }
     , _global_seq_id{ 0 }
     , _last_batch{ false }
+    , _clean_sequences{ clean_sequences }
 {
     /// end() iterator
     if (_batch_size == 0)
@@ -105,7 +106,15 @@ void impl::fasta_iterator::_read_batch()
             if (!sequence.empty())
             {
                 ++i;
-                _seqs.emplace_back(move(_header), clean_sequence(sequence));
+                if (_clean_sequences)
+                {
+                    _seqs.emplace_back(move(_header), clean_sequence(sequence));
+                }
+                else
+                {
+                    _seqs.emplace_back(move(_header), move(sequence));
+                }
+
                 sequence = "";
                 sequence.reserve(1024);
             }
@@ -122,25 +131,33 @@ void impl::fasta_iterator::_read_batch()
     if (i < _batch_size)
     {
         /// do not forget the last sequence
-        _seqs.emplace_back(move(_header), clean_sequence(sequence));
+        if (_clean_sequences)
+        {
+            _seqs.emplace_back(move(_header), clean_sequence(sequence));
+        }
+        else
+        {
+            _seqs.emplace_back(move(_header), move(sequence));
+        }
         _last_batch = true;
         _batch_size = i + 1;
     }
 }
 
-read_fasta::read_fasta(std::string filename, size_t batch_size)
+read_fasta::read_fasta(std::string filename, bool clean_sequences, size_t batch_size)
     : _filename{ std::move(filename) }
     , _batch_size{ batch_size }
+    , _clean_sequences{ clean_sequences }
 {}
 
 read_fasta::const_iterator read_fasta::begin() const
 {
-    return { _filename, _batch_size };
+    return { _filename, _batch_size, _clean_sequences };
 }
 
 read_fasta::const_iterator read_fasta::end() const
 {
-    return { _filename, 0 };
+    return { _filename, 0, false };
 }
 
 string xpas::io::clean_sequence(string sequence)

@@ -189,7 +189,18 @@ namespace xpas
                 default:
                     return std::nullopt;
             }
-        };
+        }
+
+        static bool is_gap(char_type base)
+        {
+            return base == '-';
+        }
+
+        static bool is_ambiguous(char_type base)
+        {
+            const auto optional = ambiguous_key_to_code(base);
+            return !optional || optional->size() > 1;
+        }
     };
 
 #elif SEQ_TYPE_AA
@@ -470,6 +481,17 @@ namespace xpas
                 default:
                     return std::nullopt;
             }
+        }
+
+        static bool is_gap(char_type base)
+        {
+            return base == '-';
+        }
+
+        static bool is_ambiguous(char_type base)
+        {
+            const auto optional = ambiguous_key_to_code(base);
+            return !optional || optional->size() > 1;
         }
     };
 #else
