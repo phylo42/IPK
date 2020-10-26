@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project(rappas_utils LANGUAGES CXX VERSION 0.1.0)
 
 # Create a library target and set properties
-add_library(utils STATIC "")
+add_library(utils SHARED "")
 add_library(xpas::utils ALIAS utils)
 
 target_sources(utils
