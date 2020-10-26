@@ -1,4 +1,4 @@
-name: Build-MacOS
+name: Build
 
 on: [push]
 
@@ -8,7 +8,23 @@ env:
 
 jobs:
   build:
-    runs-on: [ macos-latest ]
+    name: ${{matrix.buildname}}
+
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+        include:
+          - os: ubuntu-latest
+            buildname: 'ubuntu'
+            triplet: x64-linux
+            compiler: gcc_64
+          - os: macos-latest
+            buildname: 'macos'
+            triplet: x64-osx
+            compiler: clang_64
 
     steps:
       - name: Checkout
@@ -19,8 +35,13 @@ jobs:
         with:
           args: git submodule update --init --recursive
 
-      - name: Install dependencies
+      - name: (MacOS) Install dependencies
+        if: runner.os == 'macOS'
         run: brew install boost
+
+      - name: (Linux) Install dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev
 
       - name: Create Build Environment
         run: cmake -E make_directory ${{runner.workspace}}/build
