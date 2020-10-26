@@ -56,7 +56,7 @@ jobs:
       run: (cd tests; ctest -C $BUILD_TYPE)
 
   build-macos:
-    runs-on: [macos-latest]
+    runs-on: macos-latest
 
       steps:
         - name: Checkout
