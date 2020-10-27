@@ -19,7 +19,9 @@ namespace xpas::io
         fasta(const fasta&) = default;
         ~fasta() = default;
 
+        [[nodiscard]]
         std::string_view header() const noexcept;
+        [[nodiscard]]
         std::string_view sequence() const noexcept;
 
         bool operator==(const fasta& rhs) const noexcept;
@@ -40,7 +42,7 @@ namespace xpas::io
         public:
             using value_type = const fasta&;
 
-            fasta_iterator(const std::string& filename, size_t batch_size);
+            fasta_iterator(const std::string& filename, size_t batch_size, bool clean_sequences=true);
             fasta_iterator(const fasta_iterator&) = delete;
             fasta_iterator(fasta_iterator&&) = default;
             fasta_iterator& operator=(const fasta_iterator&) = delete;
@@ -70,6 +72,9 @@ namespace xpas::io
             bool _last_batch;
 
             std::string _header;
+
+            /// Indicates if we need to clean sequences on-the-fly with xpas::clean_sequence
+            bool _clean_sequences;
         };
     }
 
@@ -80,14 +85,17 @@ namespace xpas::io
     {
         using const_iterator = impl::fasta_iterator;
     public:
-        read_fasta(std::string filename, size_t batch_size=1024);
+        explicit read_fasta(std::string filename, bool clean_sequences=true, size_t batch_size=1024);
 
+        [[nodiscard]]
         const_iterator begin() const;
+        [[nodiscard]]
         const_iterator end() const;
 
     private:
         std::string _filename;
         size_t _batch_size;
+        bool _clean_sequences;
     };
 
     /// Clean an input sequence from gaps. Characters '*', '!', '.' are also skipped

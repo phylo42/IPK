@@ -24,7 +24,9 @@ namespace xpas
     /// \brief Auxiliary structure to define the seq_type.
     /// \sa seq_type
     struct dna
-    {};
+    {
+        inline static const char* name = "DNA";
+    };
 
     /// \brief A compile-time constant for a current sequence type.
     /// \details Sequence type is determined at compile time for efficiency reasons.
@@ -55,7 +57,7 @@ namespace xpas
         /// A type returned by encoding an ambiguous character
         using ambiguous_code_t = optional<std::vector<uint8_t>>;
 
-        static unambiguous_code_t key_to_code(char_type base)
+        static constexpr unambiguous_code_t key_to_code(char_type base)
         {
             switch (base)
             {
@@ -187,43 +189,308 @@ namespace xpas
                 default:
                     return nullopt;
             }
-        };
+        }
+
+        static bool is_gap(char_type base)
+        {
+            return base == '-';
+        }
+
+        static bool is_ambiguous(char_type base)
+        {
+            const auto optional = ambiguous_key_to_code(base);
+            return !optional || optional->size() > 1;
+        }
     };
 
 #elif SEQ_TYPE_AA
-    static_assert(false, """SEQ_TYPE_AA is not supported yet. Supported types:\n"""
-                         """SEQ_TYPE_DNA""");
 
+    /// \brief Auxiliary structure to define the seq_type.
+    /// \sa seq_type
     struct aa
-    {};
+    {
+        inline static const char* name = "Proteins";
+    };
 
+    /// \brief A compile-time constant for a current sequence type.
+    /// \details Sequence type is determined at compile time for efficiency reasons.
     using seq_type = aa;
 
     template<>
     struct seq_traits_impl<aa>
     {
-        using char_type = uint8_t;
-        using key_type = uint64_t;
+        /// \brief The type used to store one base of a sequence.
+        using char_type = unsigned char;
 
-        static const char_type char_set[];
+        /// \brief The type used to store a k-mer value.
+        /// \details K-mers are not stored as strings or char* values, but as values of this type instead.
+        /// For example for proteins and k==3 the k-mer "RRR" == 000ul if kmer_t is unsigned long.
+        using key_type = uint32_t;
 
-        static constexpr char_type decode(size_t /*code*/)
+        static const char_type code_to_key[];
+
+        /// \brief Alphabet size
+        static constexpr size_t alphabet_size = 20;
+        static constexpr size_t max_kmer_length = 6;
+
+        /// A type returned by encoding an unambiguous character
+        using unambiguous_code_t = std::optional<uint8_t>;
+
+        /// A type returned by encoding an ambiguous character
+        using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
+
+        static constexpr unambiguous_code_t key_to_code(char_type base)
         {
-            return 0;
+            switch (base)
+            {
+                case 'R':
+                    [[fallthrough]];
+                case 'r':
+                    return { 0 };
+                case 'H':
+                    [[fallthrough]];
+                case 'h':
+                    return { 1 };
+                case 'K':
+                    [[fallthrough]];
+                case 'k':
+                    return { 2 };
+                case 'D':
+                    [[fallthrough]];
+                case 'd':
+                    return { 3 };
+                case 'E':
+                    [[fallthrough]];
+                case 'e':
+                    return { 4 };
+                case 'S':
+                    [[fallthrough]];
+                case 's':
+                    return { 5 };
+                case 'T':
+                    [[fallthrough]];
+                case 't':
+                    return { 6 };
+                case 'N':
+                    [[fallthrough]];
+                case 'n':
+                    return { 7 };
+                case 'Q':
+                    [[fallthrough]];
+                case 'q':
+                    return { 8 };
+                case 'C':
+                    [[fallthrough]];
+                case 'c':
+                    [[fallthrough]];
+                case 'U':
+                    [[fallthrough]];
+                case 'u':
+                    return { 9 };
+                case 'G':
+                    [[fallthrough]];
+                case 'g':
+                    return { 10 };
+                case 'P':
+                    [[fallthrough]];
+                case 'p':
+                    return { 11 };
+                case 'A':
+                    [[fallthrough]];
+                case 'a':
+                    return { 12 };
+                case 'I':
+                    [[fallthrough]];
+                case 'i':
+                    return { 13 };
+                case 'L':
+                    [[fallthrough]];
+                case 'l':
+                    [[fallthrough]];
+                case 'O':
+                    [[fallthrough]];
+                case 'o':
+                    return { 14 };
+                case 'M':
+                    [[fallthrough]];
+                case 'm':
+                    return { 15 };
+                case 'F':
+                    [[fallthrough]];
+                case 'f':
+                    return { 16 };
+                case 'W':
+                    [[fallthrough]];
+                case 'w':
+                    return { 17 };
+                case 'Y':
+                    [[fallthrough]];
+                case 'y':
+                    return { 18 };
+                case 'V':
+                    [[fallthrough]];
+                case 'v':
+                    return { 19 };
+                /// the same as in RAPPAS
+                case '*':
+                    [[fallthrough]];
+                case '!':
+                    [[fallthrough]];
+                case '-':
+                    [[fallthrough]];
+                case '.':
+                    [[fallthrough]];
+                case 'X':
+                    [[fallthrough]];
+                case 'x':
+                    [[fallthrough]];
+                default:
+                    return std::nullopt;
+            }
+        };
+
+        static ambiguous_code_t ambiguous_key_to_code(char_type base)
+        {
+            switch (base)
+            {
+                /// Unambiguous characters
+                case 'R':
+                    [[fallthrough]];
+                case 'r':
+                    return {{0}};
+                case 'H':
+                    [[fallthrough]];
+                case 'h':
+                    return {{1}};
+                case 'K':
+                    [[fallthrough]];
+                case 'k':
+                    return {{2}};
+                case 'D':
+                    [[fallthrough]];
+                case 'd':
+                    return {{3}};
+                case 'E':
+                    [[fallthrough]];
+                case 'e':
+                    return {{4}};
+                case 'S':
+                    [[fallthrough]];
+                case 's':
+                    return {{5}};
+                case 'T':
+                    [[fallthrough]];
+                case 't':
+                    return {{6}};
+                case 'N':
+                    [[fallthrough]];
+                case 'n':
+                    return {{7}};
+                case 'Q':
+                    [[fallthrough]];
+                case 'q':
+                    return {{8}};
+                case 'C':
+                    [[fallthrough]];
+                case 'c':
+                    [[fallthrough]];
+                case 'U':
+                    [[fallthrough]];
+                case 'u':
+                    return {{9}};
+                case 'G':
+                    [[fallthrough]];
+                case 'g':
+                    return {{10}};
+                case 'P':
+                    [[fallthrough]];
+                case 'p':
+                    return {{11}};
+                case 'A':
+                    [[fallthrough]];
+                case 'a':
+                    return {{12}};
+                case 'I':
+                    [[fallthrough]];
+                case 'i':
+                    return {{13}};
+                case 'L':
+                    [[fallthrough]];
+                case 'l':
+                    [[fallthrough]];
+                case 'O':
+                    [[fallthrough]];
+                case 'o':
+                    return {{14}};
+                case 'M':
+                    [[fallthrough]];
+                case 'm':
+                    return {{15}};
+                case 'F':
+                    [[fallthrough]];
+                case 'f':
+                    return {{16}};
+                case 'W':
+                    [[fallthrough]];
+                case 'w':
+                    return {{17}};
+                case 'Y':
+                    [[fallthrough]];
+                case 'y':
+                    return {{18}};
+                case 'V':
+                    [[fallthrough]];
+                case 'v':
+                    return {{19}};
+
+                /// Ambiguous characters
+                /// B = D | N
+                case 'B':
+                    [[fallthrough]];
+                case 'b':
+                    return {{3, 7}};
+                /// Z = E | Q
+                case 'Z':
+                    [[fallthrough]];
+                case 'z':
+                    return {{4, 8}};
+                /// J = I | L
+                case 'J':
+                    [[fallthrough]];
+                case 'j':
+                    return {{13, 14}};
+
+                /// Any
+                case 'X':
+                    [[fallthrough]];
+                case 'x':
+                    [[fallthrough]];
+                case '*':
+                    [[fallthrough]];
+                case '!':
+                    [[fallthrough]];
+                case '.':
+                    return {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}};
+                default:
+                    return std::nullopt;
+            }
         }
 
-        static constexpr size_t encode(char_type /*base*/)
+        static bool is_gap(char_type base)
         {
-            return 0;
+            return base == '-';
         }
 
-        static constexpr size_t alphabet_size = sizeof(char_set);
-        static constexpr size_t max_kmer_length = 0;
+        static bool is_ambiguous(char_type base)
+        {
+            const auto optional = ambiguous_key_to_code(base);
+            return !optional || optional->size() > 1;
+        }
     };
 #else
-
     static_assert(false, """Please define a sequence type to compile core. Supported types:\n"""
-                         """SEQ_TYPE_DNA""");
+                         """SEQ_TYPE_DNA"""
+                         """SEQ_TYPE_AA""");
 #endif
 
     using seq_traits = seq_traits_impl<seq_type>;
@@ -234,9 +501,9 @@ namespace xpas
 
     /// \brief Returns a value of kmer_t type that can mask the rightmost base of a kmer_t.
     /// \details E.g. for DNA 0b1111...1100
+    ///               for AA 0b11...1100000
     template<typename SeqType>
-    constexpr seq_traits::key_type rightest_symbol_mask();
-
+    constexpr seq_traits::key_type rightmost_symbol_mask();
 
 #ifdef SEQ_TYPE_DNA
     template<>
@@ -246,13 +513,23 @@ namespace xpas
     }
 
     template<>
-    constexpr seq_traits::key_type rightest_symbol_mask<dna>()
+    constexpr seq_traits::key_type rightmost_symbol_mask<dna>()
     {
         return seq_traits::key_type{ ~0b11u };
     }
 
 #elif SEQ_TYPE_AA
-    /// ...
+    template<>
+    constexpr seq_traits::key_type bit_length<aa>()
+    {
+        return seq_traits::key_type{ 5u };
+    }
+
+    template<>
+    constexpr seq_traits::key_type rightmost_symbol_mask<aa>()
+    {
+        return seq_traits::key_type{ ~0b11111u };
+    }
 #else
     /// ...
 #endif

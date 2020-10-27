@@ -346,7 +346,7 @@ namespace xpas
     /// \brief A phylogenetic tree class
     /// \defails phylo_tree is only constructable by the rappas::io::load_newick function.
     /// Non-copyable. Phylo-nodes are not modifiable.
-    /// \sa core::phylo_node, xpas::io::load_newick
+    /// \sa xpas::phylo_node, xpas::io::load_newick
     class phylo_tree
     {
     public:

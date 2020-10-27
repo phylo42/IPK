@@ -8,22 +8,22 @@ xpas::phylo_kmer_db create_db()
     const xpas::phylo_kmer::score_type omega = 1.0;
     const std::string tree;
 
-    xpas::phylo_kmer_db db { kmer_size, omega, tree };
+    xpas::phylo_kmer_db db { kmer_size, omega, xpas::seq_type::name, tree };
 
     /// branch 0
-    db.insert(0, { 0, 0.00f });
-    db.insert(1, { 0, 0.10f });
-    db.insert(2, { 0, 0.20f });
+    db.unsafe_insert(0, { 0, 0.00f });
+    db.unsafe_insert(1, { 0, 0.10f });
+    db.unsafe_insert(2, { 0, 0.20f });
 
     /// branch 1
-    db.insert(1, { 1, 0.11f });
-    db.insert(2, { 1, 0.21f });
-    db.insert(3, { 1, 0.31f });
+    db.unsafe_insert(1, { 1, 0.11f });
+    db.unsafe_insert(2, { 1, 0.21f });
+    db.unsafe_insert(3, { 1, 0.31f });
 
     /// branch 2
-    db.insert(2, { 2, 0.22f });
-    db.insert(3, { 2, 0.32f });
-    db.insert(4, { 2, 0.42f });
+    db.unsafe_insert(2, { 2, 0.22f });
+    db.unsafe_insert(3, { 2, 0.32f });
+    db.unsafe_insert(4, { 2, 0.42f });
 
     return db;
 }

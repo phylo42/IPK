@@ -62,7 +62,7 @@ phylo_node::id_type phylo_node::get_postorder_id() const noexcept
 phylo_node::branch_length_type phylo_node::get_branch_length() const noexcept
 {
     return _branch_length;
-};
+}
 
 void phylo_node::set_branch_length(branch_length_type length)
 {
