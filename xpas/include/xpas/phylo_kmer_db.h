@@ -81,7 +81,7 @@ namespace xpas
         _phylo_kmer_db(const _phylo_kmer_db&) noexcept = delete;
         _phylo_kmer_db(_phylo_kmer_db&&) noexcept = default;
         _phylo_kmer_db& operator=(const _phylo_kmer_db&) = delete;
-        _phylo_kmer_db& operator=(_phylo_kmer_db&&) noexcept = default;
+        _phylo_kmer_db& operator=(_phylo_kmer_db&&) = default;
         ~_phylo_kmer_db() noexcept = default;
 
         /// \brief Returns the sequence type: DNA or Protein
@@ -159,7 +159,7 @@ namespace xpas
             }
             else
             {
-                return std::nullopt;
+                return nullopt;
             }
         }
         /// Iterators

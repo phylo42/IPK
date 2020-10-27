@@ -234,10 +234,10 @@ namespace xpas
         static constexpr size_t max_kmer_length = 6;
 
         /// A type returned by encoding an unambiguous character
-        using unambiguous_code_t = std::optional<uint8_t>;
+        using unambiguous_code_t = optional<uint8_t>;
 
         /// A type returned by encoding an ambiguous character
-        using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
+        using ambiguous_code_t = optional<std::vector<uint8_t>>;
 
         static constexpr unambiguous_code_t key_to_code(char_type base)
         {
@@ -345,7 +345,7 @@ namespace xpas
                 case 'x':
                     [[fallthrough]];
                 default:
-                    return std::nullopt;
+                    return nullopt;
             }
         };
 
@@ -472,7 +472,7 @@ namespace xpas
                 case '.':
                     return {{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19}};
                 default:
-                    return std::nullopt;
+                    return nullopt;
             }
         }
 
