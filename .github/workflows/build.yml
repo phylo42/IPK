@@ -21,10 +21,6 @@ jobs:
             buildname: 'ubuntu'
             triplet: x64-linux
             compiler: gcc_64
-          - os: macos-latest
-            buildname: 'macos'
-            triplet: x64-osx
-            compiler: clang_64
 
     steps:
       - name: Checkout
