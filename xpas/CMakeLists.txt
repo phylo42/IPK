@@ -6,7 +6,7 @@ project(xpas LANGUAGES CXX VERSION 0.1.8)
 # WARNING: SEQ_TYPE_AA is not supported yet. We declare a target for this,
 # but it can not be compiled. We also define this target EXCLUDE_FROM_ALL for a while
 # to not build this target by default
-add_library(xpas_aa STATIC EXCLUDE_FROM_ALL "")
+add_library(xpas_aa SHARED EXCLUDE_FROM_ALL "")
 add_library(xpas::aa ALIAS xpas_aa)
 
 target_compile_definitions(xpas_aa
