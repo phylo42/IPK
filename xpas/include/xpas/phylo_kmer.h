@@ -4,7 +4,7 @@
 #include "seq.h"
 #include <limits>
 #include <string>
-#include <optional>
+#include "optional.h"
 
 namespace xpas
 {
@@ -45,10 +45,10 @@ namespace xpas
     /// \brief Returns one or more codes of the input k-mer (depending on the policy)
     /// \details Assumes that the size of input sequence equals k
     template<typename AmbiguityPolicy>
-    std::optional<typename AmbiguityPolicy::value_type> encode_kmer(std::string_view kmer);
+    optional<typename AmbiguityPolicy::value_type> encode_kmer(std::string_view kmer);
 
     template<typename AmbiguityPolicy>
-    std::optional<phylo_kmer::key_type> encode_kmer(const std::string& kmer)
+    optional<phylo_kmer::key_type> encode_kmer(const std::string& kmer)
     {
         return encode_kmer<AmbiguityPolicy>(std::string_view{ kmer });
     }

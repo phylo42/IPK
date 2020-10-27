@@ -53,7 +53,7 @@ int main()
         if (const auto& node = tree.get_by_postorder_id(postorder_id); node)
         {
             size_t visited = 0;
-            for (const auto& subtree_node : xpas::visit_subtree(*node))
+            for (const auto& subtree_node : xpas::visit_subtree<true>(*node))
             {
                 std::cout << subtree_node.get_label() << " : " << subtree_node.get_branch_length() << std::endl;
                 ++visited;

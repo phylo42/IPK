@@ -25,7 +25,7 @@ target_include_directories(utils
 # Turn on the warnings and treat them as errors
 target_compile_options(utils
         PRIVATE
-            -Wall -Wextra -Wpedantic -Werror
+            -Wall -Wextra -Wpedantic #-Werror
         )
 
 # explicitly require c++17 standart

@@ -11,7 +11,7 @@ void phylo_kmer_db::insert(key_type key, const pkdb_value& value)
     _map[key].push_back(value);
 }
 
-std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const noexcept
+optional<impl::search_result> phylo_kmer_db::search(key_type key) const noexcept
 {
     if (auto it = _map.find(key); it != _map.end())
     {
@@ -19,7 +19,7 @@ std::optional<impl::search_result> phylo_kmer_db::search(key_type key) const noe
     }
     else
     {
-        return std::nullopt;
+        return nullopt;
     }
 }
 

@@ -3,8 +3,8 @@
 
 #include <cstdint>
 #include <cstddef>
-#include <optional>
 #include <vector>
+#include "optional.h"
 
 namespace xpas
 {
@@ -41,7 +41,7 @@ namespace xpas
         /// For example for DNA and k==3 the k-mer "AAA" == 000ul if kmer_t is unsigned long.
         using key_type = uint32_t;
 
-        static constexpr char_type code_to_key[] = {'A', 'C', 'G', 'T'};
+        static const char_type code_to_key[];
 
         /// \brief Alphabet size
         /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
@@ -50,10 +50,10 @@ namespace xpas
         static constexpr size_t max_kmer_length = 12;
 
         /// A type returned by encoding an unambiguous character
-        using unambiguous_code_t = std::optional<uint8_t>;
+        using unambiguous_code_t = optional<uint8_t>;
 
         /// A type returned by encoding an ambiguous character
-        using ambiguous_code_t = std::optional<std::vector<uint8_t>>;
+        using ambiguous_code_t = optional<std::vector<uint8_t>>;
 
         static unambiguous_code_t key_to_code(char_type base)
         {
@@ -88,7 +88,7 @@ namespace xpas
                 case '.':
                     [[fallthrough]];
                 default:
-                    return std::nullopt;
+                    return nullopt;
             }
         };
 
@@ -185,7 +185,7 @@ namespace xpas
                 case '.':
                     return { { 0, 1, 2, 3 } };
                 default:
-                    return std::nullopt;
+                    return nullopt;
             }
         };
     };
@@ -205,7 +205,7 @@ namespace xpas
         using char_type = uint8_t;
         using key_type = uint64_t;
 
-        static constexpr char_type char_set[] = { 'A' };
+        static const char_type char_set[];
 
         static constexpr char_type decode(size_t /*code*/)
         {

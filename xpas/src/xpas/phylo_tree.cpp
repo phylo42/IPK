@@ -100,8 +100,8 @@ phylo_tree::phylo_tree(phylo_node* root)
 
     _node_count = 0;
 
-    auto it = visit_subtree(_root).begin();
-    const auto end = visit_subtree(_root).end();
+    auto it = visit_subtree<false>(_root).begin();
+    const auto end = visit_subtree<false>(_root).end();
     for (; it != end; ++it)
     {
         const phylo_node* node{ it };
@@ -119,12 +119,12 @@ phylo_tree::~phylo_tree() noexcept
 
 phylo_tree::const_iterator xpas::phylo_tree::begin() const noexcept
 {
-    return visit_subtree(_root).begin();
+    return visit_subtree<true>(_root).begin();
 }
 
 phylo_tree::const_iterator xpas::phylo_tree::end() const noexcept
 {
-    return visit_subtree(_root).end();
+    return visit_subtree<true>(_root).end();
 }
 
 phylo_tree::iterator xpas::phylo_tree::begin() noexcept
@@ -147,7 +147,7 @@ phylo_tree::value_pointer phylo_tree::get_root() const noexcept
     return _root;
 }
 
-std::optional<const phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept
+optional<const phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept
 {
     if (const auto it = _preorder_id_node_mapping.find(preorder_id); it != _postorder_id_node_mapping.end())
     {
@@ -155,11 +155,11 @@ std::optional<const phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_t
     }
     else
     {
-        return { std::nullopt };
+        return { nullopt };
     }
 }
 
-std::optional<const phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept
+optional<const phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept
 {
     if (const auto it = _postorder_id_node_mapping.find(postorder_id); it != _postorder_id_node_mapping.end())
     {
@@ -167,6 +167,6 @@ std::optional<const phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_
     }
     else
     {
-        return { std::nullopt };
+        return { nullopt };
     }
 }

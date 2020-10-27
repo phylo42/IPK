@@ -21,7 +21,6 @@ else()
     elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
         add_subdirectory(hopscotch-map)
     endif()
-    #add_subdirectory(martinus)
 
     # Catch2 includes
     list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/catch2/contrib")

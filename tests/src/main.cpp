@@ -323,17 +323,17 @@ TEST_CASE("xpas::visit_tree", "[tree]")
     size_t i = 0;
 
     /// can't start visiting nullptr
-    REQUIRE_THROWS(xpas::visit_subtree(nullptr));
+    REQUIRE_THROWS(xpas::visit_subtree<true>(nullptr));
 
     /// Here we also test non-const iteration
     for (auto& node : tree)
     {
         /// Test if we can start visiting the subtree
-        REQUIRE_NOTHROW(xpas::visit_subtree(&node));
+        REQUIRE_NOTHROW(xpas::visit_subtree<false>(&node));
 
         /// run DFS from a node, calculating the total subtree branch length
         double total_length = 0.0;
-        for (const auto& subtree_node : xpas::visit_subtree(&node))
+        for (const auto& subtree_node : xpas::visit_subtree<true>(&node))
         {
             total_length += subtree_node.get_branch_length();
         }

@@ -40,7 +40,7 @@ phylo_kmer::score_type xpas::score_threshold(phylo_kmer::score_type omega, size_
 }
 
 template<>
-std::optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambiguity_policy>(std::string_view kmer)
+optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambiguity_policy>(std::string_view kmer)
 {
     no_ambiguity_policy::value_type key = 0;
     for (const auto base : kmer)
@@ -52,14 +52,14 @@ std::optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambigu
         }
         else
         {
-            return std::nullopt;
+            return nullopt;
         }
     }
     return key;
 }
 
 template<>
-std::optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity_policy>(std::string_view kmer)
+optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity_policy>(std::string_view kmer)
 {
     auto keys = one_ambiguity_policy::value_type();
     keys.push_back(0);
@@ -76,7 +76,7 @@ std::optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambi
                 /// allow only one ambiguity per k-mer
                 if (num_ambiguities > 0)
                 {
-                    return std::nullopt;
+                    return nullopt;
                 }
                 else
                 {
@@ -104,7 +104,7 @@ std::optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambi
         }
         else
         {
-            return std::nullopt;
+            return nullopt;
         }
     }
     return keys;

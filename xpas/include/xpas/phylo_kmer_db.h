@@ -20,6 +20,7 @@
 #endif
 
 #include "phylo_kmer.h"
+#include "optional.h"
 
 namespace xpas
 {
@@ -104,7 +105,7 @@ namespace xpas
         /// \details WARNING: This method does not know how the key was calculated. It is required
         /// to provide keys of substrings of size _kmer_size to get correct results.
         /// \sa _kmer_size
-        std::optional<impl::search_result> search(key_type key) const noexcept;
+        optional<impl::search_result> search(key_type key) const noexcept;
 
 
         /// Iterators

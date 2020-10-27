@@ -45,6 +45,7 @@ target_sources(xpas_dna
             src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
             src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
             src/xpas/newick.cpp include/xpas/newick.h
+            src/xpas/seq.cpp include/xpas/seq.h
             include/xpas/serialization.h
             include/xpas/version.h
         )
@@ -83,7 +84,7 @@ target_include_directories(xpas_dna
 # Turn on the warnings and treat them as errors
 target_compile_options(xpas_dna
         PRIVATE
-            -Wall -Wextra -Werror #-Wpedantic
+            -Wall -Wextra -Wpedantic #-Werror
         )
 
 # explicitly require c++17 standard

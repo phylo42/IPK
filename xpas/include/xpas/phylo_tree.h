@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <algorithm>
 #include <type_traits>
+#include "optional.h"
 
 namespace xpas
 {
@@ -110,7 +111,7 @@ namespace xpas
         /// or non-const references and pointers.
         template<bool Const=true,
                  typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
-        std::optional<phylo_node::id_type> _id_in_parent(pointer node)
+        optional<phylo_node::id_type> _id_in_parent(pointer node)
         {
             if (node && node->get_parent() != nullptr)
             {
@@ -125,7 +126,7 @@ namespace xpas
                     return { distance(begin(children), it) };
                 }
             }
-            return { std::nullopt };
+            return { nullopt };
         }
 
         /// \brief Return the node that would have the next post-order id in the tree,
@@ -385,12 +386,12 @@ namespace xpas
         /// \brief Returns a pointer to a phylo_node with a given preorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_postorder_id
-        std::optional<const xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
+        optional<const xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
 
         /// \brief Returns a pointer to a phylo_node with a given postorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_preorder_id
-        std::optional<const xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
+        optional<const xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
     private:
         /// \brief A root node.
         value_pointer _root;
