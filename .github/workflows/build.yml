@@ -15,12 +15,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest ]
+        os: [ ubuntu-18.04, macos-10.15, macos-11.0 ]
         include:
           - os: ubuntu-latest
             buildname: 'ubuntu'
             triplet: x64-linux
             compiler: gcc_64
+          - os: macos-latest
+            buildname: 'macos'
+            triplet: x64-osx
+            compiler: clang_64
 
     steps:
       - name: Checkout
