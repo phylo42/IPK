@@ -1,19 +1,14 @@
-#ifndef SHERPAS_OPTIONAL_H
-#define SHERPAS_OPTIONAL_H
+#ifndef XPAS_OPTIONAL_H
+#define XPAS_OPTIONAL_H
 
-#ifdef __APPLE__
-
-/// Seriously Apple? *Sigh*
-#include <experimental/optional>
-using std::experimental::optional;
-using std::experimental::nullopt;
-
-#else
-
+#if __has_include(<optional>)
 #include <optional>
 using std::optional;
 using std::nullopt;
-
+#elif __has_include(<experimental/optional>)
+#include <experimental/optional>
+using std::experimental::optional;
+using std::experimental::nullopt;
 #endif
 
-#endif //SHERPAS_OPTIONAL_H
+#endif //XPAS_OPTIONAL_H
