@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 # Tests
 enable_testing()
 
-add_executable(test_dna src/main.cpp)
+add_executable(test_dna EXCLUDE_FROM_ALL src/main.cpp)
 
 find_package(Boost REQUIRED COMPONENTS filesystem iostreams)
 
