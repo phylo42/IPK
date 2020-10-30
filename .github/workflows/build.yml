@@ -26,9 +26,9 @@ jobs:
             triplet: x64-osx
             compiler: clang_64
           - os: macos-11.0
-              buildname: 'macos-11.0'
-              triplet: x64-osx
-              compiler: clang_64
+            buildname: 'macos-11.0'
+            triplet: x64-osx
+            compiler: clang_64
 
     steps:
       - name: Checkout
