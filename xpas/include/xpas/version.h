@@ -9,8 +9,8 @@ namespace xpas
     struct version
     {
         static constexpr auto major = "0";
-        static constexpr auto minor = "1";
-        static constexpr auto revision = "8";
+        static constexpr auto minor = "2";
+        static constexpr auto revision = "0";
 
         /// \brief Returns the core version number as a string
         static std::string as_string()

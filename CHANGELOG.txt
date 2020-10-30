@@ -1,3 +1,14 @@
+v0.2.0
+- Supported proteins. xpas has to be compiled separately for DNA and proteins. It now has three main targets:
+  xpas_dna (for DNA), xpas_aa (for proteins), and xpas_aa_pos (phylo k-mers for proteins, where every k-mer
+  stores its position in the reference alignment).
+- Reworked the serialization protocol. Now there are three versions for databases built by different versions of xpas.
+  Backward compatibility preserved (0.2.0 can load databases created by older versions)
+- Improved Github Actions, added MacOS builds
+- Added xpas::is_gap, xpas::is_ambiguous
+- Improved compatibility with old CMake
+- Fixed issues prevented xpas being compilable on MacOS.
+
 v0.1.8
 - Renamed the library and the namespace to xpas
 - Changing submodule remotes to https for public releases

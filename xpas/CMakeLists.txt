@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
-project(xpas LANGUAGES CXX VERSION 0.1.8)
+project(xpas LANGUAGES CXX VERSION 0.2.0)
 
 if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
