@@ -13,11 +13,11 @@ namespace xpas
     struct protocol
     {
         /// xpas v0.1.x
-        static const int v0_1_x = 1;
+        static const int v0_1_x = 2;
 
         /// xpas v0.2.x
-        static const int v0_2_WITHOUT_POSITIONS = 2;
-        static const int v0_2_WITH_POSITIONS = 3;
+        static const int v0_2_WITHOUT_POSITIONS = 3;
+        static const int v0_2_WITH_POSITIONS = 4;
 
 #ifdef KEEP_POSITIONS
         static const unsigned int CURRENT = v0_2_WITH_POSITIONS;
