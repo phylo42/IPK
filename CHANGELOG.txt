@@ -1,3 +1,8 @@
+v0.2.1
+- Implemented ghost node injection.
+- xpas::phylo_node reworked, some methods are public now.
+
+
 v0.2.0
 - Supported proteins. xpas has to be compiled separately for DNA and proteins. It now has three main targets:
   xpas_dna (for DNA), xpas_aa (for proteins), and xpas_aa_pos (phylo k-mers for proteins, where every k-mer

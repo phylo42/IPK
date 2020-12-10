@@ -188,7 +188,7 @@ phylo_node* newick_parser::_finish_node()
     /// Add the node to its parent, if exists
     if (current_node->_parent != nullptr)
     {
-        current_node->_parent->_add_children(current_node);
+        current_node->_parent->add_child(current_node);
     }
 
     _parsing_node = false;
@@ -264,7 +264,11 @@ xpas::phylo_tree xpas::io::parse_newick(std::string_view newick_string)
     return xpas::phylo_tree{ parser.get_root() };
 }
 
-std::ostream& operator<<(std::ostream& out, const xpas::phylo_node& node)
+/// We need to output phylo_nodes in two ways:
+/// 1) Pure newick: (label:branch_length,label:branch_length)
+/// 2) Jplace: (label:branch_length{node_postorder_id}, ...)
+/// to_newick implements the first output type
+void to_newick(std::ostream& out, const xpas::phylo_node& node)
 {
     const auto num_children = node.get_children().size();
     if (num_children > 0)
@@ -273,23 +277,39 @@ std::ostream& operator<<(std::ostream& out, const xpas::phylo_node& node)
         size_t i = 0;
         for (; i < num_children - 1; ++i)
         {
-            out << *node.get_children()[i] << ",";
+            to_newick(out, *node.get_children()[i]);
+            out << ",";
         }
-        out << *node.get_children()[num_children - 1] << ")";
+        to_newick(out, *node.get_children()[num_children - 1]);
+        out << ")";
     }
 
     if (!node.get_label().empty())
     {
         out << node.get_label();
     }
+
     out << ":" << std::setprecision(10) << node.get_branch_length();
+}
+
+std::ostream& operator<<(std::ostream& out, const xpas::phylo_node& node)
+{
+    to_newick(out, node);
     out << "{" << node.get_postorder_id() << "}";
     return out;
 }
 
+std::ostream& operator<<(std::ostream& out, const xpas::phylo_tree& tree)
+{
+    out << *tree.get_root() << ";";
+    return out;
+}
+
+
 std::string xpas::io::to_newick(const xpas::phylo_tree& tree)
 {
     std::ostringstream stream;
-    stream << *tree.get_root() << ";";
+    ::to_newick(stream, *(tree.get_root()));
+    stream << ";";
     return stream.str();
 }
