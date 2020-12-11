@@ -38,7 +38,7 @@ else()
             include/xpas/version.h)
 
     set(LINK_LIBRARIES
-            Boost::serialization
+            Boost::serialization Boost::iostreams
             ${HASH_MAP_IMPLEMENTATION})
 
     set(INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:include>

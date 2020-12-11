@@ -6,7 +6,7 @@
 #include <xpas/seq.h>
 #include <xpas/phylo_kmer.h>
 #include <xpas/kmer_iterator.h>
-#include <utils/io/fasta.h>
+#include <xpas/fasta.h>
 
 /// Iterate over all the combinations with repetition
 /// http://shoaib-ahmed.com/2018/for-each-combination-with-repetetion-c++/

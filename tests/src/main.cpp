@@ -7,7 +7,7 @@
 #include <xpas/kmer_iterator.h>
 #include <xpas/newick.h>
 #include <xpas/phylo_tree.h>
-#include <utils/io/fasta.h>
+#include <xpas/fasta.h>
 
 namespace fs = boost::filesystem;
 
