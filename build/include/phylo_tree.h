@@ -1,7 +1,7 @@
 #ifndef XPAS_PHYLO_TREE_H
 #define XPAS_PHYLO_TREE_H
 
-#include "optional.h"
+#include <xpas/optional.h>
 #include "phylo_node.h"
 
 

@@ -5,7 +5,7 @@
 #include <string>
 #include <memory>
 #include <xpas/seq.h>
-#include <xpas/fasta.h>
+#include "fasta.h"
 
 namespace rappas
 {

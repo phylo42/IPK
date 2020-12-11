@@ -4,7 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
-#include <xpas/phylo_tree.h>
+#include "phylo_tree.h"
 #include "command_line.h"
 #include "exceptions.h"
 #include "db_builder.h"

@@ -1,8 +1,8 @@
-#include <xpas/phylo_tree.h>
 #include <xpas/phylo_kmer.h>
-#include <xpas/newick.h>
-#include <algorithm>
+#include <phylo_tree.h>
+#include <newick.h>
 #include <boost/filesystem.hpp>
+#include <algorithm>
 
 namespace fs = boost::filesystem;
 using namespace xpas;

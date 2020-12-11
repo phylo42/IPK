@@ -3,8 +3,8 @@
 #include <sstream>
 #include <algorithm>
 #include <boost/filesystem.hpp>
-#include <xpas/fasta.h>
 
+#include "fasta.h"
 #include "alignment.h"
 #include "io.h"
 

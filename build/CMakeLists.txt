@@ -19,6 +19,15 @@ set(LINK_LIBRARIES Boost::program_options
 
 
 set(SOURCES
+        # IO
+        src/fasta.cpp include/fasta.h
+        src/file_io.cpp include/file_io.h
+
+        # phylogenetic tree
+        src/phylo_node.cpp include/phylo_node.h
+        src/phylo_tree.cpp include/phylo_tree.h
+        src/newick.cpp include/newick.h
+
         src/command_line.cpp include/command_line.h
         src/exceptions.cpp include/exceptions.h
 

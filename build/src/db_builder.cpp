@@ -7,10 +7,11 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <xpas/phylo_kmer_db.h>
-#include <xpas/phylo_tree.h>
+
 #include <xpas/version.h>
-#include <xpas/file_io.h>
-#include <xpas/newick.h>
+#include "phylo_tree.h"
+#include "file_io.h"
+#include "newick.h"
 #include "db_builder.h"
 #include "alignment.h"
 #include "proba_matrix.h"
