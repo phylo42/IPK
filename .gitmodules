@@ -22,3 +22,6 @@
 [submodule "folly"]
 	path = folly
 	url = https://github.com/facebook/folly.git
+[submodule "strasser"]
+	path = build/strasser
+	url = https://github.com/nromashchenko/strasser.git

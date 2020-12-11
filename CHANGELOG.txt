@@ -1,6 +1,7 @@
 v0.2.1
 - Implemented ghost node injection.
 - xpas::phylo_node reworked, some methods are public now.
+- xpas_utils has gone and now is a part of xpas. All <utils/io/X.h> are now <xpas/X.h>
 
 
 v0.2.0

@@ -6,7 +6,7 @@
 #include <xpas/newick.h>
 #include <xpas/phylo_tree.h>
 #include <xpas/phylo_kmer.h>
-#include <utils/io/file_io.h>
+#include <xpas/file_io.h>
 #include <iomanip>
 
 using std::string, std::string_view;
