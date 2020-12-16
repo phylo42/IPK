@@ -10,6 +10,8 @@
 #include "db_builder.h"
 #include "alignment.h"
 #include "return.h"
+#include "ar.h"
+#include "proba_matrix.h"
 
 namespace fs = boost::filesystem;
 
@@ -61,6 +63,74 @@ void check_parameters(const cli::cli_parameters& parameters)
    }
 }
 
+std::string save_extended_tree(const std::string& working_dir, const xpas::phylo_tree& tree)
+{
+    fs::path directory = fs::path(working_dir) / "extended_trees";
+    fs::path full_path = directory / "extended_tree.newick";
+    fs::create_directories(directory);
+    xpas::save_tree(tree, full_path.string());
+    return full_path.string();
+}
+
+std::pair<std::string, std::string> save_extended_alignment(const std::string& working_dir, const xpas::alignment& alignment)
+{
+    fs::path directory = fs::path(working_dir) / "extended_trees";
+    fs::create_directories(directory);
+
+
+    fs::path fasta_path = directory / "extended_align.fasta";
+    xpas::save_alignment(alignment, fasta_path.string());
+
+    fs::path phylip_path = directory / "extended_align.phylip";
+    //xpas::save_alignment(alignment, phylip_path.string());
+
+
+    return { fasta_path.string(), phylip_path.string() };
+}
+
+return_code build_database(const cli::cli_parameters& parameters)
+{
+    if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
+    {
+        std::cerr << "Maximum k-mer size allowed: " << xpas::seq_traits::max_kmer_length << std::endl;
+        return return_code::argument_error;
+    }
+
+    std::cout << "TODO: MEASURE TIME HERE" << std::endl << std::endl;
+    auto alignment = xpas::preprocess_alignment(parameters.working_directory,
+                                                parameters.alignment_file,
+                                                parameters.reduction_ratio,
+                                                parameters.no_reduction);
+
+    auto [original_tree, extended_tree, mapping] = xpas::preprocess_tree(parameters.original_tree_file);
+    const auto extended_tree_file = save_extended_tree(parameters.working_directory, extended_tree);
+
+    auto extended_alignment = xpas::extend_alignment(alignment, extended_tree);
+    const auto& [ext_alignment_fasta, ext_alignment_phylip] = save_extended_alignment(parameters.working_directory, extended_alignment);
+
+    const auto proba_matrix = xpas::ancestral_reconstruction(extended_tree_file, ext_alignment_phylip);
+
+    const auto db = xpas::build(parameters.working_directory,
+                                parameters.ar_probabilities_file,
+                                std::move(alignment),
+                                std::move(extended_alignment),
+                                std::move(original_tree),
+                                std::move(extended_tree),
+                                parameters.merge_branches, parameters.kmer_size, parameters.omega,
+                                xpas::filter_type::no_filter, parameters.mu,
+                                parameters.num_threads);
+
+    const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
+
+    std::cout << "Saving database to: " << db_filename.string() << "..." << std::endl;
+    const auto begin = std::chrono::steady_clock::now();
+    xpas::save(db, db_filename.string());
+    std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - begin).count() << std::endl << std::endl;
+
+    return return_code::success;
+}
+
 return_code run(const cli::cli_parameters& parameters)
 {
     switch (parameters.action)
@@ -71,39 +141,7 @@ return_code run(const cli::cli_parameters& parameters)
         }
         case cli::build:
         {
-            if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
-            {
-                std::cerr << "Maximum k-mer size allowed: " << xpas::seq_traits::max_kmer_length << std::endl;
-                return return_code::argument_error;
-            }
-
-            std::cout << "TODO: MEASURE TIME HERE" << std::endl << std::endl;
-            auto alignment = rappas::preprocess_alignment(parameters.working_directory,
-                                                          parameters.alignment_file,
-                                                          parameters.reduction_ratio,
-                                                          parameters.no_reduction);
-
-            auto tree = xpas::preprocess_tree(parameters.working_directory,
-                                              parameters.original_tree_file);
-
-            const auto db = rappas::build(parameters.working_directory,
-                                          parameters.ar_probabilities_file,
-                                          parameters.original_tree_file, parameters.extended_tree_file,
-                                          parameters.extended_mapping_file, parameters.artree_mapping_file,
-                                          std::move(alignment),
-                                          parameters.merge_branches, parameters.kmer_size, parameters.omega,
-                                          rappas::filter_type::no_filter, parameters.mu,
-                                          parameters.num_threads);
-
-            const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
-
-            std::cout << "Saving database to: " << db_filename.string() << "..." << std::endl;
-            const auto begin = std::chrono::steady_clock::now();
-            xpas::save(db, db_filename.string());
-            std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - begin).count() << std::endl << std::endl;
-
-            return return_code::success;
+            return build_database(parameters);
         }
         default:
         {

@@ -7,7 +7,6 @@
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <xpas/phylo_kmer_db.h>
-
 #include <xpas/version.h>
 #include "phylo_tree.h"
 #include "file_io.h"
@@ -16,7 +15,6 @@
 #include "alignment.h"
 #include "proba_matrix.h"
 #include "ar.h"
-#include "io.h"
 
 using std::string;
 using std::cout, std::endl;
@@ -25,17 +23,16 @@ using namespace xpas;
 namespace fs = boost::filesystem;
 
 
-namespace rappas
+namespace xpas
 {
     /// \brief Constructs a database of phylo-kmers.
     class db_builder
     {
         friend phylo_kmer_db build(string working_directory, string ar_probabilities_file,
-                                   string original_tree_file, string extended_tree_file,
-                                   string extended_mapping_file, string artree_mapping_file,
-                                   rappas::alignment alignment,
+                                   alignment original_alignment, alignment extended_alignment,
+                                   phylo_tree original_tree, phylo_tree extended_tree,
                                    bool merge_branches, size_t kmer_size,
-                                   xpas::phylo_kmer::score_type omega,
+                                   phylo_kmer::score_type omega,
                                    filter_type filter, double mu, size_t num_threads);
     public:
         /// Member types
@@ -63,10 +60,9 @@ namespace rappas
 
         /// Ctors, dtor and operator=
         db_builder(string working_directory, string ar_probabilities_file,
-                   string original_tree_file, string extended_tree_file,
-                   string extended_mapping_file, string artree_mapping_file,
-                   rappas::alignment alignment,
-                   bool merge_branches, size_t kmer_size, xpas::phylo_kmer::score_type omega,
+                   alignment original_alignment, alignment extended_alignment,
+                   phylo_tree original_tree, phylo_tree extended_tree,
+                   bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
                    filter_type filter, double mu, size_t num_threads);
         db_builder(const db_builder&) = delete;
         db_builder(db_builder&&) = delete;
@@ -104,9 +100,7 @@ namespace rappas
         /// \brief Runs a phylo-kmer exploration for every ghost node of the extended_tree
         /// \return 1) A vector of group ids, which correspond to post-order node ids in the tree
         ///         2) The number of explored phylo-kmers. This number can be more than a size of a resulting database
-        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers(const phylo_tree& original_tree,
-                                                                               const phylo_tree& extended_tree,
-                                                                               const proba_matrix& probas);
+        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers(const proba_matrix& probas);
 
         /// \brief Explores phylo-kmers of a collection of ghost nodes. Here we assume that the nodes
         ///        in the group correspond to one original node
@@ -125,12 +119,14 @@ namespace rappas
         string _hashmaps_directory;
 
         string _ar_probabilities_file;
-        string _original_tree_file;
-        string _extended_tree_file;
-        string _extended_mapping_file;
+
         string _artree_mapping_file;
 
-        const alignment _alignment;
+        const alignment _original_alignment;
+        const alignment _extended_alignment;
+
+        const phylo_tree _original_tree;
+        const phylo_tree _extended_tree;
 
         bool _merge_branches;
 
@@ -148,357 +144,351 @@ namespace rappas
         extended_mapping _extended_mapping;
         artree_label_mapping _artree_mapping;
     };
-}
 
-using namespace rappas;
+    db_builder::db_builder(string working_directory, string ar_probabilities_file,
+                           alignment original_alignment, alignment extended_alignment,
+                           phylo_tree original_tree, phylo_tree extended_tree,
+                           bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
+                           filter_type filter, double mu, size_t num_threads)
+        : _working_directory{ std::move(working_directory) }
+        , _hashmaps_directory{ (fs::path{working_directory} / fs::path{"hashmaps"}).string() }
+        , _ar_probabilities_file{ std::move(ar_probabilities_file) }
+        , _original_alignment{ std::move(original_alignment) }
+        , _extended_alignment{ std::move(extended_alignment) }
+        , _original_tree{ std::move(original_tree) }
+        , _extended_tree{ std::move(extended_tree) }
+        , _merge_branches{ merge_branches }
+        , _kmer_size{ kmer_size }
+        , _omega{ omega }
+        , _filter{ filter }
+        , _mu{ mu }
+        , _num_threads{ num_threads }
+        , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::to_newick(_original_tree)}
+    {}
 
-db_builder::db_builder(string working_directory, string ar_probabilities_file,
-                       string original_tree_file, string extended_tree_file,
-                       string extended_mapping_file, string artree_mapping_file,
-                       rappas::alignment alignment,
-                       bool merge_branches, size_t kmer_size, xpas::phylo_kmer::score_type omega,
-                       filter_type filter, double mu, size_t num_threads)
-    : _working_directory{ std::move(working_directory) }
-    , _hashmaps_directory{ (fs::path{working_directory} / fs::path{"hashmaps"}).string() }
-    , _ar_probabilities_file{ std::move(ar_probabilities_file) }
-    , _original_tree_file{ std::move(original_tree_file) }
-    , _extended_tree_file{ std::move(extended_tree_file) }
-    , _extended_mapping_file{ std::move(extended_mapping_file) }
-    , _artree_mapping_file{ std::move(artree_mapping_file) }
-    , _alignment{ std::move(alignment) }
-    , _merge_branches{ merge_branches }
-    , _kmer_size{ kmer_size }
-    , _omega{ omega }
-    , _filter{ filter }
-    , _mu{ mu }
-    , _num_threads{ num_threads }
-    /// I do not like reading a file here, but it seems to be better than having something like "set_tree"
-    /// in the public interface of the phylo_kmer_db class.
-    , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::read_as_string(original_tree_file) }
-{}
-
-void db_builder::run()
-{
-    /// The first stage of the algorithm -- create a hashmap for every group node
-    const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
-
-    /// The second stage of the algorithm -- combine hashmaps
-    const auto merge_time = merge_hashmaps(group_ids);
-
-    /// Calculate the number of phylo-kmers stored in the database
-    size_t total_entries = 0;
-    for (const auto& kmer_entry : _phylo_kmer_db)
+    void db_builder::run()
     {
-        total_entries += kmer_entry.second.size();
+        /// Run ancestral reconstruction
+
+        /// The first stage of the algorithm -- create a hashmap for every group node
+        const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
+
+        /// The second stage of the algorithm -- combine hashmaps
+        const auto merge_time = merge_hashmaps(group_ids);
+
+        /// Calculate the number of phylo-kmers stored in the database
+        size_t total_entries = 0;
+        for (const auto& kmer_entry : _phylo_kmer_db)
+        {
+            total_entries += kmer_entry.second.size();
+        }
+
+        std::cout << "Built " << total_entries << " phylo-kmers out of " << num_tuples << " for "
+                  << _phylo_kmer_db.size() << " k-mer values.\nTime (ms): "
+                  << construction_time + merge_time << "\n\n" << std::flush;
     }
 
-    std::cout << "Built " << total_entries << " phylo-kmers out of " << num_tuples << " for "
-              << _phylo_kmer_db.size() << " k-mer values.\nTime (ms): "
-              << construction_time + merge_time << "\n\n" << std::flush;
-}
-
-std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
-{
-    /// Load .tsv files
-    _extended_mapping = rappas::io::load_extended_mapping(_extended_mapping_file);
-    _artree_mapping = rappas::io::load_artree_mapping(_artree_mapping_file);
-
-    /// create a temporary directory for hashmaps
-    rappas::io::create_directory(_hashmaps_directory);
-
-    /// Load .newick files
-    const auto original_tree = xpas::io::load_newick(_original_tree_file);
-    const auto extended_tree = xpas::io::load_newick(_extended_tree_file);
-
-    /// Load ancestral reconstruction output
-    const auto proba_matrix = rappas::io::load_ar(_ar_probabilities_file);
-
-    std::cout << "Construction parameters:" << std::endl <<
-                 "\tSequence type: " << xpas::seq_type::name << std::endl <<
-                 "\tk: " << _kmer_size << std::endl <<
-                 "\tomega: " << _omega << std::endl <<
-                 "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
-
-    std::cout << "Building database..." << std::endl;
-
-    /// Run the construction algorithm
-    const auto begin = std::chrono::steady_clock::now();
-    const auto& [group_ids, num_tuples] = explore_kmers(original_tree, extended_tree, proba_matrix);
-    const auto end = std::chrono::steady_clock::now();
-    const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-    return { group_ids, num_tuples, elapsed_time };
-}
-
-double shannon(double x)
-{
-    return - x * std::log2(x);
-}
-
-xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_score)
-{
-    return std::min(std::pow(10, log_score), 1.0);
-}
-
-unsigned long db_builder::merge_hashmaps(const std::vector<phylo_kmer::branch_type>& group_ids)
-{
-    const auto begin = std::chrono::steady_clock::now();
-
-    std::cout << "Merging hash maps..." << std::endl;
-    for (const auto group_id : group_ids)
+    std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
     {
-        const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+        /// Load .tsv files
+        //_artree_mapping = xpas::io::load_artree_mapping(_artree_mapping_file);
 
-#ifdef KEEP_POSITIONS
-        if (_merge_branches)
+        /// create a temporary directory for hashmaps
+        fs::create_directories(_hashmaps_directory);
+
+        /// Load .newick files
+        //const auto original_tree = xpas::io::load_newick(_original_tree_file);
+        //const auto extended_tree = xpas::io::load_newick(_extended_tree_file);
+
+        /// Load ancestral reconstruction output
+        const auto proba_matrix = xpas::io::load_ar(_ar_probabilities_file);
+
+        std::cout << "Construction parameters:" << std::endl <<
+                     "\tSequence type: " << xpas::seq_type::name << std::endl <<
+                     "\tk: " << _kmer_size << std::endl <<
+                     "\tomega: " << _omega << std::endl <<
+                     "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
+
+        std::cout << "Building database..." << std::endl;
+
+        /// Run the construction algorithm
+        const auto begin = std::chrono::steady_clock::now();
+        const auto& [group_ids, num_tuples] = explore_kmers(proba_matrix);
+        const auto end = std::chrono::steady_clock::now();
+        const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        return { group_ids, num_tuples, elapsed_time };
+    }
+
+    double shannon(double x)
+    {
+        return - x * std::log2(x);
+    }
+
+    xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_score)
+    {
+        return std::min(std::pow(10, log_score), 1.0);
+    }
+
+    unsigned long db_builder::merge_hashmaps(const std::vector<phylo_kmer::branch_type>& group_ids)
+    {
+        const auto begin = std::chrono::steady_clock::now();
+
+        std::cout << "Merging hash maps..." << std::endl;
+        for (const auto group_id : group_ids)
         {
-            for (const auto& [key, score_pos_pair] : hash_map)
+            const auto hash_map = load_hash_map(group_hashmap_file(group_id));
+
+    #ifdef KEEP_POSITIONS
+            if (_merge_branches)
             {
-                const auto& [score, position] = score_pos_pair;
-                if (auto entries = _phylo_kmer_db.search(key); entries)
+                for (const auto& [key, score_pos_pair] : hash_map)
                 {
-                    /// If there are entries, there must be only one because
-                    /// we always take maximum score among different branches.
-                    /// So this loop will have only one iteration
-                    for (const auto& [old_node, old_score, old_position] : *entries)
+                    const auto& [score, position] = score_pos_pair;
+                    if (auto entries = _phylo_kmer_db.search(key); entries)
                     {
-                        if (old_score < score)
+                        /// If there are entries, there must be only one because
+                        /// we always take maximum score among different branches.
+                        /// So this loop will have only one iteration
+                        for (const auto& [old_node, old_score, old_position] : *entries)
                         {
-                            _phylo_kmer_db.replace(key, { group_id, score, position });
+                            if (old_score < score)
+                            {
+                                _phylo_kmer_db.replace(key, { group_id, score, position });
+                            }
                         }
                     }
+                    else
+                    {
+                        _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                    }
                 }
-                else
+            }
+            else
+            {
+                for (const auto& [key, score_pos_pair] : hash_map)
                 {
+                    const auto& [score, position] = score_pos_pair;
                     _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
                 }
             }
-        }
-        else
-        {
-            for (const auto& [key, score_pos_pair] : hash_map)
+    #else
+            if (_merge_branches)
             {
-                const auto& [score, position] = score_pos_pair;
-                _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
+            }
+            else
+            {
+                for (const auto& [key, score] : hash_map)
+                {
+                    _phylo_kmer_db.unsafe_insert(key, { group_id, score });
+                }
+            }
+    #endif
+        }
+
+        const auto end = std::chrono::steady_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    }
+
+    bool is_ghost(const phylo_node& node)
+    {
+        const string& label = node.get_label();
+        return boost::ends_with(label, "_X0") || boost::ends_with(label, "_X1");
+    }
+
+    /// \brief Returns a list of ghost node ids
+    std::vector<std::string> get_ghost_ids(const phylo_tree& tree)
+    {
+        std::vector<std::string> branch_ids;
+
+        for (const auto& branch_node: tree)
+        {
+            if (is_ghost(branch_node))
+            {
+                branch_ids.push_back(branch_node.get_label());
             }
         }
-#else
-        if (_merge_branches)
+        return branch_ids;
+    }
+
+    std::string db_builder::group_hashmap_file(const branch_type& group) const
+    {
+        return (fs::path{_hashmaps_directory} / fs::path{std::to_string(group)}).string();
+    }
+
+    std::vector<db_builder::id_group> db_builder::group_ghost_ids(const std::vector<std::string>& ghost_ids) const
+    {
+        std::vector<id_group> groups;
+        groups.reserve(ghost_ids.size() / 2);
+
+        std::unordered_map<branch_type, size_t> mapping;
+        for (const auto& ghost_id : ghost_ids)
         {
-            throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
-        }
-        else
-        {
-            for (const auto& [key, score] : hash_map)
+            const auto original_preorder_id = _extended_mapping.at(ghost_id);
+            if (const auto it = mapping.find(original_preorder_id); it != mapping.end())
             {
-                _phylo_kmer_db.unsafe_insert(key, { group_id, score });
+                groups[it->second].push_back(ghost_id);
+            }
+            else
+            {
+                groups.push_back({ghost_id});
+                mapping[original_preorder_id] = groups.size() - 1;
+            }
+
+        }
+        return groups;
+    }
+
+    db_builder::proba_group db_builder::get_submatrices(const proba_matrix& probas, const id_group& group) const
+    {
+        proba_group submatrices;
+
+        for (const auto& branch_node_label : group)
+        {
+            const auto& artree_node_label = _artree_mapping.at(branch_node_label);
+            if (const auto& it = probas.find(artree_node_label); it != probas.end())
+            {
+                submatrices.push_back(std::cref(it->second));
+            }
+            else
+            {
+                throw std::runtime_error("Internal error: could not find " + artree_node_label + " node. "
+                                         "Make sure it is in the ARTree_id_mapping file.");
             }
         }
-#endif
+
+        return submatrices;
     }
 
-    const auto end = std::chrono::steady_clock::now();
-    return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-}
-
-bool is_ghost(const phylo_node& node)
-{
-    const string& label = node.get_label();
-    return boost::ends_with(label, "_X0") || boost::ends_with(label, "_X1");
-}
-
-/// \brief Returns a list of ghost node ids
-std::vector<std::string> get_ghost_ids(const phylo_tree& tree)
-{
-    std::vector<std::string> branch_ids;
-
-    for (const auto& branch_node: tree)
+    std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers(const proba_matrix& probas)
     {
-        if (is_ghost(branch_node))
+        size_t count = 0;
+
+        /// Here we assume that every original node corresponds to two ghost nodes.
+        const size_t ghosts_per_node = 2;
+
+        /// Filter and group ghost nodes
+        const auto node_groups = group_ghost_ids(get_ghost_ids(_extended_tree));
+
+        /// Process branches in parallel. Results of the branch-and-bound algorithm are stored
+        /// in a hash map for every group separately on disk.
+        std::vector<phylo_kmer::branch_type> node_postorder_ids(node_groups.size());
+
+    //#ifdef NDEBUG
+    //    #pragma omp parallel for schedule(auto) reduction(+: count) num_threads(_num_threads) \
+    //        shared(original_tree, node_postorder_ids, probas)
+    //#endif
+        for (size_t i = 0; i < node_groups.size(); ++i)
         {
-            branch_ids.push_back(branch_node.get_label());
+            const auto& node_group = node_groups[i];
+            assert(node_group.size() == ghosts_per_node);
+            (void) ghosts_per_node;
+
+            /// Having a label of a node in the extended tree, we need to find the corresponding node
+            /// in the original tree. We take the first ghost node, because all of them correspond to
+            /// the same original node
+            const auto original_node_preorder_id = _extended_mapping[node_group[0]];
+            const phylo_node* original_node = *_original_tree.get_by_preorder_id(original_node_preorder_id);
+            const auto original_node_postorder_id = original_node->get_postorder_id();
+            node_postorder_ids[i] = original_node_postorder_id;
+
+            /// Get submatrices of probabilities for a group
+            proba_group submatrices = get_submatrices(probas, node_group);
+
+            /// Explore k-mers of a group and store results in a hash map
+            const auto& [group_hash_map, branch_count] = explore_group(submatrices);
+
+            /// Save a hash map on disk
+            save_hash_map(group_hash_map, group_hashmap_file(original_node_postorder_id));
+
+            count += branch_count;
         }
+        return { node_postorder_ids, count };
     }
-    return branch_ids;
-}
 
-std::string db_builder::group_hashmap_file(const branch_type& group) const
-{
-    return (fs::path{_hashmaps_directory} / fs::path{std::to_string(group)}).string();
-}
-
-std::vector<db_builder::id_group> db_builder::group_ghost_ids(const std::vector<std::string>& ghost_ids) const
-{
-    std::vector<id_group> groups;
-    groups.reserve(ghost_ids.size() / 2);
-
-    std::unordered_map<branch_type, size_t> mapping;
-    for (const auto& ghost_id : ghost_ids)
+    /// \brief Puts a key-value pair in a hash map. Used to process branches in parallel
+    #ifdef KEEP_POSITIONS
+    void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
     {
-        const auto original_preorder_id = _extended_mapping.at(ghost_id);
-        if (const auto it = mapping.find(original_preorder_id); it != mapping.end())
+        if (auto it = map.find(kmer.key); it != map.end())
         {
-            groups[it->second].push_back(ghost_id);
-        }
-        else
-        {
-            groups.push_back({ghost_id});
-            mapping[original_preorder_id] = groups.size() - 1;
-        }
-
-    }
-    return groups;
-}
-
-db_builder::proba_group db_builder::get_submatrices(const proba_matrix& probas, const id_group& group) const
-{
-    proba_group submatrices;
-
-    for (const auto& branch_node_label : group)
-    {
-        const auto& artree_node_label = _artree_mapping.at(branch_node_label);
-        if (const auto& it = probas.find(artree_node_label); it != probas.end())
-        {
-            submatrices.push_back(std::cref(it->second));
+            if (it->second.score < kmer.score)
+            {
+                map[kmer.key] = { kmer.score, kmer.position };
+            }
         }
         else
-        {
-            throw std::runtime_error("Internal error: could not find " + artree_node_label + " node. "
-                                     "Make sure it is in the ARTree_id_mapping file.");
-        }
-    }
-
-    return submatrices;
-}
-
-std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers(
-    const phylo_tree& original_tree, const phylo_tree& extended_tree, const proba_matrix& probas)
-{
-    size_t count = 0;
-
-    /// Here we assume that every original node corresponds to two ghost nodes.
-    const size_t ghosts_per_node = 2;
-
-    /// Filter and group ghost nodes
-    const auto node_groups = group_ghost_ids(get_ghost_ids(extended_tree));
-
-    /// Process branches in parallel. Results of the branch-and-bound algorithm are stored
-    /// in a hash map for every group separately on disk.
-    std::vector<phylo_kmer::branch_type> node_postorder_ids(node_groups.size());
-
-//#ifdef NDEBUG
-//    #pragma omp parallel for schedule(auto) reduction(+: count) num_threads(_num_threads) \
-//        shared(original_tree, node_postorder_ids, probas)
-//#endif
-    for (size_t i = 0; i < node_groups.size(); ++i)
-    {
-        const auto& node_group = node_groups[i];
-        assert(node_group.size() == ghosts_per_node);
-        (void) ghosts_per_node;
-
-        /// Having a label of a node in the extended tree, we need to find the corresponding node
-        /// in the original tree. We take the first ghost node, because all of them correspond to
-        /// the same original node
-        const auto original_node_preorder_id = _extended_mapping[node_group[0]];
-        const phylo_node* original_node = *original_tree.get_by_preorder_id(original_node_preorder_id);
-        const auto original_node_postorder_id = original_node->get_postorder_id();
-        node_postorder_ids[i] = original_node_postorder_id;
-
-        /// Get submatrices of probabilities for a group
-        proba_group submatrices = get_submatrices(probas, node_group);
-
-        /// Explore k-mers of a group and store results in a hash map
-        const auto& [group_hash_map, branch_count] = explore_group(submatrices);
-
-        /// Save a hash map on disk
-        save_hash_map(group_hash_map, group_hashmap_file(original_node_postorder_id));
-
-        count += branch_count;
-    }
-    return { node_postorder_ids, count };
-}
-
-/// \brief Puts a key-value pair in a hash map. Used to process branches in parallel
-#ifdef KEEP_POSITIONS
-void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
-{
-    if (auto it = map.find(kmer.key); it != map.end())
-    {
-        if (it->second.score < kmer.score)
         {
             map[kmer.key] = { kmer.score, kmer.position };
         }
     }
-    else
+
+    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group)
     {
-        map[kmer.key] = { kmer.score, kmer.position };
-    }
-}
+        branch_hash_map hash_map;
+        size_t count = 0;
 
-std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group)
-{
-    branch_hash_map hash_map;
-    size_t count = 0;
+        const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
 
-    const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
-
-    for (auto node_entry_ref : group)
-    {
-        const auto& node_entry = node_entry_ref.get();
-        for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
+        for (auto node_entry_ref : group)
         {
-            const auto position = window->get_start_pos();
-            for (const auto& kmer : *window)
+            const auto& node_entry = node_entry_ref.get();
+            for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
             {
-                phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
-                put(hash_map, positioned_kmer);
-                ++count;
+                const auto position = window->get_start_pos();
+                for (const auto& kmer : *window)
+                {
+                    phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
+                    put(hash_map, positioned_kmer);
+                    ++count;
+                }
             }
         }
+
+        return {std::move(hash_map), count};
     }
+    #else
 
-    return {std::move(hash_map), count};
-}
-#else
-
-void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
-{
-    if (auto it = map.find(kmer.key); it != map.end())
+    void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
     {
-        if (it->second < kmer.score)
+        if (auto it = map.find(kmer.key); it != map.end())
+        {
+            if (it->second < kmer.score)
+            {
+                map[kmer.key] = kmer.score;
+            }
+        }
+        else
         {
             map[kmer.key] = kmer.score;
         }
     }
-    else
+
+    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group)
     {
-        map[kmer.key] = kmer.score;
-    }
-}
+        branch_hash_map hash_map;
+        size_t count = 0;
 
-std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group)
-{
-    branch_hash_map hash_map;
-    size_t count = 0;
+        const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
 
-    const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
-
-    for (auto node_entry_ref : group)
-    {
-        const auto& node_entry = node_entry_ref.get();
-        for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
+        for (auto node_entry_ref : group)
         {
-            for (const auto& kmer : *window)
+            const auto& node_entry = node_entry_ref.get();
+            for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
             {
-                put(hash_map, kmer);
-                ++count;
+                for (const auto& kmer : *window)
+                {
+                    put(hash_map, kmer);
+                    ++count;
+                }
             }
         }
+
+        return {std::move(hash_map), count};
     }
 
-    return {std::move(hash_map), count};
+    #endif
 }
-
-#endif
 
 namespace boost::serialization
 {
@@ -578,38 +568,35 @@ namespace boost::serialization
     }
 }
 
-void db_builder::save_hash_map(const branch_hash_map& map, const std::string& filename) const
+namespace xpas
 {
-    std::ofstream ofs(filename);
-    boost::archive::binary_oarchive oa(ofs);
-    oa & map;
-}
+    void db_builder::save_hash_map(const branch_hash_map& map, const std::string& filename) const
+    {
+        std::ofstream ofs(filename);
+        boost::archive::binary_oarchive oa(ofs);
+        oa & map;
+    }
 
-/// \brief Loads a hash map from file
-db_builder::branch_hash_map db_builder::load_hash_map(const std::string& filename) const
-{
-    std::ifstream ifs(filename);
-    boost::archive::binary_iarchive ia(ifs);
+    /// \brief Loads a hash map from file
+    db_builder::branch_hash_map db_builder::load_hash_map(const std::string& filename) const
+    {
+        std::ifstream ifs(filename);
+        boost::archive::binary_iarchive ia(ifs);
 
-    ::db_builder::branch_hash_map map;
-    ia & map;
-    return map;
-}
+        ::db_builder::branch_hash_map map;
+        ia & map;
+        return map;
+    }
 
-
-namespace rappas
-{
     phylo_kmer_db build(string working_directory, string ar_probabilities_file,
-                        string original_tree_file, string extended_tree_file,
-                        string extended_mapping_file, string artree_mapping_file,
-                        rappas::alignment alignment,
+                        alignment original_alignment, alignment extended_alignment,
+                        phylo_tree original_tree, phylo_tree extended_tree,
                         bool merge_branches,
                         size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu, size_t num_threads)
     {
         db_builder builder(std::move(working_directory), std::move(ar_probabilities_file),
-                           std::move(original_tree_file), std::move(extended_tree_file),
-                           std::move(extended_mapping_file), std::move(artree_mapping_file),
-                           std::move(alignment),
+                           std::move(original_alignment), std::move(extended_alignment),
+                           std::move(original_tree), std::move(extended_tree),
                            merge_branches, kmer_size, omega, filter, mu, num_threads);
         builder.run();
         return std::move(builder._phylo_kmer_db);

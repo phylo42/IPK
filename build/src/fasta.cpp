@@ -9,26 +9,6 @@ using std::cout, std::endl;
 using std::move;
 
 
-fasta::fasta(string&& header, string&& sequence) noexcept
-    : _header(move(header)), _sequence(move(sequence))
-{
-}
-
-string_view fasta::header() const noexcept
-{
-    return _header;
-}
-
-string_view fasta::sequence() const noexcept
-{
-    return _sequence;
-}
-
-bool fasta::operator==(const fasta& rhs) const noexcept
-{
-    return _header == rhs.header() && _sequence == rhs.sequence();
-}
-
 //------------------------------------------------------------------------------------
 
 impl::fasta_iterator::fasta_iterator(const std::string& filename, size_t batch_size, bool clean_sequences)
@@ -169,4 +149,12 @@ string xpas::io::clean_sequence(string sequence)
     return sequence;
 }
 
-
+std::ostream& operator<<(std::ostream& out, const std::vector<xpas::seq_record>& sequences)
+{
+    for (const auto& seq : sequences)
+    {
+        out << seq.header() << '\n';
+        out << seq.sequence() << '\n';
+    }
+    return out;
+}

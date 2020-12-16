@@ -79,6 +79,8 @@ namespace xpas
 
         void remove_child(phylo_node* node);
 
+        bool is_leaf() const noexcept;
+
     private:
         id_type _preorder_id;
         id_type _postorder_id;

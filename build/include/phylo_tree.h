@@ -2,10 +2,12 @@
 #define XPAS_PHYLO_TREE_H
 
 #include <xpas/optional.h>
+#include <xpas/phylo_kmer.h>
 #include "phylo_node.h"
 
-
 namespace xpas {
+
+    using extended_mapping = std::unordered_map<std::string, xpas::phylo_kmer::branch_type>;
 
     namespace impl
     {
@@ -279,7 +281,7 @@ namespace xpas {
 
         /// Ctors, dtor and operator=
         phylo_tree(value_pointer root);
-        phylo_tree(phylo_tree&&) noexcept = default;
+        phylo_tree(phylo_tree&&) noexcept;
         phylo_tree(const phylo_tree&) = delete;
         phylo_tree& operator=(const phylo_tree&) = delete;
         phylo_tree& operator=(phylo_tree&&) = delete;
@@ -329,8 +331,10 @@ namespace xpas {
         std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _postorder_id_node_mapping;
     };
 
+    void save_tree(const phylo_tree& tree, const std::string& filename);
+
     /// Read and preprocess a phylogentic tree
-    phylo_tree preprocess_tree(const std::string& working_dir, const std::string& filename);
+    std::tuple<phylo_tree, phylo_tree, extended_mapping> preprocess_tree(const std::string& filename);
 }
 
 #endif

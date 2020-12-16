@@ -7,29 +7,10 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <string>
 #include <vector>
+#include "alignment.h"
 
 namespace xpas::io
 {
-    class fasta
-    {
-    public:
-        fasta() = delete;
-        fasta(std::string&& header, std::string&& sequence) noexcept;
-        fasta(fasta&& other) noexcept = default;
-        fasta(const fasta&) = default;
-        ~fasta() = default;
-
-        [[nodiscard]]
-        std::string_view header() const noexcept;
-        [[nodiscard]]
-        std::string_view sequence() const noexcept;
-
-        bool operator==(const fasta& rhs) const noexcept;
-    private:
-        std::string _header;
-        std::string _sequence;
-    };
-
     namespace impl
     {
         namespace bio = boost::iostreams;
@@ -40,7 +21,7 @@ namespace xpas::io
         class fasta_iterator
         {
         public:
-            using value_type = const fasta&;
+            using value_type = const xpas::seq_record&;
 
             fasta_iterator(const std::string& filename, size_t batch_size, bool clean_sequences=true);
             fasta_iterator(const fasta_iterator&) = delete;
@@ -62,7 +43,7 @@ namespace xpas::io
             bio::stream<bio::mapped_file_source> _is;
 
             /// current batch of sequences
-            std::vector<fasta> _seqs;
+            std::vector<seq_record> _seqs;
 
             size_t _batch_size;
             /// the index of the current sequence in the batch
@@ -102,5 +83,9 @@ namespace xpas::io
     /// and ignored
     std::string clean_sequence(std::string sequence);
 }
+
+
+/// \brief Outputs a collection of fasta records
+std::ostream& operator<<(std::ostream& out, const std::vector<xpas::seq_record>& sequences);
 
 #endif //RAPPAS_CORE_FASTA_H

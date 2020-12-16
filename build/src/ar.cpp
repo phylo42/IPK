@@ -3,13 +3,13 @@
 #include <numeric>
 #include <cmath>
 #include <string>
-#include <sstream>
 #include <optional>
 #include <regex>
 #include <boost/algorithm/string/predicate.hpp>
 #include <csv-parser/csv.h>
 #include <xpas/seq.h>
 #include "ar.h"
+#include "row.h"
 #include "proba_matrix.h"
 
 
@@ -17,7 +17,7 @@ using std::string;
 using std::cout, std::endl;
 using boost::algorithm::contains;
 
-namespace rappas::io
+namespace xpas::io
 {
     /// Supported tools for ancestral reconstruction
     enum class ar_format
@@ -31,7 +31,7 @@ namespace rappas::io
     {
     public:
         virtual ~ar_reader() noexcept = default;
-        virtual rappas::proba_matrix read() = 0;
+        virtual xpas::proba_matrix read() = 0;
     };
 
     /// \brief Reads a PhyML output into a matrix.
@@ -308,7 +308,7 @@ namespace rappas::io
         auto reader = make_reader(format, file_name);
         return reader->read();
     }
-
+/*
     /// \brief Reads a "extended_tree_node_mapping.tsv" file produced by the old RAPPAS.
     extended_mapping load_extended_mapping(const string& file_name)
     {
@@ -325,7 +325,7 @@ namespace rappas::io
         }
         cout << "Loaded " << mapping.size() << " mapped ids." << endl << endl;
         return mapping;
-    }
+    }*/
 
     std::optional<xpas::phylo_kmer::branch_type> extract_number(const std::string& s)
     {
@@ -373,5 +373,13 @@ namespace rappas::io
         }
         cout << "Loaded " << mapping.size() << " mapped ids." << endl << endl;
         return mapping;
+    }
+}
+
+namespace xpas
+{
+    proba_matrix ancestral_reconstruction(const std::string& tree_file, const std::string& alignment_file)
+    {
+        return {};
     }
 }

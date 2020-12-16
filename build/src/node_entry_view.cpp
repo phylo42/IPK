@@ -5,7 +5,7 @@
 #include <node_entry_view.h>
 
 using namespace xpas;
-using namespace rappas::impl;
+using namespace xpas::impl;
 
 dac_kmer_iterator make_dac_end_iterator()
 {
@@ -214,14 +214,14 @@ xpas::phylo_kmer::score_type node_entry_view::get_threshold() const noexcept
     return _threshold;
 }
 
-bool operator==(const node_entry_view& a, const node_entry_view& b) noexcept
+bool xpas::operator==(const node_entry_view& a, const node_entry_view& b) noexcept
 {
     return (a.get_start_pos() == b.get_start_pos()) &&
            (a.get_end_pos() == b.get_end_pos()) &&
            (a.get_entry() == b.get_entry());
 }
 
-bool operator!=(const node_entry_view& a, const node_entry_view& b) noexcept
+bool xpas::operator!=(const node_entry_view& a, const node_entry_view& b) noexcept
 {
     return !(a == b);
 }

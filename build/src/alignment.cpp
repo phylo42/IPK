@@ -6,17 +6,39 @@
 
 #include "fasta.h"
 #include "alignment.h"
-#include "io.h"
+#include "phylo_tree.h"
 
 using std::vector;
 using std::string;
-using xpas::io::fasta;
-using namespace rappas;
+using namespace xpas;
 namespace fs = boost::filesystem;
 
 //------------------------------------------------------------------------------------
+// seq_record
+seq_record::seq_record(string header, string sequence) noexcept
+    : _header(move(header)), _sequence(move(sequence))
+{
+}
+
+std::string_view seq_record::header() const noexcept
+{
+    return _header;
+}
+
+std::string_view seq_record::sequence() const noexcept
+{
+    return _sequence;
+}
+
+bool seq_record::operator==(const seq_record& rhs) const noexcept
+{
+    return _header == rhs.header() && _sequence == rhs.sequence();
+}
+
+
+//------------------------------------------------------------------------------------
 // alignment class
-alignment::alignment(std::vector<fasta> sequences)
+alignment::alignment(std::vector<seq_record> sequences)
     : _sequences(std::move(sequences))
 {
     if (_sequences.empty())
@@ -61,7 +83,7 @@ alignment::const_iterator alignment::end() const
 // miscellaneous functions
 alignment load_alignment(const string& file_name)
 {
-    std::vector<fasta> sequences;
+    std::vector<seq_record> sequences;
     for (const auto& seq : xpas::io::read_fasta(file_name))
     {
         sequences.push_back(seq);
@@ -79,11 +101,11 @@ void save_fasta(InputIt first, InputIt last, const std::string& file_name)
     std::ofstream out(file_name);
     for (auto it = first; it != last; ++it)
     {
-        out << ">" << it->header() << std::endl << it->sequence() << std::endl;
+        out << ">" << it->header() << '\n' << it->sequence() << '\n';
     }
 }
 
-void save_alignment(const alignment& align, const string& file_name)
+void xpas::save_alignment(const alignment& align, const string& file_name)
 {
     save_fasta(std::begin(align), std::end(align), file_name);
 }
@@ -119,7 +141,7 @@ alignment reduce_alignment(const alignment &align, double reduction_ratio)
     transform(begin(gap_ratios), end(gap_ratios), pos_to_remove.begin(),
               [reduction_ratio](double ratio) -> bool { return ratio >= reduction_ratio; });
 
-    vector<fasta> reduced_sequences;
+    vector<seq_record> reduced_sequences;
     for (const auto& seq_record : align)
     {
         auto header = std::string(seq_record.header());
@@ -155,14 +177,14 @@ void check_length(const alignment& align)
     }
 }
 
-void check_sequence_states(const fasta& fasta)
+void check_sequence_states(const seq_record& seq_record)
 {
-    for (const auto& state : fasta.sequence())
+    for (const auto& state : seq_record.sequence())
     {
         if (!xpas::seq_traits::is_gap(state) && !xpas::seq_traits::key_to_code(state))
         {
             std::ostringstream ss;
-            ss << "Error: " << std::string(fasta.header()) << " contains a non supported state: " <<
+            ss << "Error: " << std::string(seq_record.header()) << " contains a non supported state: " <<
                 state;
             throw std::runtime_error(ss.str());
         }
@@ -194,13 +216,13 @@ void validate_alignment(const alignment& align)
     //check_sequence_states(align);
 }
 
-rappas::alignment _preprocess_alignment(const std::string& working_dir,
-                                        const std::string& alignment_file,
-                                        double reduction_ratio,
-                                        bool no_reduction)
+xpas::alignment _preprocess_alignment(const std::string& working_dir,
+                                      const std::string& alignment_file,
+                                      double reduction_ratio,
+                                      bool no_reduction)
 {
     /// Create working directories
-    rappas::io::create_directory(working_dir);
+    fs::create_directories(working_dir);
 
     /// Read and process the reference alignment
     auto raw_alignment = load_alignment(alignment_file);
@@ -217,7 +239,7 @@ rappas::alignment _preprocess_alignment(const std::string& working_dir,
         validate_alignment(alignment);
 
         /// Save the reduced alignment on disk
-        const auto reduced_alignment_file = (fs::path(working_dir) / "align.reduced").string();
+        const auto reduced_alignment_file = (fs::path(working_dir) / "align.reduced.fasta").string();
         save_alignment(alignment, reduced_alignment_file);
 
         return alignment;
@@ -225,13 +247,40 @@ rappas::alignment _preprocess_alignment(const std::string& working_dir,
 
 }
 
-rappas::alignment rappas::preprocess_alignment(const std::string& working_dir,
-                                               const std::string& alignment_file,
-                                               double reduction_ratio,
-                                               bool no_reduction)
+xpas::alignment xpas::preprocess_alignment(const std::string& working_dir,
+                                           const std::string& alignment_file,
+                                           double reduction_ratio,
+                                           bool no_reduction)
 {
     std::cout << "Loading the reference alignment: " << alignment_file <<  std::endl;
     auto alignment = _preprocess_alignment(working_dir, alignment_file, reduction_ratio, no_reduction);
     std::cout << "Loaded and filtered " << alignment.height() <<  " sequences." << std::endl << std::endl;
     return alignment;
+}
+
+
+
+bool has_sequence(const alignment& alignment, const std::string& seq_header)
+{
+    return std::find_if(alignment.begin(), alignment.end(), [&seq_header](const seq_record& seq_rec) {
+        return seq_rec.header() == seq_header;
+    }) != alignment.end();
+}
+
+alignment xpas::extend_alignment(alignment original_alignment, const phylo_tree& tree)
+{
+    alignment extended_alignment = std::move(original_alignment);
+
+    std::string empty_seq(extended_alignment.width(), seq_traits::get_gap());
+
+    for (const auto& node : xpas::visit_subtree<true>(tree.get_root()))
+    {
+        if (node.is_leaf() && !has_sequence(extended_alignment, node.get_label()))
+        {
+            extended_alignment._sequences.emplace_back(node.get_label(), empty_seq);
+            extended_alignment._height += 1;
+        }
+    }
+
+    return extended_alignment;
 }

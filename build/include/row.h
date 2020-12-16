@@ -4,7 +4,7 @@
 #include <xpas/phylo_kmer.h>
 #include <array>
 
-namespace rappas
+namespace xpas
 {
     struct proba_pair
     {

@@ -42,14 +42,13 @@ set(SOURCES
         src/ar.cpp include/ar.h
 
         include/utils.h
-        src/io.cpp include/io.h
 
         src/main.cpp)
 
 ######################################################################################################
 # Application target and properties
 add_executable(build_dna "")
-set_target_properties(build_dna PROPERTIES OUTPUT_NAME rappas-build-dna)
+set_target_properties(build_dna PROPERTIES OUTPUT_NAME xpas-build-dna)
 
 target_sources(build_dna PRIVATE ${SOURCES})
 
@@ -78,7 +77,7 @@ target_compile_features(build_dna
 ######################################################################################################
 # Amino acids
 add_executable(build_aa "")
-set_target_properties(build_aa PROPERTIES OUTPUT_NAME rappas-build-aa)
+set_target_properties(build_aa PROPERTIES OUTPUT_NAME xpas-build-aa)
 
 target_sources(build_aa PRIVATE ${SOURCES})
 
@@ -108,7 +107,7 @@ target_compile_features(build_aa
 # Amino acids, positions included
 
 add_executable(build_aa_pos "")
-set_target_properties(build_aa_pos PROPERTIES OUTPUT_NAME rappas-build-aa-pos)
+set_target_properties(build_aa_pos PROPERTIES OUTPUT_NAME xpas-build-aa-pos)
 
 target_sources(build_aa_pos PRIVATE ${SOURCES})
 

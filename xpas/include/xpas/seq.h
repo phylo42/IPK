@@ -191,9 +191,15 @@ namespace xpas
             }
         }
 
+        static char_type get_gap()
+        {
+            return '-';
+        }
+
+
         static bool is_gap(char_type base)
         {
-            return base == '-';
+            return base == get_gap();
         }
 
         static bool is_ambiguous(char_type base)
@@ -476,9 +482,14 @@ namespace xpas
             }
         }
 
+        static char_type get_gap()
+        {
+            return '-';
+        }
+
         static bool is_gap(char_type base)
         {
-            return base == '-';
+            return base == get_gap();
         }
 
         static bool is_ambiguous(char_type base)

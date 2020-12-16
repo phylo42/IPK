@@ -100,3 +100,8 @@ void phylo_node::remove_child(phylo_node* node)
 {
     _children.erase(std::remove(_children.begin(), _children.end(), node));
 }
+
+bool phylo_node::is_leaf() const noexcept
+{
+    return _children.empty();
+}

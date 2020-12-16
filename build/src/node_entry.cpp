@@ -1,6 +1,6 @@
 #include "node_entry.h"
 
-using namespace rappas;
+using namespace xpas;
 
 node_entry::node_entry(std::string _id, vector_type&& rows)
     : _branch_label{ std::move(_id) }

@@ -1,7 +1,7 @@
 #include "proba_matrix.h"
 #include <algorithm>
 
-using namespace rappas;
+using namespace xpas;
 
 size_t proba_matrix::num_branches() const
 {

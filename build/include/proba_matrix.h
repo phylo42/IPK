@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include "node_entry.h"
 
-namespace rappas
+namespace xpas
 {
 
     /// \brief A posterior probabilities matrix class.
@@ -16,6 +16,7 @@ namespace rappas
     class proba_matrix final
     {
     public:
+        using branch_type = xpas::phylo_kmer::branch_type;
         static const branch_type NOT_A_LABEL = std::numeric_limits<branch_type>::max();
 
         /// a map for a fast access to a submatrix by branch node label

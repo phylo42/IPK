@@ -19,6 +19,18 @@ phylo_tree::phylo_tree(phylo_node* root)
     _init_tree();
 }
 
+phylo_tree::phylo_tree(phylo_tree&& other) noexcept
+{
+    _root = other._root;
+    other._root = nullptr;
+
+    _node_count = other._node_count;
+    other._node_count = 0;
+
+    _preorder_id_node_mapping = std::move(other._preorder_id_node_mapping);
+    _postorder_id_node_mapping = std::move(other._postorder_id_node_mapping);
+}
+
 phylo_tree::~phylo_tree() noexcept
 {
     delete _root;
@@ -127,13 +139,16 @@ namespace xpas
         tree_extender(const tree_extender&) = delete;
         ~tree_extender() noexcept = default;
 
-        void extend()
+        extended_mapping extend()
         {
             /// add ghost nodes
             extend_subtree(_tree.get_root());
 
             /// traverse the tree to reinitialize postorder/preorder node ids
             _tree._init_tree();
+
+            /// return the mapping Extended Node ID -> Original Postorder ID
+            return _mapping;
         }
 
     private:
@@ -157,11 +172,13 @@ namespace xpas
                 /// The mean branch length in the subtree of the node
                 auto mean_length = mean_branch_length(node);
 
-                auto x0 = new phylo_node(std::to_string(_counter++) + "_X0",  old_branch_length / 2.0, parent);
+                const auto x0_name = std::to_string(_counter++) + "_X0";
+                auto x0 = new phylo_node(x0_name,  old_branch_length / 2.0, parent);
                 parent->remove_child(node);
                 parent->add_child(x0);
 
-                auto x1 = new phylo_node(std::to_string(_counter++) + "_X1",  mean_length + old_branch_length / 2.0, x0);
+                const auto x1_name = std::to_string(_counter++) + "_X1";
+                auto x1 = new phylo_node(x1_name, mean_length + old_branch_length / 2.0, x0);
                 x0->add_child(x1);
                 x0->add_child(node);
                 node->_parent = x0;
@@ -171,29 +188,36 @@ namespace xpas
                 auto x3 = new phylo_node(std::to_string(_counter++) + "_X3",  0.01, x1);
                 x1->add_child(x2);
                 x1->add_child(x3);
+
+                /// Map the new ghost node IDs to the original post-order ID.
+                /// This is needed to group x0 and x1 together,
+                /// and for output purposes.
+                _mapping[x0_name] = node->get_postorder_id();
+                _mapping[x1_name] = node->get_postorder_id();
             }
         }
 
         phylo_tree& _tree;
         size_t _counter;
 
-        //extended_node_mapping _extended_mapping;
+        extended_mapping _mapping;
     };
 
-    void extend_tree(phylo_tree& tree)
+    extended_mapping extend_tree(phylo_tree& tree)
     {
         tree_extender extender(tree);
-        extender.extend();
+        return extender.extend();
     }
 }
 
-void save_tree(const phylo_tree& tree, const std::string& filename)
+void xpas::save_tree(const phylo_tree& tree, const std::string& filename)
 {
     std::ofstream out(filename);
     out << xpas::io::to_newick(tree);
 }
 
-phylo_tree xpas::preprocess_tree(const std::string& working_dir, const std::string& filename)
+
+std::tuple<phylo_tree, phylo_tree, extended_mapping> xpas::preprocess_tree(const std::string& filename)
 {
     /// load original tree
     auto tree = xpas::io::load_newick(filename);
@@ -202,11 +226,9 @@ phylo_tree xpas::preprocess_tree(const std::string& working_dir, const std::stri
     /// ...
 
     /// inject ghost nodes
-    extend_tree(tree);
+    auto mapping = extend_tree(tree);
 
-    /// save extended tree
-    fs::path extended_tree_path = fs::path(working_dir) / "extended_trees" / filename;
-    save_tree(tree, extended_tree_path.string());
+    auto original_tree = xpas::io::load_newick(filename);
 
-    return tree;
+    return std::make_tuple(std::move(original_tree), std::move(tree), mapping);
 }
