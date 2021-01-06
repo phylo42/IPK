@@ -7,27 +7,29 @@ namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 
 //--------------------------------------------------------------------------
-namespace cli
+namespace xpas::cli
 {
     static std::string HELP = "help", HELP_SHORT = "h";
+
+    /// Input files
     static std::string WORKING_DIR = "workdir", WORKING_DIR_SHORT = "w";
     static std::string REFALIGN = "refalign";
-    static std::string AR_PROBABILITIES = "ar-probabilities", AR_PROBABILITIES_SHORT = "a";
     static std::string REFTREE = "reftree", REFTREE_SHORT = "t";
 
+    /// Ancestral Reconstruction
+    static std::string AR_BINARY = "arbinary";
     static std::string AR_MODEL = "model";
+    static std::string AR_ALPHA = "alpha";
+    static std::string AR_CATEGORIES = "categories";
 
+    /// Main options
     static std::string REDUCTION_RATIO = "reduction-ratio";
     static std::string NO_REDUCTION = "no-reduction";
-
-    static std::string EXTENDED_TREE = "extended-tree", EXTENDED_TREE_SHORT = "x";
-    static std::string EXTENDED_MAPPING = "extended-mapping", EXTENDED_MAPPING_SHORT = "e";
-    static std::string ARTREE_MAPPING = "artree-mapping", ARTREE_MAPPING_SHORT = "m";
     static std::string K = "k", K_SHORT = "k";
     static std::string OMEGA="omega", OMEGA_SHORT="o";
     static std::string NUM_THREADS = "num_threads", NUM_THREADS_SHORT = "j";
 
-    // Filtering options
+    /// Filtering options
     static std::string MU = "mu", MU_SHORT = "u";
     static std::string NO_FILTER = "no-filter";
     static std::string ENTROPY = "entropy";
@@ -63,23 +65,22 @@ namespace cli
             (REFALIGN .c_str(), po::value<fs::path>()->required(),
                 "Reference alignment in fasta format."
                 "It must be the multiple alignment from which the reference tree was built.")
-            ((AR_PROBABILITIES + "," + AR_PROBABILITIES_SHORT).c_str(), po::value<fs::path>()->required(),
-                "Ancestral reconstruction probabilities file")
             ((REFTREE + "," + REFTREE_SHORT).c_str(), po::value<fs::path>()->required(),
                 "Original phylogenetic tree file")
 
-            ((EXTENDED_TREE + "," + EXTENDED_TREE_SHORT).c_str(), po::value<fs::path>()->required(),
-                "Extended phylogenetic tree file")
-            ((EXTENDED_MAPPING + "," + EXTENDED_MAPPING_SHORT).c_str(), po::value<fs::path>()->required(),
-                "Original mapping file")
-            ((ARTREE_MAPPING + "," + ARTREE_MAPPING_SHORT).c_str(), po::value<fs::path>()->required(),
-                "Ancestral reconstruction tree mapping file")
+            (AR_BINARY.c_str(), po::value<std::string>()->required(),
+             "Binary file for ancestral reconstruction software (PhyML, RAxML-NG).")
+            (AR_MODEL.c_str(), po::value<std::string>()->default_value("GTR"),
+             "Model used in AR, one of the following:"
+             "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
+             "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
+            (AR_ALPHA.c_str(), po::value<double>()->default_value(1.0),
+             "Gammma shape parameter, used in ancestral reconstruction.")
+            (AR_CATEGORIES.c_str(), po::value<int>()->default_value(4),
+             "Number of relative substitution rate categories, used in ancestral reconstruction.")
+
             ((K + "," + K_SHORT).c_str(), po::value<size_t>()->default_value(8),
                 "k-mer length used at DB build")
-            (AR_MODEL.c_str(), po::value<std::string>()->required(),
-                "Model used in AR, one of the following:"
-                "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
-                "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
             (REDUCTION_RATIO.c_str(), po::value<double>()->default_value(0.99),
                 "Ratio for alignment reduction, e.g. sites holding >X% gaps are ignored.")
             (NO_REDUCTION.c_str(), po::bool_switch(&no_reduction_flag),
@@ -110,9 +111,9 @@ namespace cli
         return ss.str();
     }
 
-    cli_parameters process_command_line(int argc, const char* argv[])
+    parameters process_command_line(int argc, const char* argv[])
     {
-        cli_parameters parameters;
+        parameters parameters;
         try
         {
             const po::options_description desc = get_opt_description();
@@ -132,13 +133,14 @@ namespace cli
 
             parameters.working_directory = vm[WORKING_DIR].as<fs::path>().string();
             parameters.alignment_file = vm[REFALIGN].as<fs::path>().string();
-            parameters.ar_probabilities_file = vm[AR_PROBABILITIES].as<fs::path>().string();
             parameters.original_tree_file = vm[REFTREE].as<fs::path>().string();
-            parameters.extended_tree_file = vm[EXTENDED_TREE].as<fs::path>().string();
-            parameters.extended_mapping_file = vm[EXTENDED_MAPPING].as<fs::path>().string();
-            parameters.artree_mapping_file = vm[ARTREE_MAPPING].as<fs::path>().string();
             parameters.kmer_size = vm[K].as<size_t>();
+
+            parameters.ar_binary_file = vm[AR_BINARY].as<std::string>();
             parameters.ar_model = vm[AR_MODEL].as<std::string>();
+            parameters.ar_alpha = vm[AR_ALPHA].as<double>();
+            parameters.ar_categories = vm[AR_CATEGORIES].as<int>();
+
             parameters.reduction_ratio = vm[REDUCTION_RATIO].as<double>();
             parameters.no_reduction = no_reduction_flag;
             parameters.omega = vm[OMEGA].as<xpas::phylo_kmer::score_type>();

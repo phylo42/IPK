@@ -3,10 +3,12 @@
 
 #include <string>
 #include <xpas/phylo_kmer_db.h>
+#include "ar.h"
 
 namespace xpas
 {
     class alignment;
+    class proba_matrix;
 
     enum class filter_type
     {
@@ -16,11 +18,10 @@ namespace xpas
     };
 
     xpas::phylo_kmer_db build(std::string working_directory,
-                              std::string ar_probabilities_file,
-                              xpas::alignment alignment,
-                              xpas::alignment extended_alignment,
-                              xpas::phylo_tree original_tree,
-                              xpas::phylo_tree extended_tree,
+                              const alignment& original_alignment, const alignment& extended_alignment,
+                              const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                              const proba_matrix& matrix,
+                              const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                               bool merge_branches,
                               size_t kmer_size,
                               xpas::phylo_kmer::score_type omega,

@@ -7,7 +7,7 @@
 
 namespace xpas {
 
-    using extended_mapping = std::unordered_map<std::string, xpas::phylo_kmer::branch_type>;
+    using ghost_mapping = std::unordered_map<std::string, xpas::phylo_kmer::branch_type>;
 
     namespace impl
     {
@@ -15,8 +15,8 @@ namespace xpas {
         /// \details Used to start a depth-first search.
         /// The Const template parameter determines whether the visited nodes are returned via const
         /// or non-const references and pointers.
-        template<bool Const=true,
-                typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
+        template<bool Const = true,
+            typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
         pointer get_leftmost_leaf(pointer root) noexcept
         {
             while (root && !root->get_children().empty())
@@ -30,30 +30,29 @@ namespace xpas {
         /// \brief Find the index of this node in the parent's array of children
         /// \details The Const template parameter determines whether the visited nodes are returned via const
         /// or non-const references and pointers.
-        template<bool Const=true,
-                 typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
+        template<bool Const = true,
+            typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
         optional<phylo_node::id_type> _id_in_parent(pointer node)
         {
             if (node && node->get_parent() != nullptr)
             {
                 /// WARNING:
                 /// Here we perform a linear search to look for an index
-                /// in parent's children list. This is definitely not the best way
-                /// to do this. It is okay for small trees though.
+                /// in the parent's children list.
                 const auto& children = node->get_parent()->get_children();
                 const auto it = std::find(begin(children), end(children), node);
                 if (it != end(children))
                 {
-                    return { distance(begin(children), it) };
+                    return {distance(begin(children), it)};
                 }
             }
-            return { nullopt };
+            return {nullopt};
         }
 
         /// \brief Return the node that would have the next post-order id in the tree,
         /// if such node exists. Return null pointer otherwise.
-        template<bool Const=true,
-                 typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
+        template<bool Const = true,
+            typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
         pointer next_by_postorder(pointer node)
         {
             /// Go upside down if necessary. We need to know the index of current
@@ -71,13 +70,13 @@ namespace xpas {
             {
                 node = nullptr;
             }
-            /// if not, and there are sibliings, visit the next sibling
+                /// if not, and there are siblings, visit the next sibling
             else if (auto sibling_id = static_cast<size_t>(*idx + 1); sibling_id < temp->get_children().size())
             {
                 node = temp->get_children()[sibling_id];
                 node = get_leftmost_leaf(node);
             }
-            /// otherwise visit the parent
+                /// otherwise visit the parent
             else
             {
                 node = temp;
@@ -85,152 +84,200 @@ namespace xpas {
             return node;
         }
 
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        /// \brief A forward access non-const iterator for phylo_node objects.
-        /// \details Performs a pre-order depth-first search among a subtree of an input phylo_node.
-        /// The Const template parameter determines whether the visited nodes are returned via const
-        /// or non-const references and pointers.
-        template<bool Const=true>
-        class preorder_tree_iterator
+        /// \brief Return the node that would have the next pre-order id in the tree,
+        /// if such node exists. Return null pointer otherwise.
+        template<bool Const = true,
+            typename pointer = std::conditional_t<Const, const phylo_node*, phylo_node*>>
+        pointer next_by_preorder(pointer node)
         {
-        public:
-            using iterator_category = std::forward_iterator_tag;
-
-            /// deduce const qualifier from bool Const parameter
-            using reference = typename std::conditional_t<Const, const phylo_node&, phylo_node&>;
-            using pointer = typename std::conditional_t<Const, const phylo_node*, phylo_node*>;
-        public:
-
-            preorder_tree_iterator() noexcept
-                : preorder_tree_iterator{ nullptr }
-            {}
-
-            explicit preorder_tree_iterator(pointer node) noexcept
-                : _current{ node }
-            {}
-
-            preorder_tree_iterator& operator=(const preorder_tree_iterator& rhs) noexcept
+            /// if there are children, go to the left subtree
+            if (node->get_children().size())
             {
-                if (*this != rhs)
+                return node->get_children()[0];
+            }
+            else
+            {
+                pointer parent = node->get_parent();
+                auto idx = _id_in_parent(node);
+
+                /// go up until we find an unvisited sibling
+                while (parent && *idx + 1 >= parent->get_children().size())
                 {
-                    _current = rhs._current;
+                    node = parent;
+                    parent = node->get_parent();
+                    idx = _id_in_parent(node);
                 }
-                return *this;
-            }
 
-            explicit operator pointer() const noexcept
-            {
-                return _current;
-            }
-
-            bool operator==(const preorder_tree_iterator& rhs) const noexcept
-            {
-                return _current == rhs._current;
-            }
-
-            bool operator!=(const preorder_tree_iterator& rhs) const noexcept
-            {
-                return !(*this == rhs);
-            }
-
-            preorder_tree_iterator& operator++()
-            {
-                _current = next_by_preorder(_current);
-                return *this;
-            }
-
-            reference operator*() const
-            {
-                return *_current;
-            }
-
-            pointer operator->() const noexcept
-            {
-                return _current;
-            }
-
-        private:
-            pointer _current;
-        };
-
-        //////////////////////////////////////////////////////////////////////////////////////////////////
-        /// \brief A forward access non-const iterator for phylo_node objects.
-        /// \details Performs a postorder depth-first search among a subtree of an input phylo_node.
-        /// The Const template parameter determines whether the visited nodes are returned via const
-        /// or non-const references and pointers.
-        template<bool Const=true>
-        class postorder_tree_iterator
-        {
-        public:
-            using iterator_category = std::forward_iterator_tag;
-
-            /// deduce const qualifier from bool Const parameter
-            using reference = typename std::conditional_t<Const, const phylo_node&, phylo_node&>;
-            using pointer = typename std::conditional_t<Const, const phylo_node*, phylo_node*>;
-        public:
-
-            postorder_tree_iterator() noexcept
-                : postorder_tree_iterator{ nullptr }
-            {}
-
-            explicit postorder_tree_iterator(pointer node) noexcept
-                    : _current{ node }
-            {}
-
-            postorder_tree_iterator& operator=(const postorder_tree_iterator& rhs) noexcept
-            {
-                if (*this != rhs)
+                /// if found a sibling, visit it
+                if (parent)
                 {
-                    _current = rhs._current;
+                    return parent->get_children()[*idx + 1];
                 }
-                return *this;
+                    /// otherwise it's the end of the tree
+                else
+                {
+                    return nullptr;
+                }
             }
-
-            explicit operator pointer() const noexcept
-            {
-                return _current;
-            }
-
-            bool operator==(const postorder_tree_iterator& rhs) const noexcept
-            {
-                return _current == rhs._current;
-            }
-
-            bool operator!=(const postorder_tree_iterator& rhs) const noexcept
-            {
-                return !(*this == rhs);
-            }
-
-            postorder_tree_iterator& operator++()
-            {
-                _current = next_by_postorder(_current);
-                return *this;
-            }
-
-            reference operator*() const
-            {
-                return *_current;
-            }
-
-            pointer operator->() const noexcept
-            {
-                return _current;
-            }
-
-        private:
-            pointer _current;
-        };
+        }
     }
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief A forward access non-const iterator for phylo_node objects.
+    /// \details Performs a pre-order depth-first search among a subtree of an input phylo_node.
+    /// The Const template parameter determines whether the visited nodes are returned via const
+    /// or non-const references and pointers.
+    template<bool Const=true>
+    class preorder_tree_iterator
+    {
+    public:
+        static constexpr bool value = Const;
 
+        using iterator_category = std::forward_iterator_tag;
+
+        /// deduce const qualifier from bool Const parameter
+        using reference = typename std::conditional_t<Const, const phylo_node&, phylo_node&>;
+        using pointer = typename std::conditional_t<Const, const phylo_node*, phylo_node*>;
+
+        /// How to start and stop the iterator
+        static constexpr auto begin = [](pointer root) { return root; };
+        static constexpr auto end = [](pointer) { return nullptr; };
+    public:
+
+        preorder_tree_iterator() noexcept
+            : preorder_tree_iterator{ nullptr }
+        {}
+
+        explicit preorder_tree_iterator(pointer node) noexcept
+            : _current{ node }
+        {}
+
+        preorder_tree_iterator& operator=(const preorder_tree_iterator& rhs) noexcept
+        {
+            if (*this != rhs)
+            {
+                _current = rhs._current;
+            }
+            return *this;
+        }
+
+        explicit operator pointer() const noexcept
+        {
+            return _current;
+        }
+
+        bool operator==(const preorder_tree_iterator& rhs) const noexcept
+        {
+            return _current == rhs._current;
+        }
+
+        bool operator!=(const preorder_tree_iterator& rhs) const noexcept
+        {
+            return !(*this == rhs);
+        }
+
+        preorder_tree_iterator& operator++()
+        {
+            _current = impl::next_by_preorder(_current);
+            return *this;
+        }
+
+        reference operator*() const
+        {
+            return *_current;
+        }
+
+        pointer operator->() const noexcept
+        {
+            return _current;
+        }
+
+    private:
+        pointer _current;
+    };
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+    /// \brief A forward access non-const iterator for phylo_node objects.
+    /// \details Performs a postorder depth-first search among a subtree of an input phylo_node.
+    /// The Const template parameter determines whether the visited nodes are returned via const
+    /// or non-const references and pointers.
+    template<bool Const=true>
+    class postorder_tree_iterator
+    {
+    public:
+        static constexpr bool value = Const;
+
+        using iterator_category = std::forward_iterator_tag;
+
+        /// deduce const qualifier from bool Const parameter
+        using reference = typename std::conditional_t<Const, const phylo_node&, phylo_node&>;
+        using pointer = typename std::conditional_t<Const, const phylo_node*, phylo_node*>;
+
+        /// How to start and stop the iterator
+        static constexpr auto begin = impl::get_leftmost_leaf<Const>;
+        static constexpr auto end = impl::next_by_postorder<Const>;
+    public:
+
+        postorder_tree_iterator() noexcept
+            : postorder_tree_iterator{ nullptr }
+        {}
+
+        explicit postorder_tree_iterator(pointer node) noexcept
+                : _current{ node }
+        {}
+
+        postorder_tree_iterator& operator=(const postorder_tree_iterator& rhs) noexcept
+        {
+            if (*this != rhs)
+            {
+                _current = rhs._current;
+            }
+            return *this;
+        }
+
+        explicit operator pointer() const noexcept
+        {
+            return _current;
+        }
+
+        bool operator==(const postorder_tree_iterator& rhs) const noexcept
+        {
+            return _current == rhs._current;
+        }
+
+        bool operator!=(const postorder_tree_iterator& rhs) const noexcept
+        {
+            return !(*this == rhs);
+        }
+
+        postorder_tree_iterator& operator++()
+        {
+            _current = impl::next_by_postorder(_current);
+            return *this;
+        }
+
+        reference operator*() const
+        {
+            return *_current;
+        }
+
+        pointer operator->() const noexcept
+        {
+            return _current;
+        }
+
+    private:
+        pointer _current;
+    };
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief A wrapper for postorder_tree_iterator. Visits subtree nodes in DFS post-order.
     /// \details The Const template paramter has the same meaning as in impl::postorder_tree_iterator.
-    template<bool Const=true>
+    template<class Iterator=postorder_tree_iterator<true>,
+             bool Const=Iterator::value>
     class visit_subtree
     {
     public:
-        using iterator = impl::postorder_tree_iterator<Const>;
+        using iterator = Iterator;
         using value_type = phylo_node;
 
         /// deduce const qualifier from bool Const parameter
@@ -250,13 +297,13 @@ namespace xpas {
         [[nodiscard]]
         iterator begin() const noexcept
         {
-            return iterator{ impl::get_leftmost_leaf(_root) };
+            return iterator{ Iterator::begin(_root) };
         }
 
         [[nodiscard]]
         iterator end() const noexcept
         {
-            return iterator{ impl::next_by_postorder(_root) };
+            return iterator{ Iterator::end(_root) };
         }
 
     private:
@@ -274,9 +321,9 @@ namespace xpas {
     public:
         /// Member types
         /// const iterator type. Performs a post-order depth-first search
-        using const_iterator = impl::postorder_tree_iterator<true>;
+        using const_iterator = postorder_tree_iterator<true>;
         /// non-const iterator type.  Performs a post-order depth-first search
-        using iterator = impl::postorder_tree_iterator<false>;
+        using iterator = postorder_tree_iterator<false>;
         using value_pointer = phylo_node*;
 
         /// Ctors, dtor and operator=
@@ -304,6 +351,12 @@ namespace xpas {
         size_t get_node_count() const noexcept;
         /// \brief Returns a pointer to the root node.
         value_pointer get_root() const noexcept;
+        /// \brief Sets the new root
+        void set_root(value_pointer root);
+
+        /// \brief Runs DFS from the root to make pre- and post-order ID mappings
+        /// for all nodes
+        void index();
 
         /// \brief Returns a pointer to a phylo_node with a given preorder_id, if presented.
         /// \details This operation does not require any traversal and implemented in O(1).
@@ -315,8 +368,6 @@ namespace xpas {
         /// \sa get_by_preorder_id
         optional<const xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
     private:
-        void _init_tree();
-
         /// \brief A root node.
         value_pointer _root;
 
@@ -334,7 +385,11 @@ namespace xpas {
     void save_tree(const phylo_tree& tree, const std::string& filename);
 
     /// Read and preprocess a phylogentic tree
-    std::tuple<phylo_tree, phylo_tree, extended_mapping> preprocess_tree(const std::string& filename);
+    std::tuple<phylo_tree, phylo_tree, ghost_mapping> preprocess_tree(const std::string& filename);
+
+    /// Reroot tree if needed
+    /// changes the tree from (a, b, c); to ((b, c), a);
+    void reroot_tree(phylo_tree& tree);
 }
 
 #endif

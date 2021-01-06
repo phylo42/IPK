@@ -58,6 +58,8 @@ namespace xpas
         [[nodiscard]]
         phylo_node* get_parent() const noexcept;
 
+        void set_parent(phylo_node* parent);
+
         [[nodiscard]]
         id_type get_preorder_id() const noexcept;
 
@@ -79,7 +81,11 @@ namespace xpas
 
         void remove_child(phylo_node* node);
 
+        [[nodiscard]]
         bool is_leaf() const noexcept;
+
+        [[nodiscard]]
+        bool is_root() const noexcept;
 
     private:
         id_type _preorder_id;

@@ -254,7 +254,8 @@ xpas::phylo_tree xpas::io::parse_newick(std::string_view newick_string)
 
     phylo_node::id_type postorder_id = 0;
 
-    for (auto& node : xpas::visit_subtree<false>(parser.get_root()))
+    using iterator = postorder_tree_iterator<false>;
+    for (auto& node : visit_subtree<iterator>(parser.get_root()))
     {
         node._postorder_id = postorder_id;
         ++postorder_id;

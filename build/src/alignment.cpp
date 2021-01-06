@@ -84,7 +84,7 @@ alignment::const_iterator alignment::end() const
 alignment load_alignment(const string& file_name)
 {
     std::vector<seq_record> sequences;
-    for (const auto& seq : xpas::io::read_fasta(file_name))
+    for (const auto& seq : xpas::io::read_fasta(file_name, false))
     {
         sequences.push_back(seq);
     }
@@ -96,7 +96,6 @@ alignment load_alignment(const string& file_name)
 template <class InputIt>
 void save_fasta(InputIt first, InputIt last, const std::string& file_name)
 {
-    std::cout << "Saving alignment to " << file_name << "..." << std::endl;
 
     std::ofstream out(file_name);
     for (auto it = first; it != last; ++it)
@@ -105,9 +104,57 @@ void save_fasta(InputIt first, InputIt last, const std::string& file_name)
     }
 }
 
-void xpas::save_alignment(const alignment& align, const string& file_name)
+// save a stream of fasta records to a file
+template <class InputIt>
+void save_phylip(InputIt first, InputIt last, const std::string& file_name)
 {
-    save_fasta(std::begin(align), std::end(align), file_name);
+    const size_t allowed_label_size = 250;
+
+    std::ofstream out(file_name);
+
+    /// Header
+    out << '\t' << std::distance(first, last) << '\t' << first->sequence().size() << '\n';
+
+    for (auto it = first; it != last; ++it)
+    {
+        /// Left column
+        out << it->header();
+        for (size_t i = it->header().size(); i < allowed_label_size; ++i)
+        {
+            out << ' ';
+        }
+
+        /// Other columns
+        size_t pos = 0;
+        while (pos < it->sequence().size())
+        {
+            size_t remained = it->sequence().size() - pos;
+            if (remained > 10)
+            {
+                out << it->sequence().substr(pos, 10) << ' ';
+                pos += 10;
+            }
+            else
+            {
+                out << it->sequence().substr(pos, remained);
+                pos += remained;
+            }
+        }
+        out << '\n';
+
+    }
+}
+
+void xpas::save_alignment(const alignment& align, const string& file_name, alignment_format format)
+{
+    if (format == alignment_format::FASTA)
+    {
+        save_fasta(std::begin(align), std::end(align), file_name);
+    }
+    else if (format == alignment_format::PHYLIP)
+    {
+        save_phylip(std::begin(align), std::end(align), file_name);
+    }
 }
 
 vector<double> calculate_gap_ratio(const alignment& align)
@@ -240,7 +287,7 @@ xpas::alignment _preprocess_alignment(const std::string& working_dir,
 
         /// Save the reduced alignment on disk
         const auto reduced_alignment_file = (fs::path(working_dir) / "align.reduced.fasta").string();
-        save_alignment(alignment, reduced_alignment_file);
+        save_alignment(alignment, reduced_alignment_file, alignment_format::FASTA);
 
         return alignment;
     }
@@ -273,7 +320,7 @@ alignment xpas::extend_alignment(alignment original_alignment, const phylo_tree&
 
     std::string empty_seq(extended_alignment.width(), seq_traits::get_gap());
 
-    for (const auto& node : xpas::visit_subtree<true>(tree.get_root()))
+    for (const auto& node : visit_subtree(tree.get_root()))
     {
         if (node.is_leaf() && !has_sequence(extended_alignment, node.get_label()))
         {

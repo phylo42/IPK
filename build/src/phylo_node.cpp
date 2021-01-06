@@ -56,6 +56,11 @@ phylo_node* phylo_node::get_parent() const noexcept
     return _parent;
 }
 
+void phylo_node::set_parent(phylo_node* parent)
+{
+    _parent = parent;
+}
+
 phylo_node::id_type phylo_node::get_preorder_id() const noexcept
 {
     return _preorder_id;
@@ -94,6 +99,7 @@ void phylo_node::clean()
 void phylo_node::add_child(phylo_node* node)
 {
     _children.push_back(node);
+    node->set_parent(this);
 }
 
 void phylo_node::remove_child(phylo_node* node)
@@ -104,4 +110,9 @@ void phylo_node::remove_child(phylo_node* node)
 bool phylo_node::is_leaf() const noexcept
 {
     return _children.empty();
+}
+
+bool phylo_node::is_root() const noexcept
+{
+    return _parent == nullptr;
 }

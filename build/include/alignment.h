@@ -83,7 +83,15 @@ namespace xpas
 
     alignment extend_alignment(alignment original_alignment, const phylo_tree& tree);
 
-    void save_alignment(const alignment& alignment, const std::string& filename);
+
+    enum class alignment_format
+    {
+        FASTA,
+        PHYLIP
+    };
+
+    void save_alignment(const alignment& alignment, const std::string& filename,
+                        alignment_format format);
 }
 
 

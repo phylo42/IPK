@@ -5,9 +5,9 @@
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
 #include <xpas/kmer_iterator.h>
-#include <xpas/newick.h>
-#include <xpas/phylo_tree.h>
-#include <xpas/fasta.h>
+#include <newick.h>
+#include <phylo_tree.h>
+#include <fasta.h>
 
 namespace fs = boost::filesystem;
 

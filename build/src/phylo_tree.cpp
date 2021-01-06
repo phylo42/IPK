@@ -16,7 +16,7 @@ using std::begin, std::end;
 phylo_tree::phylo_tree(phylo_node* root)
     : _root{ root }, _node_count{ 0 }
 {
-    _init_tree();
+    index();
 }
 
 phylo_tree::phylo_tree(phylo_tree&& other) noexcept
@@ -38,22 +38,22 @@ phylo_tree::~phylo_tree() noexcept
 
 phylo_tree::const_iterator xpas::phylo_tree::begin() const noexcept
 {
-    return visit_subtree<true>(_root).begin();
+    return visit_subtree(_root).begin();
 }
 
 phylo_tree::const_iterator xpas::phylo_tree::end() const noexcept
 {
-    return visit_subtree<true>(_root).end();
+    return visit_subtree(_root).end();
 }
 
 phylo_tree::iterator xpas::phylo_tree::begin() noexcept
 {
-    return visit_subtree<false>(_root).begin();
+    return visit_subtree<postorder_tree_iterator<false>>(_root).begin();
 }
 
 phylo_tree::iterator xpas::phylo_tree::end() noexcept
 {
-    return visit_subtree<false>(_root).end();
+    return visit_subtree<postorder_tree_iterator<false>>(_root).end();
 }
 
 size_t phylo_tree::get_node_count() const noexcept
@@ -64,6 +64,54 @@ size_t phylo_tree::get_node_count() const noexcept
 phylo_tree::value_pointer phylo_tree::get_root() const noexcept
 {
     return _root;
+}
+
+void phylo_tree::set_root(value_pointer root)
+{
+    _root = root;
+}
+
+void phylo_tree::index()
+{
+    if (_root->get_parent())
+    {
+        throw std::invalid_argument{ "Can not create a tree from non-root node: "
+                                     "the parent of the root must be nullptr."};
+    }
+
+
+    /// Set postorder id for all nodes
+    phylo_node::id_type postorder_id = 0;
+    for (auto& node : xpas::visit_subtree<postorder_tree_iterator<false>>(_root))
+    {
+        node._postorder_id = postorder_id;
+        ++postorder_id;
+    }
+
+    /// Set preorder id for all nodes
+    phylo_node::id_type preorder_id = 0;
+
+    //auto it = preorder_tree_iterator<false>(_root);
+    //const auto end = preorder_tree_iterator<false>(nullptr);
+    //while (it != end)
+    for (auto& node : xpas::visit_subtree<preorder_tree_iterator<false>>(_root))
+    {
+        node._preorder_id = preorder_id;
+        ++preorder_id;
+    }
+
+    /// Make maps for fast search by postorder/preorder id
+    _preorder_id_node_mapping.clear();
+    _postorder_id_node_mapping.clear();
+    _node_count = 0;
+
+    for (const auto& node : xpas::visit_subtree(_root))
+    {
+        _preorder_id_node_mapping[node.get_preorder_id()] = &node;
+        _postorder_id_node_mapping[node.get_postorder_id()] = &node;
+
+        ++_node_count;
+    }
 }
 
 optional<const phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept
@@ -90,28 +138,6 @@ optional<const phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_type 
     }
 }
 
-void phylo_tree::_init_tree()
-{
-    if (_root->get_parent())
-    {
-        throw std::invalid_argument{ "Can not create a tree from non-root node: "
-                                     "the parent of the root must be nullptr."};
-    }
-
-    _node_count = 0;
-
-    auto it = visit_subtree<false>(_root).begin();
-    const auto end = visit_subtree<false>(_root).end();
-    for (; it != end; ++it)
-    {
-        const phylo_node* node{ it };
-        _preorder_id_node_mapping[node->get_preorder_id()] = node;
-        _postorder_id_node_mapping[node->get_postorder_id()] = node;
-
-        ++_node_count;
-    }
-}
-
 namespace xpas
 {
 
@@ -120,7 +146,7 @@ namespace xpas
         phylo_node::branch_length_type length = 0.0;
         size_t count = 0;
 
-        for (const auto& node : visit_subtree<true>(root))
+        for (const auto& node : visit_subtree(root))
         {
             length += node.get_branch_length();
             count++;
@@ -139,13 +165,13 @@ namespace xpas
         tree_extender(const tree_extender&) = delete;
         ~tree_extender() noexcept = default;
 
-        extended_mapping extend()
+        ghost_mapping extend()
         {
             /// add ghost nodes
             extend_subtree(_tree.get_root());
 
-            /// traverse the tree to reinitialize postorder/preorder node ids
-            _tree._init_tree();
+            /// reindex the tree
+            _tree.index();
 
             /// return the mapping Extended Node ID -> Original Postorder ID
             return _mapping;
@@ -200,10 +226,10 @@ namespace xpas
         phylo_tree& _tree;
         size_t _counter;
 
-        extended_mapping _mapping;
+        ghost_mapping _mapping;
     };
 
-    extended_mapping extend_tree(phylo_tree& tree)
+    ghost_mapping extend_tree(phylo_tree& tree)
     {
         tree_extender extender(tree);
         return extender.extend();
@@ -217,7 +243,7 @@ void xpas::save_tree(const phylo_tree& tree, const std::string& filename)
 }
 
 
-std::tuple<phylo_tree, phylo_tree, extended_mapping> xpas::preprocess_tree(const std::string& filename)
+std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const std::string& filename)
 {
     /// load original tree
     auto tree = xpas::io::load_newick(filename);
@@ -231,4 +257,29 @@ std::tuple<phylo_tree, phylo_tree, extended_mapping> xpas::preprocess_tree(const
     auto original_tree = xpas::io::load_newick(filename);
 
     return std::make_tuple(std::move(original_tree), std::move(tree), mapping);
+}
+
+void xpas::reroot_tree(phylo_tree& tree)
+{
+    auto root = tree.get_root();
+
+    /// If the root has 3 children
+    auto children = root->get_children();
+    if (children.size() > 2)
+    {
+        auto a = children[0];
+
+        /// change it from (a, b, c); to ((b, c), a)added_root;
+        auto new_node = new phylo_node("added_root", 0.0, nullptr);
+        new_node->add_child(root);
+        new_node->add_child(a);
+
+        root->remove_child(a);
+
+        tree.set_root(new_node);
+
+        tree.index();
+    }
+
+
 }

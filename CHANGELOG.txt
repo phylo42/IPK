@@ -2,6 +2,8 @@ v0.2.1
 - Implemented ghost node injection.
 - xpas::phylo_node reworked, some methods are public now.
 - xpas_utils has gone and now is a part of xpas. All <utils/io/X.h> are now <xpas/X.h>
+- Added a preorder iterator for xpas::phylo_node. visit_subtree now has a template argument Iterator,
+    which can be either post- or preorder_tree_iterator. It is now const post-order iteration by default.
 
 
 v0.2.0
