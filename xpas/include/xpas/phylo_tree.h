@@ -3,11 +3,9 @@
 
 #include <xpas/optional.h>
 #include <xpas/phylo_kmer.h>
-#include "phylo_node.h"
+#include <xpas/phylo_node.h>
 
 namespace xpas {
-
-    using ghost_mapping = std::unordered_map<std::string, xpas::phylo_kmer::branch_type>;
 
     namespace impl
     {
@@ -70,13 +68,13 @@ namespace xpas {
             {
                 node = nullptr;
             }
-                /// if not, and there are siblings, visit the next sibling
+            /// if not, and there are siblings, visit the next sibling
             else if (auto sibling_id = static_cast<size_t>(*idx + 1); sibling_id < temp->get_children().size())
             {
                 node = temp->get_children()[sibling_id];
                 node = get_leftmost_leaf(node);
             }
-                /// otherwise visit the parent
+            /// otherwise visit the parent
             else
             {
                 node = temp;
@@ -101,19 +99,21 @@ namespace xpas {
                 auto idx = _id_in_parent(node);
 
                 /// go up until we find an unvisited sibling
-                while (parent && *idx + 1 >= parent->get_children().size())
+                auto sibling_id = static_cast<size_t>(*idx + 1);
+                while (parent && sibling_id >= parent->get_children().size())
                 {
                     node = parent;
                     parent = node->get_parent();
                     idx = _id_in_parent(node);
+                    sibling_id = static_cast<size_t>(*idx + 1);
                 }
 
                 /// if found a sibling, visit it
                 if (parent)
                 {
-                    return parent->get_children()[*idx + 1];
+                    return parent->get_children()[sibling_id];
                 }
-                    /// otherwise it's the end of the tree
+                /// otherwise it's the end of the tree
                 else
                 {
                     return nullptr;
@@ -353,21 +353,32 @@ namespace xpas {
         value_pointer get_root() const noexcept;
         /// \brief Sets the new root
         void set_root(value_pointer root);
+        /// \brief Returns true if the root has no more than two children
+        bool is_rooted() const noexcept;
 
         /// \brief Runs DFS from the root to make pre- and post-order ID mappings
         /// for all nodes
         void index();
 
-        /// \brief Returns a pointer to a phylo_node with a given preorder_id, if presented.
-        /// \details This operation does not require any traversal and implemented in O(1).
-        /// \sa get_by_postorder_id
-        optional<const xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
-
-        /// \brief Returns a pointer to a phylo_node with a given postorder_id, if presented.
+        /// \brief Returns an optional fora pointer to a phylo_node with a given preorder_id, if exists in the tree.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_preorder_id
+        optional<const xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
+
+        /// \brief Returns an optional fora pointer to a phylo_node with a given postorder_id, if exists in the tree.
+        /// \details This operation does not require any traversal and implemented in O(1).
+        /// \sa get_by_postorder_id
         optional<const xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
+
+        /// \brief Returns an optional for a pointer to a phylo_node with a given label, if exists in the tree.
+        /// \details This operation does not require any traversal and implemented in O(1).
+        optional<const xpas::phylo_node*> get_by_label(const std::string& label) const noexcept;
     private:
+        void _index_preorder_id();
+        void _index_postorder_id();
+        void _index_labels();
+        void _count_nodes();
+
         /// \brief A root node.
         value_pointer _root;
 
@@ -376,20 +387,15 @@ namespace xpas {
         /// number of nodes, it is just passed as an argument in the constructor.
         size_t _node_count;
 
-        /// \brief A map for phylo_node_preorder_id-> phylo_node for fast access
-        std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _preorder_id_node_mapping;
-        /// \brief A map for phylo_node_postorder_id-> phylo_node for fast access
+        /// Map "phylo_node_preorder_id -> phylo_node"
+        std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _preorder_id_to_node;
+        /// Map "phylo_node_postorder_id -> phylo_node"
         std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _postorder_id_node_mapping;
+        /// Map "node label -> phylo_node"
+        std::unordered_map<std::string, const xpas::phylo_node*> _label_to_node;
     };
 
     void save_tree(const phylo_tree& tree, const std::string& filename);
-
-    /// Read and preprocess a phylogentic tree
-    std::tuple<phylo_tree, phylo_tree, ghost_mapping> preprocess_tree(const std::string& filename);
-
-    /// Reroot tree if needed
-    /// changes the tree from (a, b, c); to ((b, c), a);
-    void reroot_tree(phylo_tree& tree);
 }
 
 #endif

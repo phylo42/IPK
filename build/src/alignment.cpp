@@ -4,37 +4,15 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 
-#include "fasta.h"
+#include <xpas/phylo_tree.h>
+#include <xpas/fasta.h>
 #include "alignment.h"
-#include "phylo_tree.h"
+
 
 using std::vector;
 using std::string;
 using namespace xpas;
 namespace fs = boost::filesystem;
-
-//------------------------------------------------------------------------------------
-// seq_record
-seq_record::seq_record(string header, string sequence) noexcept
-    : _header(move(header)), _sequence(move(sequence))
-{
-}
-
-std::string_view seq_record::header() const noexcept
-{
-    return _header;
-}
-
-std::string_view seq_record::sequence() const noexcept
-{
-    return _sequence;
-}
-
-bool seq_record::operator==(const seq_record& rhs) const noexcept
-{
-    return _header == rhs.header() && _sequence == rhs.sequence();
-}
-
 
 //------------------------------------------------------------------------------------
 // alignment class
@@ -304,8 +282,6 @@ xpas::alignment xpas::preprocess_alignment(const std::string& working_dir,
     std::cout << "Loaded and filtered " << alignment.height() <<  " sequences." << std::endl << std::endl;
     return alignment;
 }
-
-
 
 bool has_sequence(const alignment& alignment, const std::string& seq_header)
 {

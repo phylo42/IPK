@@ -7,7 +7,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <string>
 #include <vector>
-#include "alignment.h"
+#include <xpas/seq_record.h>
 
 namespace xpas::io
 {

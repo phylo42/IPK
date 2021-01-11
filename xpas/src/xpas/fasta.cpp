@@ -1,6 +1,6 @@
 #include <iostream>
 #include <boost/algorithm/string/predicate.hpp>
-#include "fasta.h"
+#include <xpas/fasta.h>
 
 using namespace xpas::io;
 using std::vector;

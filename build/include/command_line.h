@@ -24,6 +24,7 @@ namespace xpas::cli
         std::string original_tree_file;
 
         // Ancestral Reconstruction parameters
+        std::string ar_dir;
         std::string ar_binary_file;
         std::string ar_model;
         double ar_alpha;
@@ -37,6 +38,7 @@ namespace xpas::cli
         size_t num_threads;
 
         bool merge_branches;
+        bool force_root;
 
         /// k-mer filtering parameters, mutually exclusive
         bool no_filter;

@@ -2,7 +2,7 @@
 #include <string>
 #include <streambuf>
 
-#include "file_io.h"
+#include <xpas/file_io.h>
 
 using namespace xpas::io;
 using std::string;

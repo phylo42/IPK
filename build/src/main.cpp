@@ -4,10 +4,11 @@
 #include <boost/filesystem.hpp>
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
-#include "phylo_tree.h"
+#include <xpas/phylo_tree.h>
 #include "command_line.h"
 #include "exceptions.h"
 #include "db_builder.h"
+#include "extended_tree.h"
 #include "alignment.h"
 #include "return.h"
 #include "ar.h"
@@ -115,7 +116,8 @@ return_code build_database(const xpas::cli::parameters& parameters)
                                                 parameters.no_reduction);
 
     /// Load and extend the reference tree
-    const auto& [original_tree, extended_tree, ghost_mapping] = xpas::preprocess_tree(parameters.original_tree_file);
+    const auto& [original_tree, extended_tree, ghost_mapping] = xpas::preprocess_tree(parameters.original_tree_file,
+                                                                                      parameters.force_root);
     const auto extended_tree_file = save_extended_tree(parameters.working_directory, extended_tree);
 
     /// Extend the alignment
@@ -127,7 +129,7 @@ return_code build_database(const xpas::cli::parameters& parameters)
     auto [ar_software, ar_parameters] = xpas::ar::make_parameters(parameters,
                                                                   extended_tree_file, ext_alignment_phylip);
     const auto [proba_matrix, ar_tree] = xpas::ar::ancestral_reconstruction(ar_software, ar_parameters);
-    const auto ar_mapping = xpas::ar::map_internal_nodes(extended_tree, ar_tree);
+    const auto ar_mapping = xpas::ar::map_nodes(extended_tree, ar_tree);
     save_rerooted_tree(parameters.working_directory, ar_tree);
 
     /// Generate phylo k-mers

@@ -1,5 +1,5 @@
 #include <xpas/phylo_kmer.h>
-#include "phylo_node.h"
+#include <xpas/phylo_node.h>
 
 using namespace xpas;
 using std::vector;

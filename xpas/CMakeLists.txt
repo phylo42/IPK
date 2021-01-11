@@ -25,10 +25,17 @@ else()
     find_package(Boost REQUIRED COMPONENTS serialization iostreams)
 
     set(SOURCES
-            src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
+            src/xpas/fasta.cpp include/xpas/fasta.h
+            src/xpas/file_io.cpp include/xpas/file_io.h
             src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
-            src/xpas/seq.cpp include/xpas/seq.h
+            src/xpas/newick.cpp include/xpas/newick.h
+            include/xpas/optional.h
+            src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
             include/xpas/phylo_kmer_db.h
+            src/xpas/phylo_node.cpp include/xpas/phylo_node.h
+            src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
+            src/xpas/seq.cpp include/xpas/seq.h
+            src/xpas/seq_record.cpp include/xpas/seq_record.h
             include/xpas/serialization.h
             include/xpas/version.h)
 

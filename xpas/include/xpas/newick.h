@@ -17,10 +17,11 @@ namespace xpas::io
     /// \brief Parses a phylogenetic tree from a newick formatted string.
     xpas::phylo_tree parse_newick(std::string_view newick_string);
 
-    /// \brief Constructs a Newick-formatted string:
-    /// (label:branch_length, ...)
-    std::string to_newick(const xpas::phylo_tree& tree);
-
+    /// \brief Constructs a Newick-formatted string from the input tree.
+    /// Depending on the jplace parameter, it builds
+    ///     false) Pure newick: (label:branch_length,label:branch_length)...
+    ///     true) Jplace: (label:branch_length{node_postorder_id}, ...)...
+    std::string to_newick(const xpas::phylo_tree& tree, bool jplace=false);
 }
 
 /// \brief Outputs a tree in Jplace-extended Newick format:

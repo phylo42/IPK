@@ -17,7 +17,8 @@ namespace xpas::cli
     static std::string REFTREE = "reftree", REFTREE_SHORT = "t";
 
     /// Ancestral Reconstruction
-    static std::string AR_BINARY = "arbinary";
+    static std::string AR_DIR = "ar-dir";
+    static std::string AR_BINARY = "ar-binary";
     static std::string AR_MODEL = "model";
     static std::string AR_ALPHA = "alpha";
     static std::string AR_CATEGORIES = "categories";
@@ -27,7 +28,7 @@ namespace xpas::cli
     static std::string NO_REDUCTION = "no-reduction";
     static std::string K = "k", K_SHORT = "k";
     static std::string OMEGA="omega", OMEGA_SHORT="o";
-    static std::string NUM_THREADS = "num_threads", NUM_THREADS_SHORT = "j";
+    static std::string NUM_THREADS = "num-threads", NUM_THREADS_SHORT = "j";
 
     /// Filtering options
     static std::string MU = "mu", MU_SHORT = "u";
@@ -41,6 +42,7 @@ namespace xpas::cli
     static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
     static std::string MERGE_BRANCHES = "merge-branches";
+    static std::string FORCE_ROOT = "force-root";
 
     bool no_filter_flag = true;
     bool entropy_flag = false;
@@ -52,6 +54,7 @@ namespace xpas::cli
     bool log_std_deviation_filter_flag = false;
     bool random_filter_flag = false;
     bool merge_branches_flag = false;
+    bool force_root_flag = false;
     bool no_reduction_flag = false;
 
     po::options_description get_opt_description()
@@ -68,6 +71,8 @@ namespace xpas::cli
             ((REFTREE + "," + REFTREE_SHORT).c_str(), po::value<fs::path>()->required(),
                 "Original phylogenetic tree file")
 
+            (AR_DIR.c_str(), po::value<std::string>()->default_value(""),
+             "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
             (AR_BINARY.c_str(), po::value<std::string>()->required(),
              "Binary file for ancestral reconstruction software (PhyML, RAxML-NG).")
             (AR_MODEL.c_str(), po::value<std::string>()->default_value("GTR"),
@@ -75,7 +80,7 @@ namespace xpas::cli
              "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
              "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
             (AR_ALPHA.c_str(), po::value<double>()->default_value(1.0),
-             "Gammma shape parameter, used in ancestral reconstruction.")
+             "Gamma shape parameter, used in ancestral reconstruction.")
             (AR_CATEGORIES.c_str(), po::value<int>()->default_value(4),
              "Number of relative substitution rate categories, used in ancestral reconstruction.")
 
@@ -91,6 +96,9 @@ namespace xpas::cli
             ((NUM_THREADS + "," + NUM_THREADS_SHORT).c_str(), po::value<size_t>()->default_value(1),
                 "Number of threads")
             ((MERGE_BRANCHES).c_str(), po::bool_switch(&merge_branches_flag))
+            ((FORCE_ROOT).c_str(), po::bool_switch(&force_root_flag))
+
+
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
             ((ENTROPY).c_str(), po::bool_switch(&entropy_flag))
             ((MAX_DEVIATION).c_str(), po::bool_switch(&max_deviation_filter_flag))
@@ -136,16 +144,21 @@ namespace xpas::cli
             parameters.original_tree_file = vm[REFTREE].as<fs::path>().string();
             parameters.kmer_size = vm[K].as<size_t>();
 
+            parameters.ar_dir = vm[AR_DIR].as<std::string>();
             parameters.ar_binary_file = vm[AR_BINARY].as<std::string>();
             parameters.ar_model = vm[AR_MODEL].as<std::string>();
             parameters.ar_alpha = vm[AR_ALPHA].as<double>();
             parameters.ar_categories = vm[AR_CATEGORIES].as<int>();
 
             parameters.reduction_ratio = vm[REDUCTION_RATIO].as<double>();
-            parameters.no_reduction = no_reduction_flag;
             parameters.omega = vm[OMEGA].as<xpas::phylo_kmer::score_type>();
             parameters.num_threads = vm[NUM_THREADS].as<size_t>();
             parameters.mu = vm[MU].as<double>();
+
+            parameters.merge_branches = merge_branches_flag;
+            parameters.force_root = force_root_flag;
+            parameters.no_reduction = no_reduction_flag;
+
             parameters.no_filter = no_filter_flag;
             parameters.entropy_filter = entropy_flag;
             parameters.max_dev_filter = max_deviation_filter_flag;
@@ -155,7 +168,6 @@ namespace xpas::cli
             parameters.random_filter = random_filter_flag;
             parameters.std_dev_filter = std_deviation_filter_flag;
             parameters.log_std_dev_filter = log_std_deviation_filter_flag;
-            parameters.merge_branches = merge_branches_flag;
         }
         catch (const po::error& e)
         {

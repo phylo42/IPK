@@ -3,9 +3,9 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/tokenizer.hpp>
 #include <xpas/phylo_kmer.h>
-#include "file_io.h"
-#include "phylo_tree.h"
-#include "newick.h"
+#include <xpas/file_io.h>
+#include <xpas/phylo_tree.h>
+#include <xpas/newick.h>
 #include <iomanip>
 
 using std::string, std::string_view;
@@ -64,10 +64,6 @@ namespace xpas::io
         std::stack<xpas::phylo_node*> _node_stack;
         xpas::phylo_node* _root;
 
-
-        int _preorder_id;
-        int _postorder_id;
-
         std::string _node_text;
 
         bool _parsing_node;
@@ -79,8 +75,6 @@ using xpas::io::newick_parser;
 
 newick_parser::newick_parser()
     : _root{ nullptr }
-    , _preorder_id{ -1 }
-    , _postorder_id{ -1 }
     , _parsing_node{ false }
     , _end_of_file{ false }
 {}
@@ -165,11 +159,9 @@ void newick_parser::_handle_text(char ch)
 
 void newick_parser::_start_node()
 {
-    ++_preorder_id;
     phylo_node* parent = _node_stack.empty() ? nullptr : _node_stack.top();
     _node_stack.push(new phylo_node());
-    _node_stack.top()->_preorder_id = _preorder_id;
-    _node_stack.top()->_parent = parent;
+    _node_stack.top()->set_parent(parent);
 }
 
 phylo_node* newick_parser::_finish_node()
@@ -180,14 +172,10 @@ phylo_node* newick_parser::_finish_node()
     phylo_node* current_node = _node_stack.top();
     _node_stack.pop();
 
-    /// Fill the post-order id
-    ++_postorder_id;
-    current_node->_postorder_id = _postorder_id;
-
     /// Add the node to its parent, if exists
-    if (current_node->_parent != nullptr)
+    if (current_node->get_parent() != nullptr)
     {
-        current_node->_parent->add_child(current_node);
+        current_node->get_parent()->add_child(current_node);
     }
 
     _parsing_node = false;
@@ -208,12 +196,12 @@ void newick_parser::_parse_node_text()
         // if node label presented
         if (!boost::starts_with(_node_text, ":"))
         {
-            current_node->_label = *(it++);
+            current_node->set_label(*(it++));
         }
 
         if (it != end(tokens))
         {
-            current_node->_branch_length = std::stof(*it);
+            current_node->set_branch_length(std::stof(*it));
         }
     }
 
@@ -251,24 +239,11 @@ xpas::phylo_tree xpas::io::parse_newick(std::string_view newick_string)
 {
     newick_parser parser;
     parser.parse(newick_string);
-
-    phylo_node::id_type postorder_id = 0;
-
-    using iterator = postorder_tree_iterator<false>;
-    for (auto& node : visit_subtree<iterator>(parser.get_root()))
-    {
-        node._postorder_id = postorder_id;
-        ++postorder_id;
-    }
-
     return xpas::phylo_tree{ parser.get_root() };
 }
 
-/// We need to output phylo_nodes in two ways:
-/// 1) Pure newick: (label:branch_length,label:branch_length)
-/// 2) Jplace: (label:branch_length{node_postorder_id}, ...)
-/// to_newick implements the first output type
-void to_newick(std::ostream& out, const xpas::phylo_node& node)
+
+void to_newick(std::ostream& out, const xpas::phylo_node& node, bool jplace)
 {
     const auto num_children = node.get_children().size();
     if (num_children > 0)
@@ -277,10 +252,10 @@ void to_newick(std::ostream& out, const xpas::phylo_node& node)
         size_t i = 0;
         for (; i < num_children - 1; ++i)
         {
-            to_newick(out, *node.get_children()[i]);
+            to_newick(out, *node.get_children()[i], jplace);
             out << ",";
         }
-        to_newick(out, *node.get_children()[num_children - 1]);
+        to_newick(out, *node.get_children()[num_children - 1], jplace);
         out << ")";
     }
 
@@ -290,26 +265,16 @@ void to_newick(std::ostream& out, const xpas::phylo_node& node)
     }
 
     out << ":" << std::setprecision(10) << node.get_branch_length();
+    if (jplace)
+    {
+        out << "{" << node.get_postorder_id() << "}";
+    }
 }
 
-std::ostream& operator<<(std::ostream& out, const xpas::phylo_node& node)
-{
-    to_newick(out, node);
-    out << "{" << node.get_postorder_id() << "}";
-    return out;
-}
-
-std::ostream& operator<<(std::ostream& out, const xpas::phylo_tree& tree)
-{
-    out << *tree.get_root() << ";";
-    return out;
-}
-
-
-std::string xpas::io::to_newick(const xpas::phylo_tree& tree)
+std::string xpas::io::to_newick(const xpas::phylo_tree& tree, bool jplace)
 {
     std::ostringstream stream;
-    ::to_newick(stream, *(tree.get_root()));
+    ::to_newick(stream, *(tree.get_root()), jplace);
     stream << ";";
     return stream.str();
 }

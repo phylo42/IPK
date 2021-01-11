@@ -19,31 +19,20 @@ set(LINK_LIBRARIES Boost::program_options
 
 
 set(SOURCES
-        # IO
-        src/fasta.cpp include/fasta.h
-        src/file_io.cpp include/file_io.h
-
-        # phylogenetic tree
-        src/phylo_node.cpp include/phylo_node.h
-        src/phylo_tree.cpp include/phylo_tree.h
-        src/newick.cpp include/newick.h
-
-        src/command_line.cpp include/command_line.h
-        src/exceptions.cpp include/exceptions.h
-
-        # database builder
-        src/db_builder.cpp include/db_builder.h
         src/alignment.cpp include/alignment.h
-
-        # posterior probability matrix
-        src/proba_matrix.cpp include/proba_matrix.h
+        src/ar.cpp include/ar.h
+        src/command_line.cpp include/command_line.h
+        src/db_builder.cpp include/db_builder.h
+        src/exceptions.cpp include/exceptions.h
+        src/extended_tree.cpp include/extended_tree.h
+        src/main.cpp
         src/node_entry.cpp include/node_entry.h
         src/node_entry_view.cpp include/node_entry_view.h
-        src/ar.cpp include/ar.h
-
+        src/proba_matrix.cpp include/proba_matrix.h
+        include/return.h
+        include/row.h
         include/utils.h
-
-        src/main.cpp)
+        )
 
 ######################################################################################################
 # Application target and properties

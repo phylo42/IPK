@@ -3,6 +3,7 @@
 
 #include <string>
 #include <xpas/phylo_kmer_db.h>
+#include "extended_tree.h"
 #include "ar.h"
 
 namespace xpas

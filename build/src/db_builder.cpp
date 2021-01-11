@@ -8,10 +8,10 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/version.h>
-#include "phylo_tree.h"
-#include "file_io.h"
-#include "newick.h"
+#include <xpas/phylo_tree.h>
+#include <xpas/newick.h>
 #include "db_builder.h"
+#include "extended_tree.h"
 #include "alignment.h"
 #include "proba_matrix.h"
 #include "ar.h"
@@ -317,18 +317,26 @@ namespace xpas
         std::vector<id_group> groups;
         groups.reserve(ghost_ids.size() / 2);
 
-        std::unordered_map<branch_type, size_t> mapping;
+        std::unordered_map<branch_type, size_t> index_mapping;
         for (const auto& ghost_id : ghost_ids)
         {
-            const auto original_preorder_id = _extended_mapping.at(ghost_id);
-            if (const auto it = mapping.find(original_preorder_id); it != mapping.end())
+            const auto original_postorder_id = _extended_mapping.at(ghost_id);
+
+            /// Ignore the root
+            const auto original_node = _original_tree.get_by_postorder_id(original_postorder_id);
+            if (original_node && (*original_node)->is_root())
+            {
+                continue;
+            }
+
+            if (const auto it = index_mapping.find(original_postorder_id); it != index_mapping.end())
             {
                 groups[it->second].push_back(ghost_id);
             }
             else
             {
                 groups.push_back({ghost_id});
-                mapping[original_preorder_id] = groups.size() - 1;
+                index_mapping[original_postorder_id] = groups.size() - 1;
             }
 
         }
@@ -339,19 +347,16 @@ namespace xpas
     {
         proba_group submatrices;
 
-        for (const auto& branch_node_label : group)
+        for (const auto& ext_node_label : group)
         {
-            const auto& artree_node_id = _ar_mapping.at(branch_node_label);
-            std::string artree_node_label = std::to_string(artree_node_id);
-
-            std::cout << "MAP " << branch_node_label << " - " << artree_node_id << std::endl;
-            if (const auto& it = _matrix.find(artree_node_label); it != _matrix.end())
+            const auto& ar_node_label = _ar_mapping.at(ext_node_label);
+            if (const auto& it = _matrix.find(ar_node_label); it != _matrix.end())
             {
                 submatrices.push_back(std::cref(it->second));
             }
             else
             {
-                throw std::runtime_error("Internal error: could not find " + artree_node_label + " node. "
+                throw std::runtime_error("Internal error: could not find " + ar_node_label + " node. "
                                          "Make sure it is in the ARTree_id_mapping file.");
             }
 
@@ -387,16 +392,14 @@ namespace xpas
             /// Having a label of a node in the extended tree, we need to find the corresponding node
             /// in the original tree. We take the first ghost node, because all of them correspond to
             /// the same original node
-            const auto original_node_preorder_id = _extended_mapping.at(node_group[0]);
-            const phylo_node* original_node = *_original_tree.get_by_preorder_id(original_node_preorder_id);
-            const auto original_node_postorder_id = original_node->get_postorder_id();
+            const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
-            /// Get submatrices of probabilities for a group
-            proba_group submatrices = get_submatrices(node_group);
+            /// Get sub-matrices of probabilities for a group
+            const auto matrices = get_submatrices(node_group);
 
             /// Explore k-mers of a group and store results in a hash map
-            const auto& [group_hash_map, branch_count] = explore_group(submatrices);
+            const auto& [group_hash_map, branch_count] = explore_group(matrices);
 
             /// Save a hash map on disk
             save_hash_map(group_hash_map, group_hashmap_file(original_node_postorder_id));
@@ -469,15 +472,18 @@ namespace xpas
         branch_hash_map hash_map;
         size_t count = 0;
 
-        const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
-
+        const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
-            for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
+
+            //std::cout << node_entry.get_label() << std::endl;
+            for (auto window = node_entry.begin(_kmer_size, log_threshold); window != node_entry.end(); ++window)
             {
                 for (const auto& kmer : *window)
                 {
+                    /*std::cout << "\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
+                              << kmer.score << " " << std::pow(10, kmer.score) << std::endl;*/
                     put(hash_map, kmer);
                     ++count;
                 }

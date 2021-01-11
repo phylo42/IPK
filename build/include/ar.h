@@ -21,7 +21,7 @@ namespace xpas
     {
         /// Ancestral Reconstruction software uses their own name conventions
         /// to name internal nodes of the tree. This type maps xpas's internal node names to them
-        using mapping = std::unordered_map<std::string, branch_type>;
+        using mapping = std::unordered_map<std::string, std::string>;
 
         /// Supported tools for ancestral reconstruction
         enum class software
@@ -54,6 +54,7 @@ namespace xpas
         /// All parameters for ancestral reconstruction
         struct parameters
         {
+            std::string ar_dir;
             std::string binary_file;
             std::string tree_file;
             std::string alignment_file;
@@ -71,9 +72,9 @@ namespace xpas
         std::tuple<proba_matrix, phylo_tree> ancestral_reconstruction(ar::software software,
                                                                       const ar::parameters& parameters);
 
-        /// Maps internal nodes of the extended tree to the nodes of the AR tree
+        /// Maps node labels of the extended tree to the node labels of the AR tree
         /// This mapping is needed to query proba_matrix.
-        ar::mapping map_internal_nodes(const phylo_tree& extended_tree, const phylo_tree& ar_tree);
+        ar::mapping map_nodes(const phylo_tree& extended_tree, const phylo_tree& ar_tree);
 
     }
 

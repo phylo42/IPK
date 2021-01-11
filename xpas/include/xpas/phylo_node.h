@@ -11,15 +11,7 @@ namespace xpas
 {
     class phylo_tree;
     class phylo_node;
-    class tree_extender;
 }
-
-namespace xpas::io
-{
-    class newick_parser;
-    xpas::phylo_tree parse_newick(std::string_view);
-}
-
 
 namespace xpas
 {
@@ -27,10 +19,7 @@ namespace xpas
     /// \brief A node of a phylogenetic tree.
     class phylo_node
     {
-        friend xpas::io::newick_parser;
         friend xpas::phylo_tree;
-        friend xpas::phylo_tree xpas::io::parse_newick(std::string_view);
-        friend xpas::tree_extender;
     public:
         /// Member types
 
