@@ -97,8 +97,8 @@ else()
     target_compile_features(xpas_dna PUBLIC ${COMPILE_FEATURES})
     target_compile_definitions(xpas_dna
             PUBLIC
-            ${HASH_MAP}
-            SEQ_TYPE_DNA)
+                ${HASH_MAP}
+                SEQ_TYPE_DNA)
 
     ######################################################################################################
     # Library installation

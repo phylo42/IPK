@@ -171,6 +171,7 @@ void phylo_tree::_count_nodes()
 
     for (auto& node : xpas::visit_subtree(_root))
     {
+        (void)node;
         ++_node_count;
     }
 }

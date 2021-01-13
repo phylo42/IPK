@@ -426,7 +426,7 @@ namespace xpas
         }
     }
 
-    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group)
+    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group) const
     {
         branch_hash_map hash_map;
         size_t count = 0;
