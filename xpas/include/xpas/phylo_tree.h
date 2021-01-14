@@ -373,11 +373,15 @@ namespace xpas {
         /// \brief Returns an optional for a pointer to a phylo_node with a given label, if exists in the tree.
         /// \details This operation does not require any traversal and implemented in O(1).
         optional<const xpas::phylo_node*> get_by_label(const std::string& label) const noexcept;
+
+        /// Creates a copy of the tree. We prefer to have this method and the copy constructor deleted
+        /// to make sure we never copy by mistake, and always move trees.
+        phylo_tree copy() const;
     private:
         void _index_preorder_id();
         void _index_postorder_id();
         void _index_labels();
-        void _count_nodes();
+        void _index_nodes();
 
         /// \brief A root node.
         value_pointer _root;

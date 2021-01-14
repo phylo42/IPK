@@ -3,41 +3,99 @@
 
 using namespace xpas;
 
-
-phylo_node::branch_length_type mean_branch_length(const phylo_node* root)
+phylo_node::branch_length_type total_branch_length(const phylo_node* root)
 {
-    phylo_node::branch_length_type length = 0.0;
-    size_t count = 0;
-
-    for (const auto& node : visit_subtree(root))
+    if (root->is_leaf())
     {
-        length += node.get_branch_length();
-        count++;
+        return 0.0;
     }
-    return length / phylo_node::branch_length_type(count);
+    else
+    {
+        phylo_node::branch_length_type length = 0.0;
+        for (const auto& node : visit_subtree(root))
+        {
+            if (node.is_leaf())
+            {
+                length += node.get_branch_length();
+            }
+            else
+            {
+                length += node.get_num_nodes() * node.get_branch_length();
+            }
+        }
+        /// exclude the branch that leads to the root, because it is not
+        /// in the subtree
+        length -= root->get_num_nodes() * root->get_branch_length();
+        return length;
+    }
+}
+
+/// Calculates the branch lengths from X0, X1 ghost nodes to their parents
+std::pair<phylo_node::branch_length_type, phylo_node::branch_length_type> calc_ghost_branch_lengths(const phylo_node* node)
+{
+    auto old_branch_length = node->get_branch_length();
+
+    /* The notation for different branch lengths is the following.
+     * By expanding the original tree, we create new ghost nodes x0, x1:
+     *
+     *   parent                parent
+     *      |                     |
+     *      |                     |
+     *      |       ====>         x0---------+
+     *      |                     |          |
+     *      |                     |          |
+     *    node                   node        |
+     *     / \                   / \         x1
+     *    /   \                 /   \
+     *  (subtree)             (subtree)
+     *
+     *
+     *  This function returns the lengths of branches (x0 -> parent), (x1 -> x0)
+     *
+     */
+    phylo_node::branch_length_type x0_branch_length = old_branch_length / 2.0;
+    phylo_node::branch_length_type x1_branch_length;
+    const auto residual_bl = old_branch_length - x0_branch_length;
+    if (node->is_leaf())
+    {
+        x1_branch_length = residual_bl;
+    }
+    else
+    {
+        /// The mean branch length in the subtree of X0 can be recalculated from the
+        /// mean branch length of the subtree of Node
+        const auto total_length = total_branch_length(node);
+        x1_branch_length = (total_length + residual_bl*node->get_num_leaves()) / node->get_num_leaves();
+    }
+
+    return {x0_branch_length, x1_branch_length };
 }
 
 /// Inserts ghost nodes into a phylogenetic tree.
 class tree_extender
 {
 public:
-    explicit tree_extender(phylo_tree& tree)
-        : _tree(tree)
-          , _counter(_tree.get_node_count() + 1)
+    explicit tree_extender(const phylo_tree& original_tree)
+        : _original_tree(original_tree)
+        , _counter(original_tree.get_node_count() + 1)
     {}
     tree_extender(const tree_extender&) = delete;
     ~tree_extender() noexcept = default;
 
-    ghost_mapping extend()
+    std::pair<phylo_tree, ghost_mapping>  extend()
     {
+        /// copy the tree.
+        auto extended_tree = _original_tree.copy();
+
         /// add ghost nodes
-        extend_subtree(_tree.get_root());
+        extend_subtree(extended_tree.get_root());
 
         /// reindex the tree
-        _tree.index();
+        extended_tree.index();
 
-        /// return the mapping Extended Node ID -> Original Postorder ID
-        return _mapping;
+        /// return the tree and
+        ///        the mapping Extended Node ID -> Original Postorder ID
+        return { std::move(extended_tree), std::move(_mapping) };
     }
 
 private:
@@ -56,21 +114,23 @@ private:
         {
             auto parent = node->get_parent();
 
-            auto old_branch_length = node->get_branch_length();
-
-            /// The mean branch length in the subtree of the node
-            auto mean_length = mean_branch_length(node);
+            /// Find the corresponding node in the original tree
+            const auto original_node = _original_tree.get_by_label(node->get_label());
+            /// and use it to calculate branch length. It is easier to do in the original tree
+            const auto& [x0_length, x1_length] = calc_ghost_branch_lengths(*original_node);
 
             const auto x0_name = std::to_string(_counter++) + "_X0";
-            auto x0 = new phylo_node(x0_name,  old_branch_length / 2.0, parent);
+            auto x0 = new phylo_node(x0_name, x0_length, parent);
             parent->remove_child(node);
             parent->add_child(x0);
 
             const auto x1_name = std::to_string(_counter++) + "_X1";
-            auto x1 = new phylo_node(x1_name, mean_length + old_branch_length / 2.0, x0);
+
+            auto x1 = new phylo_node(x1_name, x1_length, x0);
             x0->add_child(x1);
             x0->add_child(node);
-            node->set_branch_length(old_branch_length / 2.0);
+            const auto old_branch_length = node->get_branch_length();
+            node->set_branch_length(old_branch_length - x0_length);
 
             auto x2 = new phylo_node(std::to_string(_counter++) + "_X2",  0.01, x1);
             auto x3 = new phylo_node(std::to_string(_counter++) + "_X3",  0.01, x1);
@@ -85,13 +145,12 @@ private:
         }
     }
 
-    phylo_tree& _tree;
+    const phylo_tree& _original_tree;
     size_t _counter;
-
     ghost_mapping _mapping;
 };
 
-ghost_mapping extend_tree(phylo_tree& tree)
+std::pair<phylo_tree, ghost_mapping> extend_tree(const phylo_tree& tree)
 {
     tree_extender extender(tree);
     return extender.extend();
@@ -119,11 +178,10 @@ std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const st
     }
 
     /// inject ghost nodes
-    auto mapping = extend_tree(tree);
+    auto [extended_tree, mapping] = extend_tree(tree);
 
     auto original_tree = xpas::io::load_newick(filename);
-
-    return std::make_tuple(std::move(original_tree), std::move(tree), mapping);
+    return std::make_tuple(std::move(original_tree), std::move(extended_tree), mapping);
 }
 
 void xpas::reroot_tree(phylo_tree& tree)

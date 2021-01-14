@@ -18,12 +18,14 @@ phylo_node::phylo_node(std::string label, branch_length_type branch_length, phyl
     , _postorder_id(-1)
     , _label(std::move(label))
     , _branch_length(branch_length)
+    , _num_nodes(0)
+    , _num_leaves(0)
     , _parent(parent)
 {}
 
 phylo_node::~phylo_node() noexcept
 {
-    for (phylo_node* child : _children)
+    for (auto child : _children)
     {
         delete child;
     }
@@ -81,6 +83,26 @@ void phylo_node::set_branch_length(branch_length_type length)
     _branch_length = length;
 }
 
+size_t phylo_node::get_num_nodes() const noexcept
+{
+    return _num_nodes;
+}
+
+void phylo_node::set_num_nodes(size_t num_nodes)
+{
+    _num_nodes = num_nodes;
+}
+
+size_t phylo_node::get_num_leaves() const noexcept
+{
+    return _num_leaves;
+}
+
+void phylo_node::set_num_leaves(size_t num_leaves)
+{
+    _num_leaves = num_leaves;
+}
+
 const std::vector<phylo_node*>& phylo_node::get_children() const
 {
     return _children;
@@ -92,6 +114,8 @@ void phylo_node::clean()
     _postorder_id = -1;
     _label = "";
     _branch_length = 0.0;
+    _num_nodes = 0;
+    _num_leaves = 0;
     _children.clear();
     _parent = nullptr;
 }
@@ -115,4 +139,26 @@ bool phylo_node::is_leaf() const noexcept
 bool phylo_node::is_root() const noexcept
 {
     return _parent == nullptr;
+}
+
+phylo_node* phylo_node::copy()
+{
+    auto new_node = new phylo_node();
+
+    new_node->_preorder_id = _preorder_id;
+    new_node->_postorder_id = _postorder_id;
+    new_node->_label = _label;
+    new_node->_branch_length = _branch_length;
+    new_node->_num_nodes = _num_nodes;
+    new_node->_num_leaves = _num_leaves;
+    new_node->_parent = nullptr;
+
+    for (const auto& child : _children)
+    {
+        auto new_child = child->copy();
+        new_child->_parent = new_node;
+        new_node->_children.push_back(new_child);
+    }
+
+    return new_node;
 }

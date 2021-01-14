@@ -541,7 +541,6 @@ namespace xpas::ar
                                     "-c", std::to_string(_params.categories),
                                     "-b", std::to_string(0),
                                     "-v", std::to_string(0.0),
-                                    "-v", std::to_string(0.0),
                                     "-o", "r",
                                     "-a", std::to_string(_params.alpha),
                                     "-f", "e",

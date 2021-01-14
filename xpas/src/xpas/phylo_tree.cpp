@@ -90,7 +90,7 @@ void phylo_tree::index()
     _index_postorder_id();
     _index_labels();
 
-    _count_nodes();
+    _index_nodes();
 }
 
 optional<const phylo_node*> phylo_tree::get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept
@@ -129,6 +129,12 @@ optional<const xpas::phylo_node*> phylo_tree::get_by_label(const std::string& la
     }
 }
 
+phylo_tree phylo_tree::copy() const
+{
+    auto new_root = _root->copy();
+    return phylo_tree(new_root);
+}
+
 void phylo_tree::_index_preorder_id()
 {
     _preorder_id_to_node.clear();
@@ -165,14 +171,42 @@ void phylo_tree::_index_labels()
     }
 }
 
-void phylo_tree::_count_nodes()
+void phylo_tree::_index_nodes()
 {
     _node_count = 0;
 
-    for (auto& node : xpas::visit_subtree(_root))
+    for (auto& node : xpas::visit_subtree<iterator>(_root))
     {
         (void)node;
         ++_node_count;
+
+        if (node.is_leaf())
+        {
+            /// By convention the leaves have no nodes in their subtrees
+            node.set_num_nodes(0);
+
+            /// By convention the number of leaves in the subtree of a leaf is one
+            node.set_num_leaves(1);
+        }
+        else
+        {
+            /// The number of the nodes in the subtree of this node
+            ///   =  the number of children
+            size_t total_num_nodes = node.get_children().size();
+            size_t total_num_leaves = 0;
+
+            for (const auto& child : node.get_children())
+            {
+                ///  + the total number of nodes in subtrees of children
+                total_num_nodes += child->get_num_nodes();
+
+                /// The number of leaves is the sum of leaves of all children
+                total_num_leaves += child->get_num_leaves();
+            }
+
+            node.set_num_nodes(total_num_nodes);
+            node.set_num_leaves(total_num_leaves);
+        }
     }
 }
 

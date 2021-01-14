@@ -60,6 +60,18 @@ namespace xpas
 
         void set_branch_length(branch_length_type length);
 
+        /// Returns the total number of nodes in the subtree
+        [[nodiscard]]
+        size_t get_num_nodes() const noexcept;
+
+        void set_num_nodes(size_t num_nodes);
+
+        /// Returns the total number of leaves in the subtree
+        [[nodiscard]]
+        size_t get_num_leaves() const noexcept;
+
+        void set_num_leaves(size_t num_leaves);
+
         [[nodiscard]]
         const std::vector<phylo_node*>& get_children() const;
 
@@ -76,12 +88,25 @@ namespace xpas
         [[nodiscard]]
         bool is_root() const noexcept;
 
+        /// Creates a deep copy of this node. We prefer to have this method, not the
+        /// copy constructor to make sure we never copy nodes by mistake
+        [[nodiscard]]
+        phylo_node* copy();
+
     private:
         id_type _preorder_id;
         id_type _postorder_id;
 
         std::string _label;
+
+        /// The length of the branch to the parent
         branch_length_type _branch_length;
+
+        /// The total number of nodes in the subtree excluding this node
+        size_t _num_nodes;
+
+        /// The total number of leaves in the subtree including this node
+        size_t _num_leaves;
 
         std::vector<phylo_node*> _children;
         phylo_node* _parent;
