@@ -22,6 +22,7 @@ namespace xpas::cli
     static std::string AR_MODEL = "model";
     static std::string AR_ALPHA = "alpha";
     static std::string AR_CATEGORIES = "categories";
+    static std::string AR_ONLY = "ar-only";
 
     /// Main options
     static std::string REDUCTION_RATIO = "reduction-ratio";
@@ -42,7 +43,7 @@ namespace xpas::cli
     static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
     static std::string MERGE_BRANCHES = "merge-branches";
-    static std::string FORCE_ROOT = "force-root";
+    static std::string USE_UNROOTED = "use-unrooted";
 
     bool no_filter_flag = true;
     bool entropy_flag = false;
@@ -54,8 +55,9 @@ namespace xpas::cli
     bool log_std_deviation_filter_flag = false;
     bool random_filter_flag = false;
     bool merge_branches_flag = false;
-    bool force_root_flag = false;
+    bool use_unrooted_flag = false;
     bool no_reduction_flag = false;
+    bool ar_only_flag = false;
 
     po::options_description get_opt_description()
     {
@@ -83,6 +85,7 @@ namespace xpas::cli
              "Gamma shape parameter, used in ancestral reconstruction.")
             (AR_CATEGORIES.c_str(), po::value<int>()->default_value(4),
              "Number of relative substitution rate categories, used in ancestral reconstruction.")
+            ((AR_ONLY).c_str(), po::bool_switch(&ar_only_flag))
 
             ((K + "," + K_SHORT).c_str(), po::value<size_t>()->default_value(8),
                 "k-mer length used at DB build")
@@ -96,7 +99,7 @@ namespace xpas::cli
             ((NUM_THREADS + "," + NUM_THREADS_SHORT).c_str(), po::value<size_t>()->default_value(1),
                 "Number of threads")
             ((MERGE_BRANCHES).c_str(), po::bool_switch(&merge_branches_flag))
-            ((FORCE_ROOT).c_str(), po::bool_switch(&force_root_flag))
+            ((USE_UNROOTED).c_str(), po::bool_switch(&use_unrooted_flag))
 
 
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
@@ -149,6 +152,7 @@ namespace xpas::cli
             parameters.ar_model = vm[AR_MODEL].as<std::string>();
             parameters.ar_alpha = vm[AR_ALPHA].as<double>();
             parameters.ar_categories = vm[AR_CATEGORIES].as<int>();
+            parameters.ar_only = ar_only_flag;
 
             parameters.reduction_ratio = vm[REDUCTION_RATIO].as<double>();
             parameters.omega = vm[OMEGA].as<xpas::phylo_kmer::score_type>();
@@ -156,7 +160,7 @@ namespace xpas::cli
             parameters.mu = vm[MU].as<double>();
 
             parameters.merge_branches = merge_branches_flag;
-            parameters.force_root = force_root_flag;
+            parameters.use_unrooted = use_unrooted_flag;
             parameters.no_reduction = no_reduction_flag;
 
             parameters.no_filter = no_filter_flag;

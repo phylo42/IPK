@@ -108,10 +108,6 @@ def validate_filter(ctx, param, value):
 @click.option('--convert-uo',
               is_flag=True,
               help="U, O amino acids are converted to C, L.")
-@click.option('--force-root',
-              is_flag=True,
-              help="""Root input tree (if unrooted) by adding a root
-                  node on righmost branch of the trifurcation.""")
 #@click.option('--gap-jump-thresh',
 #              type=float,
 #              deafult=0.3, show_default=True,
@@ -172,7 +168,7 @@ def build(arbinary, #database,
           refalign, reftree, states, verbosity,
           workdir, write_reduction, #dbfilename,
           alpha, categories, #ghosts,
-          k, model, arparameters, convert_uo, force_root, #gap_jump_thresh,
+          k, model, arparameters, convert_uo, #gap_jump_thresh,
           no_reduction, ratio_reduction, omega,
           filter, f, mu, use_unrooted, merge_branches,
           ardir, keep_positions,
@@ -219,12 +215,17 @@ def build(arbinary, #database,
         "-j", str(threads)
     ]
 
+    if aronly:
+        command.append("--ar-only")
+    if ardir:
+        command.append("--ar-dir")
+        command.append(ardir)
     if no_reduction:
         command.append("--no-reduction")
     if merge_branches:
         command.append("--merge-branches")
-    if force_root:
-        command.append("--force-root")
+    if use_unrooted:
+        command.append("--use-unrooted")
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"

@@ -379,10 +379,10 @@ namespace xpas
         /// in a hash map for every group separately on disk.
         std::vector<phylo_kmer::branch_type> node_postorder_ids(node_groups.size());
 
-    /*#ifdef NDEBUG
+        /*
         #pragma omp parallel for schedule(auto) reduction(+: count) num_threads(_num_threads) \
             shared(original_tree, node_postorder_ids, _matrix)
-    #endif*/
+        */
         for (size_t i = 0; i < node_groups.size(); ++i)
         {
             const auto& node_group = node_groups[i];
@@ -482,8 +482,8 @@ namespace xpas
             {
                 for (const auto& kmer : *window)
                 {
-                    /*std::cout << "\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
-                              << kmer.score << " " << std::pow(10, kmer.score) << std::endl;*/
+                    //std::cout << "\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
+                    //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
                     put(hash_map, kmer);
                     ++count;
                 }

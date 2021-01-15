@@ -117,7 +117,7 @@ return_code build_database(const xpas::cli::parameters& parameters)
 
     /// Load and extend the reference tree
     const auto& [original_tree, extended_tree, ghost_mapping] = xpas::preprocess_tree(parameters.original_tree_file,
-                                                                                      parameters.force_root);
+                                                                                      parameters.use_unrooted);
     const auto extended_tree_file = save_extended_tree(parameters.working_directory, extended_tree);
 
     /// Extend the alignment
@@ -128,9 +128,25 @@ return_code build_database(const xpas::cli::parameters& parameters)
     /// Prepare and run ancestral reconstruction
     auto [ar_software, ar_parameters] = xpas::ar::make_parameters(parameters,
                                                                   extended_tree_file, ext_alignment_phylip);
-    const auto [proba_matrix, ar_tree] = xpas::ar::ancestral_reconstruction(ar_software, ar_parameters);
+    auto [proba_matrix, ar_tree] = xpas::ar::ancestral_reconstruction(ar_software, ar_parameters);
+
+    if (parameters.ar_only)
+    {
+        std::cout << "--ar-only requested. Finishing after ancestral reconstruction." << std::endl;
+        return return_code::success;
+    }
+
+    /// Ancestral Reconstruction will unroot the input tree even if it is rooted:
+    /// ((A, B)node, C)root  ===>   (C, A, B)newick_root;
+    if (original_tree.is_rooted() && !ar_tree.is_rooted())
+    {
+        /// Re-root it back:
+        /// ((A,B)newick_root,C)added_root;
+        xpas::reroot_tree(ar_tree);
+        save_rerooted_tree(parameters.working_directory, ar_tree);
+    }
+
     const auto ar_mapping = xpas::ar::map_nodes(extended_tree, ar_tree);
-    save_rerooted_tree(parameters.working_directory, ar_tree);
 
     /// Generate phylo k-mers
     const auto db = xpas::build(parameters.working_directory,

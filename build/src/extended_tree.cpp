@@ -20,12 +20,12 @@ phylo_node::branch_length_type total_branch_length(const phylo_node* root)
             }
             else
             {
-                length += node.get_num_nodes() * node.get_branch_length();
+                length += node.get_num_leaves() * node.get_branch_length();
             }
         }
         /// exclude the branch that leads to the root, because it is not
         /// in the subtree
-        length -= root->get_num_nodes() * root->get_branch_length();
+        length -= root->get_num_leaves() * root->get_branch_length();
         return length;
     }
 }
@@ -82,7 +82,7 @@ public:
     tree_extender(const tree_extender&) = delete;
     ~tree_extender() noexcept = default;
 
-    std::pair<phylo_tree, ghost_mapping>  extend()
+    std::pair<phylo_tree, ghost_mapping> extend()
     {
         /// copy the tree.
         auto extended_tree = _original_tree.copy();
@@ -115,8 +115,11 @@ private:
             auto parent = node->get_parent();
 
             /// Find the corresponding node in the original tree
-            const auto original_node = _original_tree.get_by_label(node->get_label());
-            /// and use it to calculate branch length. It is easier to do in the original tree
+            /// We can use the postorder IDs here because despite that the extended tree
+            /// has got more nodes, it is not indexed yet, and all IDs are old
+            const auto original_node = _original_tree.get_by_postorder_id(node->get_postorder_id());
+
+            /// Use it to calculate branch length. It is easier to do in the original tree
             const auto& [x0_length, x1_length] = calc_ghost_branch_lengths(*original_node);
 
             const auto x0_name = std::to_string(_counter++) + "_X0";
@@ -157,23 +160,18 @@ std::pair<phylo_tree, ghost_mapping> extend_tree(const phylo_tree& tree)
 }
 
 
-std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const std::string& filename, bool force_root)
+std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const std::string& filename, bool use_unrooted)
 {
     /// load original tree
     auto tree = xpas::io::load_newick(filename);
 
     if (!tree.is_rooted())
     {
-        if (!force_root)
+        if (!use_unrooted)
         {
             throw std::runtime_error("This reference tree is not rooted."
-                                     "Please provide a rooted tree or re-root it by adding --force-root. "
-                                     "The trifurcation described in the newick file will be used to root the tree."
+                                     "Please provide a rooted tree or provide --use-unrooted."
                                      "WARNING! This may impact placement accuracy.");
-        }
-        else
-        {
-            reroot_tree(tree);
         }
     }
 

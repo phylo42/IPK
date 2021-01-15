@@ -29,6 +29,7 @@ namespace xpas::cli
         std::string ar_model;
         double ar_alpha;
         int ar_categories;
+        bool ar_only;
 
         /// Main parameters
         double reduction_ratio;
@@ -38,7 +39,7 @@ namespace xpas::cli
         size_t num_threads;
 
         bool merge_branches;
-        bool force_root;
+        bool use_unrooted;
 
         /// k-mer filtering parameters, mutually exclusive
         bool no_filter;
