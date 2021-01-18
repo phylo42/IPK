@@ -118,9 +118,6 @@ install(TARGETS xpas_dna
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-export(TARGETS xpas_dna ${HASH_MAP_EXPORT}
-       FILE ${CMAKE_BINARY_DIR}/xpasConfig.cmake)
-
 install(TARGETS xpas_aa
         EXPORT xpasAaTargets
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -128,7 +125,7 @@ install(TARGETS xpas_aa
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
-export(TARGETS xpas_aa ${HASH_MAP_EXPORT}
+export(TARGETS xpas_dna xpas_aa ${HASH_MAP_EXPORT}
         FILE ${CMAKE_BINARY_DIR}/xpasConfig.cmake)
 
 export(PACKAGE xpas)
