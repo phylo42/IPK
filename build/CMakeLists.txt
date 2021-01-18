@@ -49,8 +49,9 @@ target_include_directories(build_dna
 
 target_link_libraries(build_dna
         PRIVATE
-            ${LINK_LIBRARIES}
             xpas::dna
+            ${LINK_LIBRARIES}
+
         )
 
 # Turn on the warnings and treat them as errors
@@ -78,8 +79,8 @@ target_include_directories(build_aa
 
 target_link_libraries(build_aa
         PRIVATE
-            ${LINK_LIBRARIES}
-            xpas::aa
+        ${LINK_LIBRARIES}
+        xpas::aa
         )
 
 # Turn on the warnings and treat them as errors

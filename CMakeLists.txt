@@ -13,6 +13,7 @@ endif()
 
 if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
     add_subdirectory(skarupke)
+    set(HASH_MAP_EXPORT skarupke)
 elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
     add_subdirectory(skarupke)
 elseif(${HASH_MAP} STREQUAL USE_ABSL_FLAT_HASH_MAP)
