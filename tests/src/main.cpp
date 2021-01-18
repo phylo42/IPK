@@ -5,9 +5,9 @@
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
 #include <xpas/kmer_iterator.h>
-#include <newick.h>
-#include <phylo_tree.h>
-#include <fasta.h>
+#include <xpas/newick.h>
+#include <xpas/phylo_tree.h>
+#include <xpas/fasta.h>
 
 namespace fs = boost::filesystem;
 
@@ -323,17 +323,18 @@ TEST_CASE("xpas::visit_tree", "[tree]")
     size_t i = 0;
 
     /// can't start visiting nullptr
-    REQUIRE_THROWS(xpas::visit_subtree<true>(nullptr));
+    REQUIRE_THROWS(xpas::visit_subtree(nullptr));
 
     /// Here we also test non-const iteration
     for (auto& node : tree)
     {
         /// Test if we can start visiting the subtree
-        REQUIRE_NOTHROW(xpas::visit_subtree<false>(&node));
+        using iterator = xpas::postorder_tree_iterator<false>;
+        REQUIRE_NOTHROW(xpas::visit_subtree<iterator>(&node));
 
         /// run DFS from a node, calculating the total subtree branch length
         double total_length = 0.0;
-        for (const auto& subtree_node : xpas::visit_subtree<true>(&node))
+        for (const auto& subtree_node : xpas::visit_subtree(&node))
         {
             total_length += subtree_node.get_branch_length();
         }
@@ -346,7 +347,7 @@ TEST_CASE("xpas::visit_tree", "[tree]")
 
 TEST_CASE("xpas::io::read_fasta", "[utils]")
 {
-    const auto fasta = std::vector<xpas::io::fasta>{
+    const auto seq_records = std::vector<xpas::seq_record>{
         {"1", "AAAAA"},
         {"2", "AAAAC"},
         {"3", "AAAAG"},
@@ -364,7 +365,7 @@ TEST_CASE("xpas::io::read_fasta", "[utils]")
     /// write sequences to a temporary file
     const auto filename = fs::unique_path().string();
     std::ofstream out(filename);
-    for (const auto& seq : fasta)
+    for (const auto& seq : seq_records)
     {
         out << ">" << seq.header() << std::endl << seq.sequence() << std::endl;
     }
@@ -373,45 +374,45 @@ TEST_CASE("xpas::io::read_fasta", "[utils]")
     size_t i = 0;
     for (const auto& seq : xpas::io::read_fasta(filename))
     {
-        REQUIRE(seq == fasta[i]);
+        REQUIRE(seq == seq_records[i]);
         ++i;
     }
 
-    /// batch_size < fasta.size()
-    /// fasta.size() % batch_size == 0
+    /// batch_size < seq_records.size()
+    /// seq_records.size() % batch_size == 0
     size_t batch_size = 4;
     i = 0;
     for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
     {
-        REQUIRE(seq == fasta[i]);
+        REQUIRE(seq == seq_records[i]);
         ++i;
     }
 
-    /// batch_size < fasta.size()
-    /// fasta.size() % batch_size != 0
+    /// batch_size < seq_records.size()
+    /// seq_records.size() % batch_size != 0
     batch_size = 5;
     i = 0;
     for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
     {
-        REQUIRE(seq == fasta[i]);
+        REQUIRE(seq == seq_records[i]);
         ++i;
     }
 
-    /// batch_size == fasta.size()
-    batch_size = fasta.size();
+    /// batch_size == seq_records.size()
+    batch_size = seq_records.size();
     i = 0;
     for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
     {
-        REQUIRE(seq == fasta[i]);
+        REQUIRE(seq == seq_records[i]);
         ++i;
     }
 
-    /// batch_size > fasta.size()
-    batch_size = 2 * fasta.size();
+    /// batch_size > seq_records.size()
+    batch_size = 2 * seq_records.size();
     i = 0;
     for (const auto& seq : xpas::io::read_fasta(filename, batch_size))
     {
-        REQUIRE(seq == fasta[i]);
+        REQUIRE(seq == seq_records[i]);
         ++i;
     }
 }
