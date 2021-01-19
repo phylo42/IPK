@@ -68,7 +68,7 @@ chain_window_iterator& chain_window_iterator::operator++()
         _view.set_end_pos(_view.get_end_pos() + suffix_size);
     }
     /// if the chain is over, start the next one if possible
-    else if (_first_view_pos + 1 <= _kmer_size / 2)
+    else if (_first_view_pos + 1 < _kmer_size / 2)
     {
         ++_first_view_pos;
 
