@@ -3,13 +3,15 @@
 #include <xpas/seq.h>
 #include <node_entry.h>
 #include <node_entry_view.h>
+#include <cassert>
+#include <iostream>
 
 using namespace xpas;
 using namespace xpas::impl;
 
-dac_kmer_iterator make_dac_end_iterator()
+dac_kmer_iterator xpas::impl::make_dac_end_iterator()
 {
-    return { nullptr, 0, 0, 0 };
+    return { nullptr, 0, 0.0, 0, 0, {} };
 }
 
 bool kmer_score_comparator(const unpositioned_phylo_kmer& k1, const unpositioned_phylo_kmer& k2)
@@ -17,54 +19,79 @@ bool kmer_score_comparator(const unpositioned_phylo_kmer& k1, const unpositioned
     return k1.score > k2.score;
 }
 
-dac_kmer_iterator::dac_kmer_iterator(const node_entry* entry, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
-                                     xpas::phylo_kmer::pos_type start_pos) noexcept
-    : _entry{ entry }, _kmer_size{ kmer_size }, _left_part_size{ 0 }, _start_pos{ start_pos }, _threshold{ threshold }
+dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
+                                     xpas::phylo_kmer::pos_type start_pos, size_t prefix_size,
+                                     vector_type<xpas::unpositioned_phylo_kmer> prefixes) noexcept
+    : _entry_view{ view }, _kmer_size{ kmer_size }, _prefix_size{ 0 }, _start_pos{ start_pos }, _threshold{ threshold }
 {
-    const auto halfsize = size_t{ kmer_size / 2 };
-    _left_part_size = (halfsize >= 1)
-        ? size_t{ kmer_size / 2 }
-        : kmer_size;
+    /// if prefixes are not given, figure out their size
+    if (prefixes.empty())
+    {
+        /// kmer_size can also be zero, which means the end() iterator
+        const auto halfsize = size_t{ kmer_size / 2 };
+        _prefix_size = (halfsize >= 1) ? halfsize : kmer_size;
+    }
+    else
+    {
+        _prefix_size = prefix_size;
+    }
 
+    /// for the window of size 1, k-mers are trivial
     if (kmer_size == 1)
     {
         for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
         {
-            const auto& letter = _entry->at(_start_pos, i);
-            _left_halfmers.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(letter.index, letter.score, 0));
-        }
-        _left_halfmer_it = _left_halfmers.begin();
-        _current = _next_phylokmer();
-    }
-    /// a workaround for end()
-    else if (_left_part_size > 0)
-    {
-        // left part
-        {
-            auto it = (_left_part_size == 0)
-                      ? make_dac_end_iterator()
-                      : dac_kmer_iterator(entry, _left_part_size, threshold, start_pos);
-            const auto end = make_dac_end_iterator();
-            for (; it != end; ++it)
-            {
-                _left_halfmers.push_back(*it);
-            }
-            _left_halfmer_it = _left_halfmers.begin();
+            const auto entry = _entry_view->get_entry();
+            const auto& letter = entry->at(_start_pos, i);
+            _prefixes.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(letter.index, letter.score, 0));
         }
 
-        // right part
+        _prefix_it = _prefixes.begin();
+        _current = _next_phylokmer();
+    }
+    /// for all other window sizes:
+    /// if it is not the end()
+    else if (_prefix_size > 0)
+    {
+        // Calculate prefixes
         {
-            auto it = (_left_part_size < kmer_size)
-                      ? dac_kmer_iterator(entry, kmer_size - _left_part_size, threshold, start_pos + _left_part_size)
+            /// if prefixes are provided, they are already calculated from the previous window
+            if (!prefixes.empty())
+            {
+                _prefixes = std::move(prefixes);
+            }
+            /// otherwise it's the very first window in the chain: calculate prefixes
+            else
+            {
+                auto it = (_prefix_size == 0)
+                          ? make_dac_end_iterator()
+                          : dac_kmer_iterator(_entry_view, _prefix_size, threshold, start_pos, 0, {});
+                const auto end = make_dac_end_iterator();
+                //std::cout << "\tprefix of " << _prefix_size << " from " << start_pos << ":" << std::endl;
+                for (; it != end; ++it)
+                {
+                    _prefixes.push_back(*it);
+                    //std::cout << "\t\t" << xpas::decode_kmer(it->key, _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
+                }
+            }
+            _prefix_it = _prefixes.begin();
+        }
+
+        // Calculate suffixes
+        {
+            auto it = (_prefix_size < kmer_size)
+                      ? dac_kmer_iterator(_entry_view, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
                       : make_dac_end_iterator();
             const auto end = make_dac_end_iterator();
+            //std::cout << "\tsuffix of " << kmer_size - _prefix_size << " from " << start_pos + _prefix_size << ":" << std::endl;
             for (; it != end; ++it)
             {
-                _right_halfmers.push_back(*it);
+                _suffixes.push_back(*it);
+                //std::cout << "\t\t" << xpas::decode_kmer(it->key, kmer_size - _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
             }
-            std::sort(_right_halfmers.begin(), _right_halfmers.end(), kmer_score_comparator);
-            _right_halfmer_it = _right_halfmers.begin();
-            _select_right_halfmers_bound();
+            std::sort(_suffixes.begin(), _suffixes.end(), kmer_score_comparator);
+            _suffix_it = _suffixes.begin();
+            _select_suffix_bound();
         }
 
         _current = _next_phylokmer();
@@ -75,24 +102,24 @@ dac_kmer_iterator& dac_kmer_iterator::operator=(dac_kmer_iterator&& rhs) noexcep
 {
     if (*this != rhs)
     {
-        _entry = rhs._entry;
+        _entry_view = rhs._entry_view;
         _kmer_size = rhs._kmer_size;
-        _left_part_size = rhs._left_part_size;
+        _prefix_size = rhs._prefix_size;
         _start_pos = rhs._start_pos;
         _threshold = rhs._threshold;
         _current = rhs._current;
-        _left_halfmers = std::move(rhs._left_halfmers);
-        _left_halfmer_it = rhs._left_halfmer_it;
-        _right_halfmers = std::move(rhs._right_halfmers);
-        _right_halfmer_it = rhs._right_halfmer_it;
-        _last_right_halfmer_it = rhs._last_right_halfmer_it;
+        _prefixes = std::move(rhs._prefixes);
+        _prefix_it = rhs._prefix_it;
+        _suffixes = std::move(rhs._suffixes);
+        _suffix_it = rhs._suffix_it;
+        _last_suffix_it = rhs._last_suffix_it;
     }
     return *this;
 }
 
 bool dac_kmer_iterator::operator==(const dac_kmer_iterator& rhs) const noexcept
 {
-    return _entry == rhs._entry && _start_pos == rhs._start_pos && _kmer_size == rhs._kmer_size;
+    return _entry_view == rhs._entry_view && _start_pos == rhs._start_pos && _kmer_size == rhs._kmer_size;
 }
 
 bool dac_kmer_iterator::operator!=(const dac_kmer_iterator& rhs) const noexcept
@@ -118,64 +145,88 @@ dac_kmer_iterator::pointer dac_kmer_iterator::operator->()  const noexcept
 
 unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
 {
-    if (_left_halfmer_it != _left_halfmers.end())
+    if (_prefix_it != _prefixes.end())
     {
         if (_kmer_size > 1)
         {
-            while ((_right_halfmer_it == _last_right_halfmer_it) && (_left_halfmer_it != _left_halfmers.end()))
+            while ((_suffix_it == _last_suffix_it) && (_prefix_it != _prefixes.end()))
             {
-                ++_left_halfmer_it;
-                _right_halfmer_it = _right_halfmers.begin();
-                _select_right_halfmers_bound();
+                ++_prefix_it;
+                _suffix_it = _suffixes.begin();
+                _select_suffix_bound();
             }
 
-            if (_left_halfmer_it != _left_halfmers.end())
+            if (_prefix_it != _prefixes.end())
             {
-                const auto left_halfmer = *_left_halfmer_it;
-                const auto right_halfmer = *_right_halfmer_it;
+                const auto prefix = *_prefix_it;
+                const auto suffix = *_suffix_it;
                 const auto full_key =
-                    (left_halfmer.key << ((_kmer_size - _left_part_size) * xpas::bit_length<xpas::seq_type>()))
-                    | right_halfmer.key;
-                const auto full_score = left_halfmer.score + right_halfmer.score;
-                ++_right_halfmer_it;
+                    (prefix.key << ((_kmer_size - _prefix_size) * xpas::bit_length<xpas::seq_type>()))
+                    | suffix.key;
+                const auto full_score = prefix.score + suffix.score;
+                ++_suffix_it;
+                /*std::cout << "\t\tpairing "
+                    << xpas::decode_kmer(prefix.key, _prefix_size)  << " " << std::pow(10, prefix.score) << " "
+                    << xpas::decode_kmer(suffix.key, _kmer_size - _prefix_size)  << " " << std::pow(10, suffix.score) << " "
+                    << "= " << xpas::decode_kmer(full_key, _kmer_size)  << " " << std::pow(10, full_score) << std::endl;*/
                 return make_phylo_kmer<unpositioned_phylo_kmer>(full_key, full_score, 0);
             }
         }
         else
         {
-            const auto kmer = *_left_halfmer_it;
-            ++_left_halfmer_it;
+            const auto kmer = *_prefix_it;
+            ++_prefix_it;
             return kmer;
         }
     }
 
+    /// If we reached this line, the iterator is over
+    if (_entry_view != nullptr)
+    {
+        /// Save suffixes of this window as prefixes of the next window
+        _entry_view->set_prefixes(std::move(_suffixes));
+        /// save their length
+        _entry_view->set_prefix_size(_kmer_size - _prefix_size);
+    }
+
+    /// Now we can safely mark the iterator as ended
     *this = make_dac_end_iterator();
     return {};
 }
 
-void dac_kmer_iterator::_select_right_halfmers_bound()
+void dac_kmer_iterator::_select_suffix_bound()
 {
-    const auto residual_threshold =  _threshold - _left_halfmer_it->score;
-    _last_right_halfmer_it = ::std::lower_bound(_right_halfmers.begin(), _right_halfmers.end(),
-        make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
+    const auto residual_threshold = _threshold - _prefix_it->score;
+    _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
+                                         make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
 }
 
 node_entry_view::node_entry_view(const node_entry* entry, phylo_kmer::score_type threshold,
                                  phylo_kmer::pos_type start, phylo_kmer::pos_type end) noexcept
-    : _entry{ entry }, _threshold{ threshold }, _start{ start }, _end{ end }
+    : _entry{ entry }
+    , _threshold{ threshold }
+    , _start{ start }
+    , _end{ end }
+    /// _prefix_size will be set by the dac_iterator later
+    , _prefix_size{ 0 }
+    /// same for _prefixes. At the beginning it's empty
 {}
 
 node_entry_view::node_entry_view(const node_entry_view& other) noexcept
-    : node_entry_view{ other._entry, other._threshold, other._start, other._end}
-{}
-
-node_entry_view::const_iterator node_entry_view::begin() const
+    : node_entry_view{ other._entry, other._threshold, other._start, other._end }
 {
-    const auto kmer_size = size_t{ (size_t)_end - _start };
-    return { _entry, kmer_size, _threshold, _start };
+    /// We need the copy constructor, but only for windows without precomputed prefixes.
+    /// Check that we never copy those around
+    assert(other._prefixes.empty());
 }
 
-node_entry_view::const_iterator node_entry_view::end() const noexcept
+node_entry_view::iterator node_entry_view::begin()
+{
+    const auto kmer_size = size_t{ (size_t)_end - _start + 1};
+    return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
+}
+
+node_entry_view::iterator node_entry_view::end() const noexcept
 {
     return make_dac_end_iterator();
 }
@@ -204,14 +255,39 @@ xpas::phylo_kmer::pos_type node_entry_view::get_start_pos() const noexcept
     return _start;
 }
 
+void node_entry_view::set_start_pos(xpas::phylo_kmer::pos_type pos)
+{
+    _start = pos;
+}
+
 xpas::phylo_kmer::pos_type node_entry_view::get_end_pos() const noexcept
 {
     return _end;
 }
 
+void node_entry_view::set_end_pos(phylo_kmer::pos_type pos)
+{
+    _end = pos;
+}
+
 xpas::phylo_kmer::score_type node_entry_view::get_threshold() const noexcept
 {
     return _threshold;
+}
+
+void node_entry_view::set_prefixes(impl::vector_type<xpas::unpositioned_phylo_kmer> prefixes)
+{
+    _prefixes = std::move(prefixes);
+}
+
+size_t node_entry_view::get_prefix_size() const noexcept
+{
+    return _prefix_size;
+}
+
+void node_entry_view::set_prefix_size(size_t size)
+{
+    _prefix_size = size;
 }
 
 bool xpas::operator==(const node_entry_view& a, const node_entry_view& b) noexcept

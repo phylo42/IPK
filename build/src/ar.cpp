@@ -140,7 +140,7 @@ namespace xpas::ar
                 auto it = matrix.find(node_label);
                 if (it != std::end(matrix))
                 {
-                    it->second.push_back(std::move(new_row));
+                    it->second.push_back(new_row);
                 }
                 else
                 {
@@ -258,7 +258,7 @@ namespace xpas::ar
             auto it = matrix.find(node_label);
             if (it != std::end(matrix))
             {
-                it->second.push_back(std::move(new_row));
+                it->second.push_back(new_row);
             }
             else
             {

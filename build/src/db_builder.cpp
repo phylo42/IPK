@@ -478,11 +478,12 @@ namespace xpas
             const auto& node_entry = node_entry_ref.get();
 
             //std::cout << node_entry.get_label() << std::endl;
-            for (auto window = node_entry.begin(_kmer_size, log_threshold); window != node_entry.end(); ++window)
+            for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             {
-                for (const auto& kmer : *window)
+                //std::cout << "\tWINDOW " << window.get_start_pos() << std::endl;
+                for (const auto& kmer : window)
                 {
-                    //std::cout << "\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
+                    //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
                     put(hash_map, kmer);
                     ++count;

@@ -1,4 +1,6 @@
 #include "node_entry.h"
+#include "node_entry_view.h"
+#include <iostream>
 
 using namespace xpas;
 
@@ -7,17 +9,7 @@ node_entry::node_entry(std::string _id, vector_type&& rows)
     , _rows{ std::move(rows) }
 {}
 
-node_entry::const_iterator node_entry::begin(size_t kmer_size, xpas::phylo_kmer::score_type threshold) const
-{
-    return { { this, threshold, 0, xpas::phylo_kmer::pos_type(kmer_size) } };
-}
-
-node_entry::const_iterator node_entry::end() const
-{
-    return { { this, 0.0, 0, 0 } };
-}
-
-void node_entry::push_back(row_type&& row)
+void node_entry::push_back(row_type row)
 {
     _rows.push_back(row);
 }
@@ -42,43 +34,86 @@ bool operator==(const node_entry& lhs, const node_entry& rhs)
     return lhs.get_label() == rhs.get_label();
 }
 
-view_iterator::view_iterator(node_entry_view view) noexcept
-    : _view{ view }
-{}
+using namespace impl;
 
-view_iterator& view_iterator::operator++()
+node_entry_view make_empty_view()
 {
-    auto entry = _view.get_entry();
-    if (size_t(_view.get_end_pos()) < entry->get_alignment_size())
+    return node_entry_view{ nullptr, 0.0, 0, 0 };
+}
+
+chain_window_iterator::chain_window_iterator(node_entry_view view,
+                                             size_t kmer_size, phylo_kmer::score_type threshold) noexcept
+    : _view{ std::move(view) }
+    , _kmer_size{ kmer_size }
+    , _threshold{ threshold }
+    , _first_view_pos{ 0 }
+{
+}
+
+chain_window_iterator& chain_window_iterator::operator++()
+{
+    const auto entry = _view.get_entry();
+
+    /// Prefix size is the suffix size from the previous window,
+    /// see dac_kmer_iterator::_next_phylokmer
+    const auto prefix_size = _view.get_prefix_size();
+    /// Suffix size for the next window
+    const auto suffix_size = _kmer_size - prefix_size;
+
+    /// continue the chain if possible
+    if (size_t(_view.get_end_pos() + suffix_size) < entry->get_alignment_size())
     {
-        const xpas::phylo_kmer::pos_type start = _view.get_start_pos() + 1;
-        const xpas::phylo_kmer::pos_type end = _view.get_end_pos() + 1;
-        _view = { node_entry_view{ entry, _view.get_threshold(), start, end } };
+        //std::cout << "\tOK MOVE from " << _view.get_start_pos() << " to " << _view.get_start_pos() + suffix_size << std::endl;
+        _view.set_start_pos(_view.get_start_pos() + suffix_size);
+        _view.set_end_pos(_view.get_end_pos() + suffix_size);
     }
+    /// if the chain is over, start the next one if possible
+    else if (_first_view_pos + 1 <= _kmer_size / 2)
+    {
+        ++_first_view_pos;
+
+        //std::cout << "\tOK MOVE " << _first_view_pos << std::endl;
+        _view.set_start_pos(_first_view_pos);
+        _view.set_end_pos(_first_view_pos + _kmer_size - 1);
+        _view.set_prefixes({});
+    }
+    /// otherwise, the iterator is over
     else
     {
-        /// WARNING: the same code in node_entry::end
-        _view = { node_entry_view{ entry, 0.0, 0, 0 } };
+        _view = make_empty_view();
     }
     return *this;
 }
 
-bool view_iterator::operator==(const view_iterator& rhs) const noexcept
+bool chain_window_iterator::operator==(const chain_window_iterator& rhs) const noexcept
 {
     return _view == rhs._view;
 }
 
-bool view_iterator::operator!=(const view_iterator& rhs) const noexcept
+bool chain_window_iterator::operator!=(const chain_window_iterator& rhs) const noexcept
 {
     return !(*this == rhs);
 }
 
-view_iterator::const_reference view_iterator::operator*() const noexcept
+chain_window_iterator::reference chain_window_iterator::operator*() noexcept
 {
     return _view;
 }
 
-view_iterator::const_pointer view_iterator::operator->() const noexcept
+chain_windows::chain_windows(const node_entry& entry, size_t kmer_size, xpas::phylo_kmer::score_type threshold)
+    : _entry{ entry }
+    , _kmer_size{ kmer_size }
+    , _start_pos{ 0 }
+    , _threshold{ threshold }
+{}
+
+chain_windows::const_iterator chain_windows::begin() const
 {
-    return &_view;
+    auto first_window_view = node_entry_view(&_entry, _threshold, 0, _kmer_size - 1);
+    return { std::move(first_window_view), _kmer_size, _threshold };
+}
+
+chain_windows::const_iterator chain_windows::end() const noexcept
+{
+    return { make_empty_view(), 0, 0.0 };
 }
