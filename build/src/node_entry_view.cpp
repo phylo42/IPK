@@ -19,6 +19,51 @@ bool kmer_score_comparator(const unpositioned_phylo_kmer& k1, const unpositioned
     return k1.score > k2.score;
 }
 
+bool is_odd(int x)
+{
+    return x % 2;
+}
+
+/// Creates a vector of 1-mers from a column of PP matrix
+vector_type<xpas::unpositioned_phylo_kmer> get_column(const node_entry& entry, size_t pos)
+{
+    vector_type<xpas::unpositioned_phylo_kmer> column;
+    for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
+    {
+        const auto& letter = entry.at(pos, i);
+        column.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(letter.index, letter.score, pos));
+    }
+    return column;
+}
+
+/// Creates all combinations of prefixes and suffixes
+/// It does the same as dac_kmer_iterator::_next_phylokmer, but calculates all in one go, not on demand
+vector_type<xpas::unpositioned_phylo_kmer> join_mmers(const vector_type<xpas::unpositioned_phylo_kmer>& prefixes,
+                                                      const vector_type<xpas::unpositioned_phylo_kmer>& suffixes,
+                                                      size_t suffix_size,
+                                                      phylo_kmer::score_type threshold)
+{
+    vector_type<xpas::unpositioned_phylo_kmer> result;
+
+    for (const auto& prefix : prefixes)
+    {
+        const auto residual_threshold = threshold - prefix.score;
+
+        for (const auto& suffix : suffixes)
+        {
+            if (suffix.score < residual_threshold)
+            {
+                break;
+            }
+
+            const auto full_key = (prefix.key << (suffix_size * xpas::bit_length<xpas::seq_type>())) | suffix.key;
+            const auto full_score = prefix.score + suffix.score;
+            result.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(full_key, full_score, 0));
+        }
+    }
+    return result;
+}
+
 dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
                                      xpas::phylo_kmer::pos_type start_pos, size_t prefix_size,
                                      vector_type<xpas::unpositioned_phylo_kmer> prefixes) noexcept
@@ -39,13 +84,7 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
     /// for the window of size 1, k-mers are trivial
     if (kmer_size == 1)
     {
-        for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
-        {
-            const auto entry = _entry_view->get_entry();
-            const auto& letter = entry->at(_start_pos, i);
-            _prefixes.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(letter.index, letter.score, 0));
-        }
-
+        _prefixes = get_column(*_entry_view->get_entry(), _start_pos);
         _prefix_it = _prefixes.begin();
         _current = _next_phylokmer();
     }
@@ -73,6 +112,15 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
                     _prefixes.push_back(*it);
                     //std::cout << "\t\t" << xpas::decode_kmer(it->key, _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
                 }
+            }
+
+            /// if k is odd, we need to join one more column to the window of prefixes
+            if (is_odd(kmer_size))
+            {
+                const auto temp_prefixes = std::move(_prefixes);
+                const auto central_column = get_column(*_entry_view->get_entry(), _start_pos + _prefix_size);
+                _prefixes = join_mmers(temp_prefixes, central_column, 1, _threshold);
+                ++_prefix_size;
             }
             _prefix_it = _prefixes.begin();
         }

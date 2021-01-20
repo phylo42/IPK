@@ -60,6 +60,9 @@ chain_window_iterator& chain_window_iterator::operator++()
     /// Suffix size for the next window
     const auto suffix_size = _kmer_size - prefix_size;
 
+    /// The start position of the last chain
+    const auto last_chain_pos = (_kmer_size % 2) ? _kmer_size / 2 : _kmer_size / 2 - 1;
+
     /// continue the chain if possible
     if (size_t(_view.get_end_pos() + suffix_size) < entry->get_alignment_size())
     {
@@ -68,7 +71,7 @@ chain_window_iterator& chain_window_iterator::operator++()
         _view.set_end_pos(_view.get_end_pos() + suffix_size);
     }
     /// if the chain is over, start the next one if possible
-    else if (_first_view_pos + 1 < _kmer_size / 2)
+    else if (_first_view_pos + 1 <= last_chain_pos)
     {
         ++_first_view_pos;
 
@@ -76,6 +79,7 @@ chain_window_iterator& chain_window_iterator::operator++()
         _view.set_start_pos(_first_view_pos);
         _view.set_end_pos(_first_view_pos + _kmer_size - 1);
         _view.set_prefixes({});
+        _view.set_prefix_size(_kmer_size / 2);
     }
     /// otherwise, the iterator is over
     else
