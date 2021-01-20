@@ -93,28 +93,34 @@ namespace xpas
         unsigned long merge_hashmaps(const std::vector<phylo_kmer::branch_type>& group_ids);
 
         /// \brief Returns a filename for a hashmap of a given group
-        std::string group_hashmap_file(const branch_type& group) const;
+        [[nodiscard]]
+        std::string group_hashmap_file(const branch_type& group, size_t index) const;
 
         /// \brief Groups ghost nodes by corresponding original node id
+        [[nodiscard]]
         std::vector<id_group> group_ghost_ids(const std::vector<std::string>& ghost_ids) const;
 
         /// \brief Groups references to submatrices of probabilites, corresponding to a group of nodes
+        [[nodiscard]]
         proba_group get_submatrices(const id_group& group) const;
 
         /// \brief Runs a phylo-kmer exploration for every ghost node of the extended_tree
         /// \return 1) A vector of group ids, which correspond to post-order node ids in the tree
         ///         2) The number of explored phylo-kmers. This number can be more than a size of a resulting database
-        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers();
+        [[nodiscard]]
+        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers() const;
 
         /// \brief Explores phylo-kmers of a collection of ghost nodes. Here we assume that the nodes
         ///        in the group correspond to one original node
         /// \return A hash map with phylo-kmers stored and a number of explored phylo-kmers
-        std::pair<branch_hash_map, size_t> explore_group(const proba_group& group) const;
+        [[nodiscard]]
+        std::pair<std::vector<branch_hash_map>, size_t> explore_group(const proba_group& group) const;
 
         /// \brief Saves a hash map to file
         void save_hash_map(const branch_hash_map& map, const std::string& filename) const;
 
         /// \brief Loads a hash map from file
+        [[nodiscard]]
         branch_hash_map load_hash_map(const std::string& filename) const;
 
         /// \brief Working and output directory
@@ -141,6 +147,9 @@ namespace xpas
 
         filter_type _filter;
         double _mu;
+
+        /// The number of ranges in which the space of k-mers is split
+        const size_t _num_ranges = 4;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
@@ -230,56 +239,59 @@ namespace xpas
         const auto begin = std::chrono::steady_clock::now();
 
         std::cout << "Merging hash maps..." << std::endl;
-        for (const auto group_id : group_ids)
+        for (size_t index = 0; index < _num_ranges; ++index)
         {
-            const auto hash_map = load_hash_map(group_hashmap_file(group_id));
-
-    #ifdef KEEP_POSITIONS
-            if (_merge_branches)
+            for (const auto group_id : group_ids)
             {
-                for (const auto& [key, score_pos_pair] : hash_map)
+                const auto hash_map = load_hash_map(group_hashmap_file(group_id, index));
+
+        #ifdef KEEP_POSITIONS
+                if (_merge_branches)
                 {
-                    const auto& [score, position] = score_pos_pair;
-                    if (auto entries = _phylo_kmer_db.search(key); entries)
+                    for (const auto& [key, score_pos_pair] : hash_map)
                     {
-                        /// If there are entries, there must be only one because
-                        /// we always take maximum score among different branches.
-                        /// So this loop will have only one iteration
-                        for (const auto& [old_node, old_score, old_position] : *entries)
+                        const auto& [score, position] = score_pos_pair;
+                        if (auto entries = _phylo_kmer_db.search(key); entries)
                         {
-                            if (old_score < score)
+                            /// If there are entries, there must be only one because
+                            /// we always take maximum score among different branches.
+                            /// So this loop will have only one iteration
+                            for (const auto& [old_node, old_score, old_position] : *entries)
                             {
-                                _phylo_kmer_db.replace(key, { group_id, score, position });
+                                if (old_score < score)
+                                {
+                                    _phylo_kmer_db.replace(key, { group_id, score, position });
+                                }
                             }
                         }
+                        else
+                        {
+                            _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                        }
                     }
-                    else
+                }
+                else
+                {
+                    for (const auto& [key, score_pos_pair] : hash_map)
                     {
+                        const auto& [score, position] = score_pos_pair;
                         _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
                     }
                 }
-            }
-            else
-            {
-                for (const auto& [key, score_pos_pair] : hash_map)
+        #else
+                if (_merge_branches)
                 {
-                    const auto& [score, position] = score_pos_pair;
-                    _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                    throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
                 }
-            }
-    #else
-            if (_merge_branches)
-            {
-                throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
-            }
-            else
-            {
-                for (const auto& [key, score] : hash_map)
+                else
                 {
-                    _phylo_kmer_db.unsafe_insert(key, { group_id, score });
+                    for (const auto& [key, score] : hash_map)
+                    {
+                        _phylo_kmer_db.unsafe_insert(key, { group_id, score });
+                    }
                 }
+        #endif
             }
-    #endif
         }
 
         const auto end = std::chrono::steady_clock::now();
@@ -307,9 +319,9 @@ namespace xpas
         return branch_ids;
     }
 
-    std::string db_builder::group_hashmap_file(const branch_type& group) const
+    std::string db_builder::group_hashmap_file(const branch_type& group, size_t index) const
     {
-        return (fs::path{_hashmaps_directory} / fs::path{std::to_string(group)}).string();
+        return (fs::path{_hashmaps_directory} / fs::path{std::to_string(group) + "_" + std::to_string(index)}).string();
     }
 
     std::vector<db_builder::id_group> db_builder::group_ghost_ids(const std::vector<std::string>& ghost_ids) const
@@ -365,7 +377,7 @@ namespace xpas
         return submatrices;
     }
 
-    std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers()
+    std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers() const
     {
         size_t count = 0;
 
@@ -399,10 +411,15 @@ namespace xpas
             const auto matrices = get_submatrices(node_group);
 
             /// Explore k-mers of a group and store results in a hash map
-            const auto& [group_hash_map, branch_count] = explore_group(matrices);
+            const auto& [hash_maps, branch_count] = explore_group(matrices);
 
-            /// Save a hash map on disk
-            save_hash_map(group_hash_map, group_hashmap_file(original_node_postorder_id));
+            /// Save hash maps on disk
+            size_t index = 0;
+            for (const auto& hash_map : hash_maps)
+            {
+                save_hash_map(hash_map, group_hashmap_file(original_node_postorder_id, index));
+                ++index;
+            }
 
             count += branch_count;
         }
@@ -466,11 +483,11 @@ namespace xpas
         }
     }
 
-    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<db_builder::branch_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
-        branch_hash_map hash_map;
-        size_t count = 0;
+        auto hash_maps = std::vector<branch_hash_map>(_num_ranges);
 
+        size_t count = 0;
         const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
         for (auto node_entry_ref : group)
         {
@@ -484,13 +501,13 @@ namespace xpas
                 {
                     //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
-                    put(hash_map, kmer);
+                    put(hash_maps[kmer.key % _num_ranges], kmer);
                     ++count;
                 }
             }
         }
 
-        return {std::move(hash_map), count};
+        return {std::move(hash_maps), count};
     }
 
     #endif
