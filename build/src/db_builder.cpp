@@ -431,15 +431,14 @@ namespace xpas
         branch_hash_map hash_map;
         size_t count = 0;
 
-        const auto threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
-
+        const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
-            for (auto window = node_entry.begin(_kmer_size, threshold); window != node_entry.end(); ++window)
+            for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             {
-                const auto position = window->get_start_pos();
-                for (const auto& kmer : *window)
+                const auto position = window.get_start_pos();
+                for (const auto& kmer : window)
                 {
                     phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
                     put(hash_map, positioned_kmer);
