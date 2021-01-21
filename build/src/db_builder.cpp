@@ -263,16 +263,15 @@ namespace xpas
             auto temp_db = merge_hashmaps(group_ids, index);
             hash_map<phylo_kmer::key_type, bool> keep_keys = filter_keys(temp_db);
 
-            for (const auto&[key, entries] : temp_db)
+            for (const auto& [key, entries] : temp_db)
             {
                 if (keep_keys[key])
                 {
 #ifdef KEEP_POSITIONS
                     if (_merge_branches)
                     {
-                        for (const auto& [key, score_pos_pair] : hash_map)
+                        for (const auto& [branch, score, position] : entries)
                         {
-                            const auto& [score, position] = score_pos_pair;
                             if (auto entries = _phylo_kmer_db.search(key); entries)
                             {
                                 /// If there are entries, there must be only one because
@@ -282,21 +281,21 @@ namespace xpas
                                 {
                                     if (old_score < score)
                                     {
-                                        _phylo_kmer_db.replace(key, { group_id, score, position });
+                                        _phylo_kmer_db.replace(key, { branch, score, position });
                                     }
                                 }
                             }
                             else
                             {
-                                _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                                _phylo_kmer_db.unsafe_insert(key, { branch, score, position });
                             }
                         }
                     }
                     else
                     {
-                        for (const auto& [key, score, position] : entries)
+                        for (const auto& [branch, score, position] : entries)
                         {
-                            _phylo_kmer_db.unsafe_insert(key, { group_id, score, position });
+                            _phylo_kmer_db.unsafe_insert(key, { branch, score, position });
                         }
                     }
 #else
@@ -362,10 +361,18 @@ namespace xpas
         for (const auto group_id : group_ids)
         {
             const auto hash_map = load_hash_map(group_hashmap_file(group_id, index));
+#ifdef KEEP_POSITIONS
+            for (const auto& [key, score_pos_pair] : hash_map)
+            {
+                const auto& [score, position] = score_pos_pair;
+                temp_db.unsafe_insert(key, {group_id, score, position});
+            }
+#else
             for (const auto& [key, score] : hash_map)
             {
                 temp_db.unsafe_insert(key, {group_id, score});
             }
+#endif
         }
 
         return temp_db;
@@ -394,11 +401,21 @@ namespace xpas
                 /// calculate the score sum to normalize scores
                 double score_sum = 0;
                 double log_score_sum = 0;
-                for (const auto&[_, log_score] : entries)
+#ifdef KEEP_POSITIONS
+                for (const auto& [branch, log_score, position] : entries)
+                {
+                    (void)branch;
+                    (void)position;
+                    score_sum += logscore_to_score(log_score);
+                    log_score_sum += log_score;
+                }
+#else
+                for (const auto& [_, log_score] : entries)
                 {
                     score_sum += logscore_to_score(log_score);
                     log_score_sum += log_score;
                 }
+#endif
 
                 /// do not forget the branches that are not stored in the database,
                 /// they suppose to have the threshold score
@@ -410,7 +427,11 @@ namespace xpas
                 const auto weighted_threshold = threshold / score_sum;
                 const auto target_threshold = shannon(weighted_threshold);
 
-                for (const auto&[branch, log_score] : entries)
+#ifdef KEEP_POSITIONS
+                for (const auto& [branch, log_score, position] : entries)
+#else
+                for (const auto& [branch, log_score] : entries)
+#endif
                 {
                     const auto weighted_score = logscore_to_score(log_score) / score_sum;
                     const auto target_value = shannon(weighted_score);
@@ -428,7 +449,7 @@ namespace xpas
                 std::cout << stats << " ";
             }
             std::cout << std::endl << std::endl;
-            */
+*/
 
             /// copy entropy values into a vector
             std::vector<phylo_kmer::score_type> filter_values;
@@ -439,7 +460,7 @@ namespace xpas
             }
 
             std::cout << "Partial sort..." << std::endl;
-            const auto qth_element = filter_values.size() * _mu;
+            const auto qth_element = size_t(filter_values.size() * _mu);
             std::nth_element(filter_values.begin(), filter_values.begin() + qth_element, filter_values.end());
             const auto quantile = filter_values[qth_element];
 
@@ -447,7 +468,7 @@ namespace xpas
 
             for (const auto& [key, entries] : db)
             {
-                keep_keys[key] = (filter_values[key] <= quantile);
+                keep_keys[key] = (filter_stats[key] <= quantile);
             }
         }
         else if (_filter == filter_type::random)
@@ -593,9 +614,9 @@ namespace xpas
         }
     }
 
-    std::pair<db_builder::branch_hash_map, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<db_builder::branch_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
-        branch_hash_map hash_map;
+        auto hash_maps = std::vector<branch_hash_map>(_num_ranges);
         size_t count = 0;
 
         const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
@@ -608,13 +629,13 @@ namespace xpas
                 for (const auto& kmer : window)
                 {
                     phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
-                    put(hash_map, positioned_kmer);
+                    put(hash_maps[kmer.key % _num_ranges], positioned_kmer);
                     ++count;
                 }
             }
         }
 
-        return {std::move(hash_map), count};
+        return {std::move(hash_maps), count};
     }
     #else
 

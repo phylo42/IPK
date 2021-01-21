@@ -101,6 +101,20 @@ std::string save_rerooted_tree(const std::string& working_dir, const xpas::phylo
     return tree_path.string();
 }
 
+xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
+{
+    if (parameters.entropy_filter)
+    {
+        return xpas::filter_type::entropy;
+    }
+    else if (parameters.random_filter)
+    {
+        return xpas::filter_type::random;
+    }
+
+    return xpas::filter_type::no_filter;
+}
+
 return_code build_database(const xpas::cli::parameters& parameters)
 {
     if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
@@ -155,7 +169,7 @@ return_code build_database(const xpas::cli::parameters& parameters)
                                 proba_matrix,
                                 ghost_mapping, ar_mapping,
                                 parameters.merge_branches, parameters.kmer_size, parameters.omega,
-                                xpas::filter_type::no_filter, parameters.mu,
+                                get_filter_type(parameters), parameters.mu,
                                 parameters.num_threads);
 
     /// Deserialize database
