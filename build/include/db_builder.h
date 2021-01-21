@@ -18,7 +18,7 @@ namespace xpas
         random
     };
 
-    xpas::phylo_kmer_db build(std::string working_directory,
+    xpas::phylo_kmer_db build(const std::string& working_directory,
                               const alignment& original_alignment, const alignment& extended_alignment,
                               const phylo_tree& original_tree, const phylo_tree& extended_tree,
                               const proba_matrix& matrix,

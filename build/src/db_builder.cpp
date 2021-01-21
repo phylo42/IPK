@@ -28,7 +28,7 @@ namespace xpas
     /// \brief Constructs a database of phylo-kmers.
     class db_builder
     {
-        friend phylo_kmer_db build(string working_directory,
+        friend phylo_kmer_db build(const string& working_directory,
                                    const alignment& original_alignment, const alignment& extended_alignment,
                                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                                    const proba_matrix& matrix,
@@ -61,7 +61,7 @@ namespace xpas
 
 
         /// Ctors, dtor and operator=
-        db_builder(string working_directory,
+        db_builder(const string& working_directory,
                    const alignment& original_alignment, const alignment& extended_alignment,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                    const proba_matrix& matrix,
@@ -163,7 +163,7 @@ namespace xpas
 
     };
 
-    db_builder::db_builder(string working_directory,
+    db_builder::db_builder(const string& working_directory,
                            const alignment& original_alignment, const alignment& extended_alignment,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
                            const proba_matrix& matrix,
@@ -782,7 +782,7 @@ namespace xpas
         return map;
     }
 
-    phylo_kmer_db build(string working_directory,
+    phylo_kmer_db build(const string& working_directory,
                         const alignment& original_alignment, const alignment& extended_alignment,
                         const phylo_tree& original_tree, const phylo_tree& extended_tree,
                         const proba_matrix& matrix,
@@ -790,7 +790,7 @@ namespace xpas
                         bool merge_branches,
                         size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu, size_t num_threads)
     {
-        db_builder builder(std::move(working_directory),
+        db_builder builder(working_directory,
                            original_alignment, extended_alignment,
                            original_tree, extended_tree,
                            matrix,
