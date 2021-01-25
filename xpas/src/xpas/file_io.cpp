@@ -51,7 +51,7 @@ bool buffered_reader::empty() const
 {
     if (_file_length == 0)
     {
-        return 1;
+        return true;
     }
 
     return _read == _file_length;
@@ -74,7 +74,7 @@ void buffered_reader::_read_next_chunk()
 
     if (_read < _file_length)
     {
-        std::streamsize size_to_read = std::min(_file_length - _read, static_cast<std::streamoff>(_buffer_size - 1));
+        std::streamsize size_to_read = std::min(_file_length - _read, static_cast<std::streamoff>(buffer_size - 1));
         _stream.read(_buffer, size_to_read);
         _buffer[size_to_read] = '\0';
         _read += size_to_read;

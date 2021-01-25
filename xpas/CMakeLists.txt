@@ -30,6 +30,7 @@ find_package(Boost REQUIRED COMPONENTS serialization iostreams)
 set(SOURCES
         src/xpas/fasta.cpp include/xpas/fasta.h
         src/xpas/file_io.cpp include/xpas/file_io.h
+        include/xpas/hash_map.h
         src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
         src/xpas/newick.cpp include/xpas/newick.h
         include/xpas/optional.h

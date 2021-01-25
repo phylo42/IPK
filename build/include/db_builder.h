@@ -10,16 +10,9 @@ namespace xpas
 {
     class alignment;
     class proba_matrix;
-
-    enum class filter_type
-    {
-        no_filter,
-        entropy,
-        random
-    };
+    enum class filter_type;
 
     xpas::phylo_kmer_db build(const std::string& working_directory,
-                              const alignment& original_alignment, const alignment& extended_alignment,
                               const phylo_tree& original_tree, const phylo_tree& extended_tree,
                               const proba_matrix& matrix,
                               const ghost_mapping& mapping, const ar::mapping& ar_mapping,

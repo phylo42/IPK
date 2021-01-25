@@ -14,12 +14,18 @@ namespace xpas::io
     public:
         explicit buffered_reader(const std::string& file_name);
         buffered_reader(const buffered_reader&) = delete;
+        buffered_reader(buffered_reader&&) = delete;
         ~buffered_reader();
+
         buffered_reader& operator=(const buffered_reader&) = delete;
+        buffered_reader& operator=(buffered_reader&&) = delete;
 
         std::string_view read_next_chunk();
         bool empty() const;
         bool good() const;
+
+        static constexpr size_t buffer_size = 4096;
+
     private:
         std::fpos<mbstate_t> _get_file_legth();
         void _start_reading();
@@ -36,8 +42,8 @@ namespace xpas::io
         std::fpos<mbstate_t> _file_length;
         std::fpos<mbstate_t> _read = 0;
 
-        static constexpr size_t _buffer_size = 4096;
-        char _buffer[_buffer_size];
+
+        char _buffer[buffer_size];
     };
 
     /// \brief Reads the whole file in a string

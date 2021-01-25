@@ -13,6 +13,7 @@
 #include "return.h"
 #include "ar.h"
 #include "proba_matrix.h"
+#include "filter.h"
 
 namespace fs = boost::filesystem;
 
@@ -164,7 +165,6 @@ return_code build_database(const xpas::cli::parameters& parameters)
 
     /// Generate phylo k-mers
     const auto db = xpas::build(parameters.working_directory,
-                                alignment, extended_alignment,
                                 original_tree, extended_tree,
                                 proba_matrix,
                                 ghost_mapping, ar_mapping,

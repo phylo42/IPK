@@ -21,10 +21,12 @@ set(LINK_LIBRARIES Boost::program_options
 set(SOURCES
         src/alignment.cpp include/alignment.h
         src/ar.cpp include/ar.h
+        src/branch_group.cpp include/branch_group.h
         src/command_line.cpp include/command_line.h
         src/db_builder.cpp include/db_builder.h
         src/exceptions.cpp include/exceptions.h
         src/extended_tree.cpp include/extended_tree.h
+        src/filter.cpp include/filter.h
         src/main.cpp
         src/node_entry.cpp include/node_entry.h
         src/node_entry_view.cpp include/node_entry_view.h

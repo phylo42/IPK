@@ -2,19 +2,19 @@
 #include <unordered_set>
 #include <chrono>
 #include <random>
+#include <queue>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/binary_iarchive.hpp>
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/version.h>
 #include <xpas/phylo_tree.h>
 #include <xpas/newick.h>
 #include "db_builder.h"
 #include "extended_tree.h"
-#include "alignment.h"
 #include "proba_matrix.h"
 #include "ar.h"
+#include "filter.h"
+#include "branch_group.h"
 
 using std::string;
 using std::cout, std::endl;
@@ -25,11 +25,11 @@ namespace fs = boost::filesystem;
 
 namespace xpas
 {
+
     /// \brief Constructs a database of phylo-kmers.
     class db_builder
     {
         friend phylo_kmer_db build(const string& working_directory,
-                                   const alignment& original_alignment, const alignment& extended_alignment,
                                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                                    const proba_matrix& matrix,
                                    const ghost_mapping& mapping, const ar::mapping& ar_mapping,
@@ -38,19 +38,7 @@ namespace xpas
                                    filter_type filter, double mu, size_t num_threads);
     public:
         /// Member types
-        /// \brief A hash map to store all the phylo-kmers, placed to one original node
-#ifdef KEEP_POSITIONS
 
-        struct score_pos_pair
-        {
-            phylo_kmer::score_type score;
-            phylo_kmer::pos_type position;
-        };
-
-        using branch_hash_map = hash_map<phylo_kmer::key_type, score_pos_pair>;
-#else
-        using branch_hash_map = hash_map<phylo_kmer::key_type, phylo_kmer::score_type>;
-#endif
 
         /// \brief A group of node ids that must be processed together. We group together
         ///        the extended node ids that correspond to the same original node ids
@@ -62,7 +50,6 @@ namespace xpas
 
         /// Ctors, dtor and operator=
         db_builder(const string& working_directory,
-                   const alignment& original_alignment, const alignment& extended_alignment,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                    const proba_matrix& matrix,
                    const ghost_mapping& mapping, const ar::mapping& ar_mapping,
@@ -74,13 +61,10 @@ namespace xpas
         db_builder& operator=(db_builder&&) = delete;
         ~db_builder() noexcept = default;
 
-
         /// \brief Runs the database construction
         void run();
 
     private:
-        /// \brief Results of the first stage of the algorithm:
-        using explore_groups_result = std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long>;
 
         /// \brief The first stage of the construction algorithm. Creates a hashmap of phylo-kmers
         ///        for every node group.
@@ -90,18 +74,7 @@ namespace xpas
 
         /// \brief The second stage of the construction algorithm. Combines group hashmaps
         /// \return Elapsed time
-        unsigned long merge_and_filter(const std::vector<phylo_kmer::branch_type>& group_ids);
-
-        /// Merges hashmaps of the same index into a database
-        [[nodiscard]]
-        phylo_kmer_db merge_hashmaps(const std::vector<phylo_kmer::branch_type>& group_ids, size_t index) const;
-
-        [[nodiscard]]
-        hash_map<phylo_kmer::key_type, bool> filter_keys(const phylo_kmer_db& db) const;
-
-        /// \brief Returns a filename for a hashmap of a given group
-        [[nodiscard]]
-        std::string group_hashmap_file(const branch_type& group, size_t index) const;
+        unsigned long merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids);
 
         /// \brief Groups ghost nodes by corresponding original node id
         [[nodiscard]]
@@ -121,22 +94,10 @@ namespace xpas
         ///        in the group correspond to one original node
         /// \return A hash map with phylo-kmers stored and a number of explored phylo-kmers
         [[nodiscard]]
-        std::pair<std::vector<branch_hash_map>, size_t> explore_group(const proba_group& group) const;
-
-        /// \brief Saves a hash map to file
-        void save_hash_map(const branch_hash_map& map, const std::string& filename) const;
-
-        /// \brief Loads a hash map from file
-        [[nodiscard]]
-        branch_hash_map load_hash_map(const std::string& filename) const;
+        std::pair<std::vector<group_hash_map>, size_t> explore_group(const proba_group& group) const;
 
         /// \brief Working and output directory
         string _working_directory;
-        /// \brief A subdirectory of _working_directory to store hashmaps
-        string _hashmaps_directory;
-
-        const alignment& _original_alignment;
-        const alignment& _extended_alignment;
 
         const phylo_tree& _original_tree;
         const phylo_tree& _extended_tree;
@@ -152,11 +113,11 @@ namespace xpas
 
         double _reduction_ratio;
 
-        filter_type _filter;
+        xpas::filter_type _filter;
         double _mu;
 
-        /// The number of ranges in which the space of k-mers is split
-        const size_t _num_ranges = 4;
+        /// The number of batches in which the space of k-mers is split
+        const size_t _num_batches = 4;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
@@ -164,16 +125,12 @@ namespace xpas
     };
 
     db_builder::db_builder(const string& working_directory,
-                           const alignment& original_alignment, const alignment& extended_alignment,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
                            const proba_matrix& matrix,
                            const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                            bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
                            filter_type filter, double mu, size_t num_threads)
-        : _working_directory{ std::move(working_directory) }
-        , _hashmaps_directory{ (fs::path{working_directory} / fs::path{"hashmaps"}).string() }
-        , _original_alignment{ original_alignment }
-        , _extended_alignment{ extended_alignment }
+        : _working_directory{ working_directory }
         , _original_tree{ original_tree }
         , _extended_tree{ extended_tree }
         , _matrix{ matrix }
@@ -196,7 +153,7 @@ namespace xpas
         const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
 
         /// The second stage of the algorithm -- combine hashmaps
-        const auto merge_time = merge_and_filter(group_ids);
+        const auto merge_time = merge_filtered(group_ids);
 
         /// Calculate the number of phylo-kmers stored in the database
         size_t total_entries = 0;
@@ -213,7 +170,7 @@ namespace xpas
     std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
     {
         /// create a temporary directory for hashmaps
-        fs::create_directories(_hashmaps_directory);
+        fs::create_directories(get_groups_dir(_working_directory));
 
         std::cout << "Construction parameters:" << std::endl <<
                      "\tSequence type: " << xpas::seq_type::name << std::endl <<
@@ -231,42 +188,29 @@ namespace xpas
         return { group_ids, num_tuples, elapsed_time };
     }
 
-    double shannon(double x)
-    {
-        return - x * std::log2(x);
-    }
 
-    xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_score)
-    {
-        return std::min(std::pow(10, log_score), 1.0);
-    }
-
-    unsigned long db_builder::merge_and_filter(const std::vector<phylo_kmer::branch_type>& group_ids)
+    unsigned long db_builder::merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
         const auto begin = std::chrono::steady_clock::now();
 
-        if (_filter == filter_type::entropy)
-        {
-            std::cout << "Filtering (minimal conditional entropy)..." << std::endl;
-        }
-        else if (_filter == filter_type::random)
-        {
-            std::cout << "Filtering (random)..." << std::endl;
-        }
-        else
-        {
-            std::cout << "No filtering." << std::endl;
-        }
+        /// Filter phylo k-mers
+        auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
+                                        _working_directory, _num_batches, _mu);
+        filter->filter(group_ids);
 
-        for (size_t index = 0; index < _num_ranges; ++index)
-        {
-            auto temp_db = merge_hashmaps(group_ids, index);
-            hash_map<phylo_kmer::key_type, bool> keep_keys = filter_keys(temp_db);
+        size_t num_filtered = 0;
+        size_t total_num_kmers = 0;
 
+        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
+        {
+            const auto temp_db = xpas::merge_batch(_working_directory, group_ids, batch_idx);
             for (const auto& [key, entries] : temp_db)
             {
-                if (keep_keys[key])
+                total_num_kmers++;
+                if (filter->is_good(key))
                 {
+                    num_filtered++;
+
 #ifdef KEEP_POSITIONS
                     if (_merge_branches)
                     {
@@ -314,16 +258,8 @@ namespace xpas
                 }
             }
 
-            size_t counter = 0;
-            for (const auto& [_, keep] : keep_keys)
-            {
-                if (keep)
-                {
-                    counter++;
-                }
-            }
-            std::cout << counter << " out of " << keep_keys.size() <<
-                      " (" << ((float) counter) / keep_keys.size() << ")" << std::endl;
+            std::cout << num_filtered << " out of " << total_num_kmers <<
+                      " (" << ((float) num_filtered) / total_num_kmers << ")" << std::endl;
         }
 
 
@@ -352,32 +288,7 @@ namespace xpas
         return branch_ids;
     }
 
-    phylo_kmer_db db_builder::merge_hashmaps(const std::vector<phylo_kmer::branch_type>& group_ids, size_t index) const
-    {
-        std::cout << "Merging hash maps [index = " << index << "]..." << std::endl;
-        phylo_kmer_db temp_db(_phylo_kmer_db.kmer_size(), _phylo_kmer_db.omega(), xpas::seq_type::name, "");
-
-        /// Load hash maps and merge them
-        for (const auto group_id : group_ids)
-        {
-            const auto hash_map = load_hash_map(group_hashmap_file(group_id, index));
-#ifdef KEEP_POSITIONS
-            for (const auto& [key, score_pos_pair] : hash_map)
-            {
-                const auto& [score, position] = score_pos_pair;
-                temp_db.unsafe_insert(key, {group_id, score, position});
-            }
-#else
-            for (const auto& [key, score] : hash_map)
-            {
-                temp_db.unsafe_insert(key, {group_id, score});
-            }
-#endif
-        }
-
-        return temp_db;
-    }
-
+/*
     hash_map<phylo_kmer::key_type, bool> db_builder::filter_keys(const phylo_kmer_db& db) const
     {
         std::cout << "Filtering phylo k-mers..." << std::endl;
@@ -390,110 +301,11 @@ namespace xpas
             keep_keys[key] = true;
         }
 
-        if (_filter == filter_type::entropy)
-        {
-            const auto threshold = xpas::score_threshold(_phylo_kmer_db.omega(), _phylo_kmer_db.kmer_size());
-            const auto log_threshold = std::log10(threshold);
+        auto filter_values = calc_filter_values(db);
 
-            hash_map<phylo_kmer::key_type, double> filter_stats;
-            for (const auto& [key, entries] : db)
-            {
-                /// calculate the score sum to normalize scores
-                double score_sum = 0;
-                double log_score_sum = 0;
-#ifdef KEEP_POSITIONS
-                for (const auto& [branch, log_score, position] : entries)
-                {
-                    (void)branch;
-                    (void)position;
-                    score_sum += logscore_to_score(log_score);
-                    log_score_sum += log_score;
-                }
-#else
-                for (const auto& [_, log_score] : entries)
-                {
-                    score_sum += logscore_to_score(log_score);
-                    log_score_sum += log_score;
-                }
-#endif
-
-                /// do not forget the branches that are not stored in the database,
-                /// they suppose to have the threshold score
-                score_sum += static_cast<double>(_original_tree.get_node_count() - entries.size()) * threshold;
-                log_score_sum +=
-                    static_cast<double>(_original_tree.get_node_count() - entries.size()) * log_threshold;
-
-                /// Entropy
-                const auto weighted_threshold = threshold / score_sum;
-                const auto target_threshold = shannon(weighted_threshold);
-
-#ifdef KEEP_POSITIONS
-                for (const auto& [branch, log_score, position] : entries)
-#else
-                for (const auto& [branch, log_score] : entries)
-#endif
-                {
-                    const auto weighted_score = logscore_to_score(log_score) / score_sum;
-                    const auto target_value = shannon(weighted_score);
-
-                    if (filter_stats.find(key) == filter_stats.end())
-                    {
-                        filter_stats[key] = static_cast<double>(_original_tree.get_node_count()) * target_threshold;
-                    }
-                    filter_stats[key] = filter_stats[key] - target_threshold + target_value;
-                }
-            }
-
-            /*for (const auto& [key, stats] : filter_stats)
-            {
-                std::cout << stats << " ";
-            }
-            std::cout << std::endl << std::endl;
-*/
-
-            /// copy entropy values into a vector
-            std::vector<phylo_kmer::score_type> filter_values;
-            filter_values.reserve(filter_stats.size());
-            for (const auto& entry : filter_stats)
-            {
-                filter_values.push_back(entry.second);
-            }
-
-            std::cout << "Partial sort..." << std::endl;
-            const auto qth_element = size_t(filter_values.size() * _mu);
-            std::nth_element(filter_values.begin(), filter_values.begin() + qth_element, filter_values.end());
-            const auto quantile = filter_values[qth_element];
-
-            std::cout << "Filter threshold value: " << quantile << std::endl;
-
-            for (const auto& [key, entries] : db)
-            {
-                keep_keys[key] = (filter_stats[key] <= quantile);
-            }
-        }
-        else if (_filter == filter_type::random)
-        {
-            std::default_random_engine generator;
-            std::uniform_real_distribution<double> distribution(0, 1);
-
-            /// update keep_keys randomly
-            for (const auto& [key, _] : db)
-            {
-                keep_keys[key] = distribution(generator) <= _mu;
-            }
-        }
-        else
-        {
-            ///  No filtering
-        }
 
         return keep_keys;
-    }
-
-    std::string db_builder::group_hashmap_file(const branch_type& group, size_t index) const
-    {
-        return (fs::path{_hashmaps_directory} / fs::path{std::to_string(group) + "_" + std::to_string(index)}).string();
-    }
+    }*/
 
     std::vector<db_builder::id_group> db_builder::group_ghost_ids(const std::vector<std::string>& ghost_ids) const
     {
@@ -578,17 +390,17 @@ namespace xpas
             const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
-            /// Get sub-matrices of probabilities for a group
+            /// Get sub-matrices of probabilities for the group
             const auto matrices = get_submatrices(node_group);
 
-            /// Explore k-mers of a group and store results in a hash map
+            /// Explore k-mers of the group and store results in a hash map
             const auto& [hash_maps, branch_count] = explore_group(matrices);
 
-            /// Save hash maps on disk
+            /// Save the group hashmap on disk
             size_t index = 0;
             for (const auto& hash_map : hash_maps)
             {
-                save_hash_map(hash_map, group_hashmap_file(original_node_postorder_id, index));
+                save_group_map(hash_map, get_group_map_file(_working_directory, original_node_postorder_id, index));
                 ++index;
             }
 
@@ -629,7 +441,7 @@ namespace xpas
                 for (const auto& kmer : window)
                 {
                     phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
-                    put(hash_maps[kmer.key % _num_ranges], positioned_kmer);
+                    put(hash_maps[kmer_batch(kmer.key, _num_ranges)], positioned_kmer);
                     ++count;
                 }
             }
@@ -639,7 +451,7 @@ namespace xpas
     }
     #else
 
-    void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
+    void put(group_hash_map& map, const phylo_kmer& kmer)
     {
         if (auto it = map.find(kmer.key); it != map.end())
         {
@@ -654,9 +466,9 @@ namespace xpas
         }
     }
 
-    std::pair<std::vector<db_builder::branch_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
-        auto hash_maps = std::vector<branch_hash_map>(_num_ranges);
+        auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         size_t count = 0;
         const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
@@ -672,7 +484,7 @@ namespace xpas
                 {
                     //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
-                    put(hash_maps[kmer.key % _num_ranges], kmer);
+                    put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
             }
@@ -682,108 +494,13 @@ namespace xpas
     }
 
     #endif
-}
+};
 
-namespace boost::serialization
-{
-
-#ifdef KEEP_POSITIONS
-    /// Serialize a hash map
-    template<class Archive>
-    inline void save(Archive& ar, const ::db_builder::branch_hash_map& map, const unsigned int /*version*/)
-    {
-        size_t map_size = map.size();
-        ar & map_size;
-
-        for (const auto& [key, score_pos_pair] : map)
-        {
-            const auto& [score, position] = score_pos_pair;
-            ar & key & score & position;
-        }
-    }
-
-    /// Deserialize a hash map
-    template<class Archive>
-    inline void load(Archive& ar, ::db_builder::branch_hash_map& map, unsigned int version)
-    {
-        (void)version;
-
-        size_t map_size = 0;
-        ar & map_size;
-
-        for (size_t i = 0; i < map_size; ++i)
-        {
-            xpas::phylo_kmer::key_type key = xpas::phylo_kmer::na_key;
-            xpas::phylo_kmer::score_type score = xpas::phylo_kmer::na_score;
-            xpas::phylo_kmer::pos_type position = xpas::phylo_kmer::na_pos;
-            ar & key & score & position;
-            map[key] = { score, position };
-        }
-    }
-#else
-    /// Serialize a hash map
-    template<class Archive>
-    inline void save(Archive& ar, const ::db_builder::branch_hash_map& map, const unsigned int /*version*/)
-    {
-        size_t map_size = map.size();
-        ar & map_size;
-
-        for (const auto&[key, score] : map)
-        {
-            ar & key & score;
-        }
-    }
-
-    /// Deserialize a hash map
-    template<class Archive>
-    inline void load(Archive& ar, ::db_builder::branch_hash_map& map, unsigned int version)
-    {
-        (void)version;
-
-        size_t map_size = 0;
-        ar & map_size;
-
-        for (size_t i = 0; i < map_size; ++i)
-        {
-            xpas::phylo_kmer::key_type key = xpas::phylo_kmer::na_key;
-            xpas::phylo_kmer::score_type score = xpas::phylo_kmer::na_score;
-            ar & key & score;
-            map[key] = score;
-        }
-    }
-#endif
-
-    // split non-intrusive serialization function member into separate
-    // non intrusive save/load member functions
-    template<class Archive>
-    inline void serialize(Archive& ar, ::db_builder::branch_hash_map& map, unsigned int file_version)
-    {
-        boost::serialization::split_free(ar, map, file_version);
-    }
-}
 
 namespace xpas
 {
-    void db_builder::save_hash_map(const branch_hash_map& map, const std::string& filename) const
-    {
-        std::ofstream ofs(filename);
-        boost::archive::binary_oarchive oa(ofs);
-        oa & map;
-    }
-
-    /// \brief Loads a hash map from file
-    db_builder::branch_hash_map db_builder::load_hash_map(const std::string& filename) const
-    {
-        std::ifstream ifs(filename);
-        boost::archive::binary_iarchive ia(ifs);
-
-        ::db_builder::branch_hash_map map;
-        ia & map;
-        return map;
-    }
 
     phylo_kmer_db build(const string& working_directory,
-                        const alignment& original_alignment, const alignment& extended_alignment,
                         const phylo_tree& original_tree, const phylo_tree& extended_tree,
                         const proba_matrix& matrix,
                         const ghost_mapping& mapping, const ar::mapping& ar_mapping,
@@ -791,7 +508,6 @@ namespace xpas
                         size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu, size_t num_threads)
     {
         db_builder builder(working_directory,
-                           original_alignment, extended_alignment,
                            original_tree, extended_tree,
                            matrix,
                            mapping, ar_mapping,
