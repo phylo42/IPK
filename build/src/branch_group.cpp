@@ -40,7 +40,7 @@ std::string xpas::get_group_map_file(const std::string& working_dir, const phylo
 phylo_kmer_db xpas::merge_batch(const std::string& working_dir,
                                 const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx)
 {
-    std::cout << "Merging hash maps [batch index = " << batch_idx << "]..." << std::endl;
+    //std::cout << "Merging hash maps [batch index = " << batch_idx << "]..." << std::endl;
     phylo_kmer_db temp_db(0, 1.0, xpas::seq_type::name, "");
 
     /// Load hash maps and merge them

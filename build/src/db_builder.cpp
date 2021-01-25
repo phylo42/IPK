@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <unordered_set>
 #include <chrono>
 #include <random>
@@ -147,12 +148,20 @@ namespace xpas
 
     void db_builder::run()
     {
-        /// Run ancestral reconstruction
+        std::cout << "Construction parameters:" << std::endl <<
+                  "\tSequence type: " << xpas::seq_type::name << std::endl <<
+                  "\tk: " << _kmer_size << std::endl <<
+                  "\tomega: " << _omega << std::endl <<
+                  "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
 
-        /// The first stage of the algorithm -- create a hashmap for every group node
+        /// The first stage of the algorithm: create a hashmap for every node group
+        std::cout << "Building database: [stage 1 / 2]:" << std::endl;
         const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
+        std::cout << "Calculated " << num_tuples << " phylo-k-mers.\nCalculation time: " << construction_time
+                  << "\n\n" << std::flush;
 
-        /// The second stage of the algorithm -- combine hashmaps
+        /// The second stage of the algorithm: combine merge and filter
+        std::cout << "Building database: [stage 2 / 2]:" << std::endl;
         const auto merge_time = merge_filtered(group_ids);
 
         /// Calculate the number of phylo-kmers stored in the database
@@ -162,8 +171,8 @@ namespace xpas
             total_entries += kmer_entry.second.size();
         }
 
-        std::cout << "Built " << total_entries << " phylo-kmers out of " << num_tuples << " for "
-                  << _phylo_kmer_db.size() << " k-mer values.\nTime (ms): "
+        std::cout << "\nBuilt " << total_entries << " phylo-k-mers for "
+                  << _phylo_kmer_db.size() << " different k-mers.\nTotal time (ms): "
                   << construction_time + merge_time << "\n\n" << std::flush;
     }
 
@@ -171,14 +180,6 @@ namespace xpas
     {
         /// create a temporary directory for hashmaps
         fs::create_directories(get_groups_dir(_working_directory));
-
-        std::cout << "Construction parameters:" << std::endl <<
-                     "\tSequence type: " << xpas::seq_type::name << std::endl <<
-                     "\tk: " << _kmer_size << std::endl <<
-                     "\tomega: " << _omega << std::endl <<
-                     "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
-
-        std::cout << "Building database..." << std::endl;
 
         /// Run the construction algorithm
         const auto begin = std::chrono::steady_clock::now();
@@ -257,14 +258,15 @@ namespace xpas
 #endif
                 }
             }
-
-            std::cout << num_filtered << " out of " << total_num_kmers <<
-                      " (" << ((float) num_filtered) / total_num_kmers << ")" << std::endl;
         }
 
-
         const auto end = std::chrono::steady_clock::now();
-        return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+        std::cout << "Kept " << num_filtered << " / " << total_num_kmers <<
+                  " k-mers (" << std::setprecision(3) << ((float) num_filtered) / total_num_kmers * 100 << "%)."
+                  << "\nFiltering time: " << time << "\n\n" << std::flush;
+        return time;
     }
 
     bool is_ghost(const phylo_node& node)
