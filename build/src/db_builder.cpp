@@ -171,7 +171,8 @@ namespace xpas
             total_entries += kmer_entry.second.size();
         }
 
-        std::cout << "\nBuilt " << total_entries << " phylo-k-mers for "
+        std::cout << "Building database: Done.\n";
+        std::cout << "Built " << total_entries << " phylo-k-mers for "
                   << _phylo_kmer_db.size() << " different k-mers.\nTotal time (ms): "
                   << construction_time + merge_time << "\n\n" << std::flush;
     }
