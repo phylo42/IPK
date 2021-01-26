@@ -18,16 +18,16 @@ namespace fs = boost::filesystem;
 struct filter_value
 {
     phylo_kmer::key_type key;
-    double value;
+    double filter_score;
 
     bool operator<(const filter_value& rhs) const
     {
-        return value < rhs.value;
+        return filter_score < rhs.filter_score;
     }
 
     bool operator>(const filter_value& rhs) const
     {
-        return value > rhs.value;
+        return filter_score > rhs.filter_score;
     }
 };
 
@@ -36,8 +36,8 @@ std::string xpas::get_fvs_file(const std::string& working_dir, size_t batch_idx)
     return (fs::path{xpas::get_groups_dir(working_dir)} / fs::path(std::to_string(batch_idx) + ".fvs")).string();
 }
 
-kmer_filter::kmer_filter(std::string working_dir, size_t num_batches, double mu)
-    : _working_dir{ std::move(working_dir) }, _num_batches{ num_batches }, _mu{ mu }
+kmer_filter::kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
+    : _working_dir{ std::move(working_dir) }, _num_batches{ num_batches }, _mu{ mu }, _threshold{ threshold }
 {}
 
 xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_score)
@@ -48,8 +48,8 @@ xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_
 class entropy_filter : public kmer_filter
 {
 public:
-    entropy_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu)
-        : kmer_filter{ std::move(working_dir), num_batches, mu},
+    entropy_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
+        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold },
         _total_num_groups{ total_num_groups }
     {}
 
@@ -95,6 +95,8 @@ public:
             auto best_fv = heap.top();
             heap.pop();
             _filtered.insert(best_fv.key);
+            std::cout << "TAKE " << best_fv.key << " " << xpas::decode_kmer(best_fv.key, 5) << " " <<
+                best_fv.filter_score << std::endl;
 
             /// take the next k-mer value from this batch
             size_t best_kmer_index = kmer_batch(best_fv.key, _num_batches);
@@ -123,9 +125,6 @@ private:
     {
         std::vector<filter_value> filter_values;
 
-        const auto threshold = xpas::score_threshold(db.omega(), db.kmer_size());
-        //const auto log_threshold = std::log10(threshold);
-
         hash_map<phylo_kmer::key_type, double> filter_stats;
         for (const auto& [key, entries] : db)
         {
@@ -148,10 +147,10 @@ private:
 
             /// do not forget the branches that are not stored in the database,
             /// they suppose to have the threshold score
-            score_sum += static_cast<double>(_total_num_groups - entries.size()) * threshold;
+            score_sum += static_cast<double>(_total_num_groups - entries.size()) * _threshold;
 
             /// Entropy
-            const auto weighted_threshold = threshold / score_sum;
+            const auto weighted_threshold = _threshold / score_sum;
             const auto target_threshold = shannon(weighted_threshold);
 
 #ifdef KEEP_POSITIONS
@@ -168,13 +167,15 @@ private:
                     filter_stats[key] = static_cast<double>(_total_num_groups) * target_threshold;
                 }
                 filter_stats[key] = filter_stats[key] - target_threshold + target_value;
+                //std::cout << "FV: " << key << " " << xpas::decode_kmer(key, 5) << " " <<
+                //                                                                      filter_stats[key] << std::endl;
             }
         }
         /// copy entropy values into a vector
         filter_values.reserve(filter_stats.size());
-        for (const auto& entry : filter_stats)
+        for (const auto& [key, filter_score] : filter_stats)
         {
-            filter_values.push_back({ entry.first, entry.second });
+            filter_values.push_back({ key, filter_score });
         }
         return filter_values;
     }
@@ -190,8 +191,8 @@ private:
 class random_filter : public kmer_filter
 {
 public:
-    random_filter(std::string working_dir, size_t num_batches, double mu)
-        : kmer_filter{ std::move(working_dir), num_batches, mu }
+    random_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
+        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
     {}
 
     ~random_filter() noexcept = default;
@@ -232,8 +233,8 @@ private:
 class no_filter : public kmer_filter
 {
 public:
-    no_filter(std::string working_dir, size_t num_batches, double mu)
-        : kmer_filter{ std::move(working_dir), num_batches, mu }
+    no_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
+        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
     {}
 
     ~no_filter() noexcept = default;
@@ -254,19 +255,20 @@ public:
 
 std::unique_ptr<kmer_filter> xpas::make_filter(xpas::filter_type filter,
                                                size_t total_num_nodes,
-                                               std::string working_dir, size_t num_batches, double mu)
+                                               std::string working_dir, size_t num_batches,
+                                               double mu, phylo_kmer::score_type threshold)
 {
     if (filter == filter_type::entropy)
     {
-        return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu);
+        return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
     }
     else if (filter == filter_type::random)
     {
-        return std::make_unique<random_filter>(std::move(working_dir), num_batches, mu);
+        return std::make_unique<random_filter>(std::move(working_dir), num_batches, mu, threshold);
     }
     else if (filter == filter_type::no_filter)
     {
-        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu);
+        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu, threshold);
     }
     else
     {

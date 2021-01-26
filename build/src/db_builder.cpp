@@ -196,8 +196,9 @@ namespace xpas
         const auto begin = std::chrono::steady_clock::now();
 
         /// Filter phylo k-mers
+        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
         auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
-                                        _working_directory, _num_batches, _mu);
+                                        _working_directory, _num_batches, _mu, threshold);
         filter->filter(group_ids);
 
         size_t num_filtered = 0;
@@ -251,10 +252,10 @@ namespace xpas
                     }
                     else
                     {
-                        //std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " << std::endl;
+                        std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " << std::endl;
                         for (const auto& [branch, score] : entries)
                         {
-                            //std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
+                            std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
                             _phylo_kmer_db.unsafe_insert(key, {branch, score});
                         }
                     }
