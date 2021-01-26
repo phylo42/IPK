@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-if(${HASH_MAP} STREQUAL "USE_SKA_FLAT_HASH_MAP")
+if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
     set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
     set(HASH_MAP_EXPORT flat_hash_map)
 elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)

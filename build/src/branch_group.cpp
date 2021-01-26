@@ -64,6 +64,22 @@ phylo_kmer_db xpas::merge_batch(const std::string& working_dir,
     return temp_db;
 }
 
+#ifdef KEEP_POSITIONS
+void xpas::put(group_hash_map& map, const phylo_kmer& kmer)
+    {
+        if (auto it = map.find(kmer.key); it != map.end())
+        {
+            if (it->second.score < kmer.score)
+            {
+                map[kmer.key] = { kmer.score, kmer.position };
+            }
+        }
+        else
+        {
+            map[kmer.key] = { kmer.score, kmer.position };
+        }
+    }
+#else
 void xpas::put(group_hash_map& map, const phylo_kmer& kmer)
 {
     if (auto it = map.find(kmer.key); it != map.end())
@@ -78,6 +94,7 @@ void xpas::put(group_hash_map& map, const phylo_kmer& kmer)
         map[kmer.key] = kmer.score;
     }
 }
+#endif
 
 size_t xpas::kmer_batch(phylo_kmer::key_type key, size_t n_ranges)
 {
@@ -90,7 +107,7 @@ namespace boost::serialization
 #ifdef KEEP_POSITIONS
     /// Serialize a hash map
     template<class Archive>
-    inline void save(Archive& ar, const branch_hash_map& map, const unsigned int /*version*/)
+    inline void save(Archive& ar, const group_hash_map& map, const unsigned int /*version*/)
     {
         size_t map_size = map.size();
         ar & map_size;
@@ -104,7 +121,7 @@ namespace boost::serialization
 
     /// Deserialize a hash map
     template<class Archive>
-    inline void load(Archive& ar, branch_hash_map& map, unsigned int version)
+    inline void load(Archive& ar, group_hash_map& map, unsigned int version)
     {
         (void)version;
 

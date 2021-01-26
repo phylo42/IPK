@@ -396,26 +396,10 @@ namespace xpas
         return { node_postorder_ids, count };
     }
 
-    /// \brief Puts a key-value pair in a hash map. Used to process branches in parallel
     #ifdef KEEP_POSITIONS
-    void put(db_builder::branch_hash_map& map, const phylo_kmer& kmer)
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
-        if (auto it = map.find(kmer.key); it != map.end())
-        {
-            if (it->second.score < kmer.score)
-            {
-                map[kmer.key] = { kmer.score, kmer.position };
-            }
-        }
-        else
-        {
-            map[kmer.key] = { kmer.score, kmer.position };
-        }
-    }
-
-    std::pair<std::vector<db_builder::branch_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
-    {
-        auto hash_maps = std::vector<branch_hash_map>(_num_ranges);
+        auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
 
         const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
@@ -428,7 +412,7 @@ namespace xpas
                 for (const auto& kmer : window)
                 {
                     phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
-                    put(hash_maps[kmer_batch(kmer.key, _num_ranges)], positioned_kmer);
+                    put(hash_maps[kmer_batch(kmer.key, _num_batches)], positioned_kmer);
                     ++count;
                 }
             }

@@ -134,7 +134,6 @@ private:
                 (void)branch;
                 (void)position;
                 score_sum += logscore_to_score(log_score);
-                log_score_sum += log_score;
             }
 #else
             for (const auto& [_, log_score] : entries)
