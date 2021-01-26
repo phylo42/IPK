@@ -64,6 +64,21 @@ phylo_kmer_db xpas::merge_batch(const std::string& working_dir,
     return temp_db;
 }
 
+void xpas::put(group_hash_map& map, const phylo_kmer& kmer)
+{
+    if (auto it = map.find(kmer.key); it != map.end())
+    {
+        if (it->second < kmer.score)
+        {
+            map[kmer.key] = kmer.score;
+        }
+    }
+    else
+    {
+        map[kmer.key] = kmer.score;
+    }
+}
+
 size_t xpas::kmer_batch(phylo_kmer::key_type key, size_t n_ranges)
 {
     return key % n_ranges;

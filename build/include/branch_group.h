@@ -36,6 +36,10 @@ namespace xpas
     xpas::phylo_kmer_db merge_batch(const std::string& working_dir,
                                     const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx);
 
+    /// Puts a kmer in the hash. Takes a maximum score between the existing value
+    /// of the k-mer (if any) and the provided value.
+    void put(group_hash_map& map, const phylo_kmer& kmer);
+
     /// Returns the number of the batch of the given k-mer
     size_t kmer_batch(phylo_kmer::key_type key, size_t n_ranges);
 

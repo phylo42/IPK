@@ -251,8 +251,10 @@ namespace xpas
                     }
                     else
                     {
+                        //std::cout << key << " " << xpas::decode_kmer(key, _kmer_size) << ": " << std::endl;
                         for (const auto& [branch, score] : entries)
                         {
+                            //std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
                             _phylo_kmer_db.unsafe_insert(key, {branch, score});
                         }
                     }
@@ -290,25 +292,6 @@ namespace xpas
         }
         return branch_ids;
     }
-
-/*
-    hash_map<phylo_kmer::key_type, bool> db_builder::filter_keys(const phylo_kmer_db& db) const
-    {
-        std::cout << "Filtering phylo k-mers..." << std::endl;
-
-        /// create a hash map which contains boolean values
-        /// which tell if we keep corresponding k-mers.
-        hash_map<phylo_kmer::key_type, bool> keep_keys;
-        for (const auto& [key, _] : db)
-        {
-            keep_keys[key] = true;
-        }
-
-        auto filter_values = calc_filter_values(db);
-
-
-        return keep_keys;
-    }*/
 
     std::vector<db_builder::id_group> db_builder::group_ghost_ids(const std::vector<std::string>& ghost_ids) const
     {
@@ -454,21 +437,6 @@ namespace xpas
     }
     #else
 
-    void put(group_hash_map& map, const phylo_kmer& kmer)
-    {
-        if (auto it = map.find(kmer.key); it != map.end())
-        {
-            if (it->second < kmer.score)
-            {
-                map[kmer.key] = kmer.score;
-            }
-        }
-        else
-        {
-            map[kmer.key] = kmer.score;
-        }
-    }
-
     std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
@@ -487,7 +455,7 @@ namespace xpas
                 {
                     //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
-                    put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                    xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
             }
