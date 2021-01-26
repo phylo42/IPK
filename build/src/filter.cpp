@@ -95,8 +95,6 @@ public:
             auto best_fv = heap.top();
             heap.pop();
             _filtered.insert(best_fv.key);
-            std::cout << "TAKE " << best_fv.key << " " << xpas::decode_kmer(best_fv.key, 5) << " " <<
-                best_fv.filter_score << std::endl;
 
             /// take the next k-mer value from this batch
             size_t best_kmer_index = kmer_batch(best_fv.key, _num_batches);
