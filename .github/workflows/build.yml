@@ -49,24 +49,24 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-program-options-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev
 
       - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/build
+        run: cmake -E make_directory ${{runner.workspace}}/bin
 
       - name: Configure CMake
         shell: bash
-        working-directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/bin
         run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DHASH_MAP=$HASH_MAP
 
       - name: Build all
-        working-directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/bin
         shell: bash
         run: cmake --build . --config $BUILD_TYPE
 
       - name: Build tests
-        working-directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/bin
         shell: bash
         run: cmake --build . --config $BUILD_TYPE --target test_dna
 
       - name: Test
-        working-directory: ${{runner.workspace}}/build
+        working-directory: ${{runner.workspace}}/bin
         shell: bash
         run: (cd tests; ctest -C $BUILD_TYPE)
