@@ -255,17 +255,17 @@ std::unique_ptr<kmer_filter> xpas::make_filter(xpas::filter_type filter,
                                                std::string working_dir, size_t num_batches,
                                                double mu, phylo_kmer::score_type threshold)
 {
-    if (filter == filter_type::entropy)
+    if (filter == filter_type::no_filter || mu == 1.0)
+    {
+        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu, threshold);
+    }
+    else if (filter == filter_type::entropy)
     {
         return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
     }
     else if (filter == filter_type::random)
     {
         return std::make_unique<random_filter>(std::move(working_dir), num_batches, mu, threshold);
-    }
-    else if (filter == filter_type::no_filter)
-    {
-        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu, threshold);
     }
     else
     {
