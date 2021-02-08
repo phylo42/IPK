@@ -108,6 +108,14 @@ xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
     {
         return xpas::filter_type::entropy;
     }
+    else if (parameters.mis_filter)
+    {
+        return xpas::filter_type::mis;
+    }
+    else if (parameters.mif_filter)
+    {
+        return xpas::filter_type::mif;
+    }
     else if (parameters.random_filter)
     {
         return xpas::filter_type::random;

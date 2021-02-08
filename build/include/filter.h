@@ -10,7 +10,9 @@ namespace xpas
     {
         no_filter,
         entropy,
-        random
+        random,
+        mis,
+        mif
     };
 
     /// Get the .fvs file of the k-mer batch (filter value stats)

@@ -163,6 +163,7 @@ namespace xpas
         /// The second stage of the algorithm: combine merge and filter
         std::cout << "Building database: [stage 2 / 2]:" << std::endl;
         const auto merge_time = merge_filtered(group_ids);
+        fs::remove_all(get_groups_dir(_working_directory));
 
         /// Calculate the number of phylo-kmers stored in the database
         size_t total_entries = 0;

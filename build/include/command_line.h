@@ -44,6 +44,8 @@ namespace xpas::cli
         /// k-mer filtering parameters, mutually exclusive
         bool no_filter;
         bool entropy_filter;
+        bool mif_filter;
+        bool mis_filter;
         bool max_dev_filter;
         bool log_max_dev_filter;
         bool max_diff_filter;

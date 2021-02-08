@@ -1,6 +1,7 @@
 #include "filter.h"
 #include "branch_group.h"
 #include <xpas/phylo_kmer_db.h>
+#include <xpas/version.h>
 #include <boost/filesystem.hpp>
 #include <vector>
 #include <queue>
@@ -45,20 +46,18 @@ xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_
     return std::min(std::pow(10, log_score), 1.0);
 }
 
-class entropy_filter : public kmer_filter
+class batched_filter : public kmer_filter
 {
 public:
-    entropy_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
+    batched_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
         : kmer_filter{ std::move(working_dir), num_batches, mu, threshold },
         _total_num_groups{ total_num_groups }
     {}
 
-    ~entropy_filter() noexcept override = default;
+    ~batched_filter() noexcept override = default;
 
     void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
     {
-        std::cout << "Filtering (minimal conditional entropy)..." << std::endl;
-
         /// Create Filter Value files for every batch
         std::vector<std::vector<filter_value>> batch_filter_values;
 
@@ -72,7 +71,7 @@ public:
             /// Calculate filter values for the batch
             auto filter_values = calc_filter_values(batch_db);
 
-            //FIXME: do the partial sort to the (mu * total_num_kmers)th element
+            /// FIXME: do the partial sort to the (mu * total_num_kmers)th element
             std::sort(filter_values.begin(), filter_values.end());
             batch_filter_values.push_back(std::move(filter_values));
         }
@@ -113,13 +112,40 @@ public:
         return _filtered.find(key) != _filtered.end();
     }
 
+protected:
+    virtual std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const = 0;
+
+    /// The total number of groups for which k-mers values are calculated
+    size_t _total_num_groups;
+
+    /// The set of k-mers taken by the filter
+    std::unordered_set<phylo_kmer::key_type> _filtered;
+
+};
+
+class entropy_filter : public batched_filter
+{
+public:
+    entropy_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
+                   phylo_kmer::score_type threshold)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+    {}
+
+    ~entropy_filter() noexcept override = default;
+
+    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
+    {
+        std::cout << "Filtering (minimal conditional entropy)..." << std::endl;
+        batched_filter::filter(group_ids);
+    }
+
 private:
     static double shannon(double x)
     {
         return - x * std::log2(x);
     }
 
-    std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const
+    std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const override
     {
         std::vector<filter_value> filter_values;
 
@@ -136,8 +162,9 @@ private:
                 score_sum += logscore_to_score(log_score);
             }
 #else
-            for (const auto& [_, log_score] : entries)
+            for (const auto& [branch, log_score] : entries)
             {
+                (void)branch;
                 score_sum += logscore_to_score(log_score);
             }
 #endif
@@ -177,11 +204,94 @@ private:
         return filter_values;
     }
 
-    /// The total number of groups for which k-mers values are calculated
-    size_t _total_num_groups;
+};
 
-    /// The set of k-mers taken by the filter
-    std::unordered_set<phylo_kmer::key_type> _filtered;
+
+class mis_filter : public batched_filter
+{
+public:
+    mis_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
+                   phylo_kmer::score_type threshold)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+    {}
+
+    ~mis_filter() noexcept override = default;
+
+    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
+    {
+        std::cout << "Filtering (maximal mutual information, short version)..." << std::endl;
+        batched_filter::filter(group_ids);
+    }
+
+private:
+    static double shannon(double x)
+    {
+        return - x * std::log2(x);
+    }
+
+    std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const override
+    {
+        std::vector<filter_value> filter_values;
+
+        hash_map<phylo_kmer::key_type, double> filter_stats;
+        for (const auto& [key, entries] : db)
+        {
+            /// calculate the score sum to normalize scores
+            /// i.e. S_w by the notation
+            double score_sum = 0;
+#ifdef KEEP_POSITIONS
+            for (const auto& [branch, log_score, position] : entries)
+            {
+                (void)branch;
+                (void)position;
+                score_sum += logscore_to_score(log_score);
+            }
+#else
+            for (const auto& [branch, log_score] : entries)
+            {
+                (void)branch;
+                score_sum += logscore_to_score(log_score);
+            }
+#endif
+
+            /// do not forget the branches that are not stored in the database,
+            /// they suppose to have the threshold score
+            score_sum += static_cast<double>(_total_num_groups - entries.size()) * _threshold;
+
+            /// s_wc / S_w, if s_wc == threshold
+            const auto weighted_threshold = _threshold / score_sum;
+            const auto target_threshold = shannon(weighted_threshold);
+
+#ifdef KEEP_POSITIONS
+            for (const auto& [branch, log_score, position] : entries)
+#else
+            for (const auto& [branch, log_score] : entries)
+#endif
+            {
+                /// s_wc / S_w
+                const auto weighted_score = logscore_to_score(log_score) / score_sum;
+                const auto target_value = shannon(weighted_score);
+
+                if (filter_stats.find(key) == filter_stats.end())
+                {
+                    filter_stats[key] = static_cast<double>(_total_num_groups) * target_threshold;
+                }
+                filter_stats[key] = filter_stats[key] - target_threshold + target_value;
+                //std::cout << "FV: " << key << " " << xpas::decode_kmer(key, 5) << " " <<
+                //                                                                      filter_stats[key] << std::endl;
+            }
+
+            /// MI = S_w * H(c | B_w = 1)
+            filter_stats[key] = score_sum * filter_stats[key];
+        }
+        /// copy entropy values into a vector
+        filter_values.reserve(filter_stats.size());
+        for (const auto& [key, filter_score] : filter_stats)
+        {
+            filter_values.push_back({ key, filter_score });
+        }
+        return filter_values;
+    }
 };
 
 
@@ -192,9 +302,9 @@ public:
         : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
     {}
 
-    ~random_filter() noexcept = default;
+    ~random_filter() noexcept override = default;
 
-    void filter(const std::vector<phylo_kmer::branch_type>& group_ids)
+    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
     {
         std::default_random_engine generator(42);
         std::uniform_real_distribution<double> distribution(0, 1);
@@ -234,19 +344,19 @@ public:
         : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
     {}
 
-    ~no_filter() noexcept = default;
+    ~no_filter() noexcept override = default;
 
-    void filter(const std::vector<phylo_kmer::branch_type>& group_ids)
+    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
     {
         (void)group_ids;
     }
 
+    [[nodiscard]]
     bool is_good(phylo_kmer::key_type key) const noexcept override
     {
         (void)key;
         return true;
     }
-
 };
 
 
@@ -262,6 +372,10 @@ std::unique_ptr<kmer_filter> xpas::make_filter(xpas::filter_type filter,
     else if (filter == filter_type::entropy)
     {
         return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+    }
+    else if (filter == filter_type::mis)
+    {
+        return std::make_unique<mis_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
     }
     else if (filter == filter_type::random)
     {
