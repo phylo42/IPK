@@ -3,9 +3,14 @@
 
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+#include <boost/filesystem.hpp>
 #include <fstream>
 #include "phylo_kmer_db.h"
 #include "version.h"
+
+namespace fs = boost::filesystem;
 
 namespace xpas
 {
@@ -19,6 +24,7 @@ namespace xpas
         static const int v0_2_WITHOUT_POSITIONS = 3;
         static const int v0_2_WITH_POSITIONS = 4;
 
+
 #ifdef KEEP_POSITIONS
         static const unsigned int CURRENT = v0_2_WITH_POSITIONS;
 #else
@@ -26,20 +32,62 @@ namespace xpas
 #endif
     };
 
-    xpas::phylo_kmer_db load(const std::string& filename)
+    xpas::phylo_kmer_db load_compressed(const std::string& filename)
     {
         std::ifstream ifs(filename);
-        ::boost::archive::binary_iarchive ia(ifs);
+        boost::iostreams::filtering_istream in;
+        boost::iostreams::zlib_params zp(boost::iostreams::zlib::best_speed);
+        in.push(boost::iostreams::zlib_decompressor(zp));
+        in.push(ifs);
+
+        boost::archive::binary_iarchive ia(in);
 
         xpas::phylo_kmer_db db { 0, 0.0, "", "" };
         ia & db;
         return db;
     }
 
+    xpas::phylo_kmer_db load_uncompressed(const std::string& filename)
+    {
+        std::ifstream ifs(filename);
+        boost::archive::binary_iarchive ia(ifs);
+
+        xpas::phylo_kmer_db db { 0, 0.0, "", "" };
+        ia & db;
+        return db;
+    }
+
+
+    xpas::phylo_kmer_db load(const std::string& filename)
+    {
+        if (!fs::exists(filename))
+        {
+            throw std::runtime_error("No such file: " + filename);
+        }
+
+        /// Versions earlier than v0.2.1 were not using zlib compression.
+        /// There is no good way to figure out if the file is compressed or not
+        /// than to just try to decompress first.
+        try
+        {
+            return load_compressed(filename);
+        }
+        catch (const boost::iostreams::zlib_error& error)
+        {
+            return load_uncompressed(filename);
+        }
+    }
+
     void save(const xpas::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream ofs(filename);
-        ::boost::archive::binary_oarchive oa(ofs);
+
+        boost::iostreams::filtering_ostream out;
+        boost::iostreams::zlib_params zp(boost::iostreams::zlib::best_speed);
+        out.push(boost::iostreams::zlib_compressor(zp));
+        out.push(ofs);
+
+        ::boost::archive::binary_oarchive oa(out);
         oa & db;
     }
 }
