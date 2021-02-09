@@ -206,7 +206,6 @@ private:
 
 };
 
-
 class mis_filter : public batched_filter
 {
 public:
@@ -236,7 +235,7 @@ private:
         hash_map<phylo_kmer::key_type, double> filter_stats;
         for (const auto& [key, entries] : db)
         {
-            /// calculate the score sum to normalize scores
+            /// calculate the score sum to normalize scores7
             /// i.e. S_w by the notation
             double score_sum = 0;
 #ifdef KEEP_POSITIONS
@@ -247,16 +246,22 @@ private:
                 score_sum += logscore_to_score(log_score);
             }
 #else
+            //std::cout << key << std::endl;
             for (const auto& [branch, log_score] : entries)
             {
                 (void)branch;
                 score_sum += logscore_to_score(log_score);
+
+                //std::cout << "\t" << logscore_to_score(log_score) << "," << std::endl;
             }
 #endif
 
             /// do not forget the branches that are not stored in the database,
             /// they suppose to have the threshold score
             score_sum += static_cast<double>(_total_num_groups - entries.size()) * _threshold;
+
+            //std::cout << "\tTreshold: " << _threshold << std::endl;
+            //std::cout << "\tS_w: " << score_sum << std::endl;
 
             /// s_wc / S_w, if s_wc == threshold
             const auto weighted_threshold = _threshold / score_sum;
@@ -281,9 +286,127 @@ private:
                 //                                                                      filter_stats[key] << std::endl;
             }
 
-            /// MI = S_w * H(c | B_w = 1)
-            filter_stats[key] = score_sum * filter_stats[key];
+            //std::cout << "\tEntropy: " << filter_stats[key] << std::endl;
+
+            /// MIs = S_w / N * H(c | B_w = 1)
+            filter_stats[key] = score_sum / _total_num_groups * filter_stats[key];
+
+            //std::cout << "\tMIS: " << filter_stats[key] << std::endl;
         }
+        /// copy entropy values into a vector
+        filter_values.reserve(filter_stats.size());
+        for (const auto& [key, filter_score] : filter_stats)
+        {
+            filter_values.push_back({ key, filter_score });
+        }
+        return filter_values;
+    }
+};
+
+
+class mif_filter : public batched_filter
+{
+public:
+    mif_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
+               phylo_kmer::score_type threshold)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+    {}
+
+    ~mif_filter() noexcept override = default;
+
+    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
+    {
+        std::cout << "Filtering (maximal mutual information, full version)..." << std::endl;
+        batched_filter::filter(group_ids);
+    }
+
+private:
+    static double shannon(double x)
+    {
+        return - x * std::log2(x);
+    }
+
+    std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const override
+    {
+        std::vector<filter_value> filter_values;
+        const auto N = _total_num_groups;
+
+        hash_map<phylo_kmer::key_type, double> filter_stats;
+        for (const auto& [key, entries] : db)
+        {
+            //std::cout << key << std::endl;
+
+            /// calculate the score sum to normalize scores
+            double Sw = 0;
+#ifdef KEEP_POSITIONS
+            for (const auto& [branch, log_score, position] : entries)
+            {
+                (void)branch;
+                (void)position;
+                Sw += logscore_to_score(log_score);
+            }
+#else
+            for (const auto& [branch, log_score] : entries)
+            {
+                (void)branch;
+                Sw += logscore_to_score(log_score);
+
+                //std::cout << "\t" << logscore_to_score(log_score) << "," << std::endl;
+            }
+#endif
+
+            /// do not forget the branches that are not stored in the database,
+            /// they suppose to have the threshold score
+            Sw += static_cast<double>(N - entries.size()) * _threshold;
+
+            //std::cout << "\tSW = " << Sw << std::endl;
+
+            /// Calculate the Mutual Information
+            /// MI = H(C) - H(C|Bw) =
+            ///    = H(C) - [P(Bw=1)H(C|Bw=1) + P(Bw=0)H(C|Bw=0)] =
+            ///    = A - (B + C)
+
+            /// P(Bw == 1) = s_wc / Sw, if s_wc == threshold
+            const auto PBw1_threshold = _threshold / Sw;
+            /// P(Bw == 0) = (1 - s_wc) / (N - Sw), if s_wc == threshold
+            const auto PBw0_threshold = (1 - _threshold) / (N - Sw);
+
+            /// Calculate B and C: starting with the missing scores
+            double HcBw1 = static_cast<double>(N) * shannon(PBw1_threshold);
+            double HcBw0 = static_cast<double>(N) * shannon(PBw0_threshold);
+
+#ifdef KEEP_POSITIONS
+            for (const auto& [branch, log_score, position] : entries)
+#else
+            for (const auto& [branch, log_score] : entries)
+#endif
+            {
+                const auto swc = logscore_to_score(log_score);
+
+                /// P(Bw == 1) = s_wc / Sw
+                const auto PBw1 = swc / Sw;
+                /// P(Bw == 0) = (1 - s_wc) / (N - Sw)
+                const auto PBw0 = (1 - swc) / (N - Sw);
+
+                HcBw1 = HcBw1 - shannon(PBw1_threshold) + shannon(PBw1);
+                HcBw0 = HcBw0 - shannon(PBw0_threshold) + shannon(PBw0);
+            }
+
+            /// B = P(Bw=1) * H(c|Bw=1)
+            const auto b = Sw / N * HcBw1;
+
+            /// C = P(Bw=0) * H(c|Bw=0)
+            const auto c = (N - Sw) / N * HcBw0;
+
+            /// Since A is const for all k-mers,
+            /// maximizing A - (B + C) is the same as minimizing B + C
+            filter_stats[key] = b + c;
+
+            //std::cout << "\tB: " << b << std::endl;
+            //std::cout << "\tC: " << c << std::endl;
+            //std::cout << "\tMIF: " << filter_stats[key] << std::endl;
+        }
+
         /// copy entropy values into a vector
         filter_values.reserve(filter_stats.size());
         for (const auto& [key, filter_score] : filter_stats)
@@ -376,6 +499,10 @@ std::unique_ptr<kmer_filter> xpas::make_filter(xpas::filter_type filter,
     else if (filter == filter_type::mis)
     {
         return std::make_unique<mis_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+    }
+    else if (filter == filter_type::mif)
+    {
+        return std::make_unique<mif_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
     }
     else if (filter == filter_type::random)
     {
