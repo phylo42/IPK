@@ -181,14 +181,23 @@ namespace xpas
     std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
     {
         /// create a temporary directory for hashmaps
-        fs::create_directories(get_groups_dir(_working_directory));
+        const auto temp_dir = get_groups_dir(_working_directory);
+        fs::create_directories(temp_dir);
 
-        /// Run the construction algorithm
-        const auto begin = std::chrono::steady_clock::now();
-        const auto& [group_ids, num_tuples] = explore_kmers();
-        const auto end = std::chrono::steady_clock::now();
-        const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-        return { group_ids, num_tuples, elapsed_time };
+        try
+        {
+            /// Run the construction algorithm
+            const auto begin = std::chrono::steady_clock::now();
+            const auto& [group_ids, num_tuples] = explore_kmers();
+            const auto end = std::chrono::steady_clock::now();
+            const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+            return { group_ids, num_tuples, elapsed_time };
+        }
+        catch (const std::exception& error)
+        {
+            fs::remove_all(temp_dir);
+            throw error;
+        }
     }
 
 
