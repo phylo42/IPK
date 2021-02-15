@@ -118,7 +118,7 @@ namespace xpas
         double _mu;
 
         /// The number of batches in which the space of k-mers is split
-        const size_t _num_batches = 4;
+        const size_t _num_batches = 16;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
@@ -211,19 +211,21 @@ namespace xpas
                                         _working_directory, _num_batches, _mu, threshold);
         filter->filter(group_ids);
 
-        size_t num_filtered = 0;
-        size_t total_num_kmers = 0;
-
+        size_t filtered_kmers = 0;
+        size_t total_kmers = 0;
+        size_t total_entries = 0;
+        size_t filtered_entries = 0;
         for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
         {
             const auto temp_db = xpas::merge_batch(_working_directory, group_ids, batch_idx);
             for (const auto& [key, entries] : temp_db)
             {
-                total_num_kmers++;
+                total_entries += entries.size();
+                total_kmers++;
                 if (filter->is_good(key))
                 {
-                    num_filtered++;
-
+                    filtered_kmers++;
+                    filtered_entries += entries.size();
 #ifdef KEEP_POSITIONS
                     if (_merge_branches)
                     {
@@ -277,8 +279,10 @@ namespace xpas
         const auto end = std::chrono::steady_clock::now();
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
-        std::cout << "Kept " << num_filtered << " / " << total_num_kmers <<
-                  " k-mers (" << std::setprecision(3) << ((float) num_filtered) / total_num_kmers * 100 << "%)."
+        std::cout << "Kept " << filtered_kmers << " / " << total_kmers
+                  << " k-mers (" << std::setprecision(3) << ((float) filtered_kmers) / total_kmers * 100 << "%) | "
+                  << filtered_entries << " / " << total_entries
+                  << " entries (" << std::setprecision(3) << ((float) filtered_entries) / total_entries * 100 << "%)."
                   << "\nFiltering time: " << time << "\n\n" << std::flush;
         return time;
     }

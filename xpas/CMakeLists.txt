@@ -25,7 +25,7 @@ elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
 endif()
 
 
-find_package(Boost REQUIRED COMPONENTS serialization iostreams)
+find_package(Boost REQUIRED COMPONENTS serialization iostreams system filesystem)
 
 set(SOURCES
         src/xpas/fasta.cpp include/xpas/fasta.h
@@ -45,7 +45,7 @@ set(SOURCES
 
 
 set(LINK_LIBRARIES
-        Boost::serialization Boost::iostreams
+        Boost::serialization Boost::iostreams Boost::system Boost::filesystem
         ${HASH_MAP_IMPLEMENTATION})
 
 set(INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:include>

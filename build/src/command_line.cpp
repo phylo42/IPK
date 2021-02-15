@@ -35,8 +35,8 @@ namespace xpas::cli
     static std::string MU = "mu", MU_SHORT = "u";
     static std::string NO_FILTER = "no-filter";
     static std::string ENTROPY = "entropy";
-    static std::string MIS = "mis";
-    static std::string MIF = "mif";
+    static std::string MIF0 = "mif0";
+    static std::string MIF1 = "mif1";
     static std::string MAX_DEVIATION = "max-deviation";
     static std::string LOG_MAX_DEVIATION = "log-max-deviation";
     static std::string MAX_DIFF = "max-difference";
@@ -49,8 +49,8 @@ namespace xpas::cli
 
     bool no_filter_flag = true;
     bool entropy_flag = false;
-    bool mis_flag = false;
-    bool mif_flag = false;
+    bool mif0_flag = false;
+    bool mif1_flag = false;
     bool max_deviation_filter_flag = false;
     bool log_max_deviation_filter_flag = false;
     bool max_difference_filter_flag = false;
@@ -108,8 +108,8 @@ namespace xpas::cli
 
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
             ((ENTROPY).c_str(), po::bool_switch(&entropy_flag))
-            ((MIS).c_str(), po::bool_switch(&mis_flag))
-            ((MIF).c_str(), po::bool_switch(&mif_flag))
+            ((MIF0).c_str(), po::bool_switch(&mif0_flag))
+            ((MIF1).c_str(), po::bool_switch(&mif1_flag))
             ((MAX_DEVIATION).c_str(), po::bool_switch(&max_deviation_filter_flag))
             ((LOG_MAX_DEVIATION).c_str(), po::bool_switch(&log_max_deviation_filter_flag))
             ((MAX_DIFF).c_str(), po::bool_switch(&max_difference_filter_flag))
@@ -171,8 +171,8 @@ namespace xpas::cli
 
             parameters.no_filter = no_filter_flag;
             parameters.entropy_filter = entropy_flag;
-            parameters.mif_filter = mif_flag;
-            parameters.mis_filter = mis_flag;
+            parameters.mif1_filter = mif1_flag;
+            parameters.mif0_filter = mif0_flag;
             parameters.max_dev_filter = max_deviation_filter_flag;
             parameters.log_max_dev_filter = log_max_deviation_filter_flag;
             parameters.max_diff_filter = max_difference_filter_flag;
