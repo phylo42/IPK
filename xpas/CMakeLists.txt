@@ -26,6 +26,7 @@ endif()
 
 
 find_package(Boost REQUIRED COMPONENTS serialization iostreams system filesystem)
+find_package(ZLIB)
 
 set(SOURCES
         src/xpas/fasta.cpp include/xpas/fasta.h
@@ -46,6 +47,7 @@ set(SOURCES
 
 set(LINK_LIBRARIES
         Boost::serialization Boost::iostreams Boost::system Boost::filesystem
+        ZLIB::ZLIB
         ${HASH_MAP_IMPLEMENTATION})
 
 set(INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:include>
