@@ -23,5 +23,5 @@
 	path = folly
 	url = https://github.com/facebook/folly.git
 [submodule "strasser"]
-	path = build/strasser
+	path = strasser
 	url = https://github.com/nromashchenko/strasser.git

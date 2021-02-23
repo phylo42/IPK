@@ -34,6 +34,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/catch2/contrib")
 
 add_subdirectory(catch2)
+add_subdirectory(strasser)
 add_subdirectory(xpas)
 add_subdirectory(build)
 add_subdirectory(examples)

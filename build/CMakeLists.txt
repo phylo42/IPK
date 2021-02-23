@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-add_subdirectory(strasser)
-
 ######################################################################################################
 # Dependencies
 # WARNING: some dependencies are not listed here. See the top-level CMake file
