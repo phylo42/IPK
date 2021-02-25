@@ -1,11 +1,11 @@
 # xpas, the phylo k-mer database construction library
 
-
-This is a core library used in RAPPAS2 and SHERPAS.
+xpas is the shared part of RAPPAS2 and SHERPAS, which builds phylo k-mer databases and provides efficient access to previously built databases.
 
 ## Dependencies
 xpas depends on:
-- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams
+- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams, boost-program-options
+- zlib
 - third-party libraries included as submodules in the repository
 
 ## Install
@@ -16,8 +16,8 @@ xpas depends on:
 
 Example:
 ```
-# Install boost
-sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev
+# Install dependencies
+sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dbg
 
 # Clone the repo
 git clone --recursive https://github.com/phylo42/xpas.git
