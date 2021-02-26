@@ -38,5 +38,15 @@ HASH_MAP options:
 - USE_TSL_HOPSCOTCH_MAP
 
 ## Usage
-This library is not intended to be used stand-alone. It is used in RAPPAS2 and SHERPAS. Check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) for the use cases.
 
+To build a database:
+```
+python xpas.py build -s [nucl|amino] -b `which phyml` -w workdir -r alignment.fasta -t tree.newick -k 10
+```
+
+To check out all options:
+```
+python xpas.py build --help
+```
+
+Databases can be used in [RAPPAS2](https://github.com/phylo42/rappas2) and [SHERPAS](https://github.com/phylo42/sherpas). Also check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) to see how to use xpas to retrieve information from databases.
