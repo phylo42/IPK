@@ -17,7 +17,7 @@ xpas depends on:
 Example:
 ```
 # Install dependencies
-sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dbg
+sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
 
 # Clone the repo
 git clone --recursive https://github.com/phylo42/xpas.git
