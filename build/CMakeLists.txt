@@ -49,9 +49,9 @@ target_include_directories(build_dna
 )
 
 target_link_libraries(build_dna
-        PRIVATE
-            xpas::dna
+        PUBLIC
             ${LINK_LIBRARIES}
+            xpas::dna
 
         )
 
