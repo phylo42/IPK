@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(xpas LANGUAGES CXX VERSION 0.2.0)
+project(xpas LANGUAGES CXX VERSION 0.3.0)
 
 # default build type Release
 if(NOT CMAKE_BUILD_TYPE)

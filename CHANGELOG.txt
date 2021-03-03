@@ -1,9 +1,18 @@
-v0.2.1
-- Implemented ghost node injection.
+v0.3.0
+XPAS BUILD:
+- Database construction code moved to xpas.
+- Implemented missing parts of RAPPAS: tree extension and ancestral reconstruction
+- Implemented batched filtering (external merge) with constant number of batches.
+- Implemented MIF0 and MIF1 phylo k-mer filtering.
+- Refactored k-mer filtering code for more congruency
+- Implemented the chaining window optimization for the divide-and-conquer algorithm
+XPAS LIBRARY:
 - xpas::phylo_node reworked, some methods are public now.
 - xpas_utils has gone and now is a part of xpas. All <utils/io/X.h> are now <xpas/X.h>
 - Added a preorder iterator for xpas::phylo_node. visit_subtree now has a template argument Iterator,
     which can be either post- or preorder_tree_iterator. It is now const post-order iteration by default.
+- Changed the serialization protocol. It now uses zlib compression by default. Deserialization tries to
+    decompress the file first, and tries to load the DB uncompressed in the case of error.
 
 
 v0.2.0
