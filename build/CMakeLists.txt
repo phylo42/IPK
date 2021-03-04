@@ -45,13 +45,12 @@ target_include_directories(build_dna
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/
             ${CMAKE_CURRENT_SOURCE_DIR}/include/
-            ${CMAKE_CURRENT_SOURCE_DIR}/strasser/
 )
 
 target_link_libraries(build_dna
-        PRIVATE
-            xpas::dna
+        PUBLIC
             ${LINK_LIBRARIES}
+            xpas::dna
 
         )
 

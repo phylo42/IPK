@@ -1,11 +1,11 @@
 # xpas, the phylo k-mer database construction library
 
-
-This is a core library used in RAPPAS2 and SHERPAS.
+xpas is the shared part of RAPPAS2 and SHERPAS, which builds phylo k-mer databases and provides efficient access to previously built databases.
 
 ## Dependencies
 xpas depends on:
-- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams
+- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams, boost-program-options
+- zlib
 - third-party libraries included as submodules in the repository
 
 ## Install
@@ -16,8 +16,8 @@ xpas depends on:
 
 Example:
 ```
-# Install boost
-sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev
+# Install dependencies
+sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
 
 # Clone the repo
 git clone --recursive https://github.com/phylo42/xpas.git
@@ -38,5 +38,15 @@ HASH_MAP options:
 - USE_TSL_HOPSCOTCH_MAP
 
 ## Usage
-This library is not intended to be used stand-alone. It is used in RAPPAS2 and SHERPAS. Check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) for the use cases.
 
+To build a database:
+```
+python xpas.py build -s [nucl|amino] -b `which phyml` -w workdir -r alignment.fasta -t tree.newick -k 10
+```
+
+To check out all options:
+```
+python xpas.py build --help
+```
+
+Databases can be used in [RAPPAS2](https://github.com/phylo42/rappas2) and [SHERPAS](https://github.com/phylo42/sherpas). Also check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) to see how to use xpas to retrieve information from databases.
