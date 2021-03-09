@@ -40,6 +40,9 @@ namespace xpas
     /// of the k-mer (if any) and the provided value.
     void put(group_hash_map& map, const phylo_kmer& kmer);
 
+    void accumulate(group_hash_map& map, const phylo_kmer& kmer,
+                    phylo_kmer::score_type default_value, phylo_kmer::score_type log_rev_threshold);
+
     /// Returns the number of the batch of the given k-mer
     size_t kmer_batch(phylo_kmer::key_type key, size_t n_ranges);
 

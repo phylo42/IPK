@@ -94,6 +94,26 @@ void xpas::put(group_hash_map& map, const phylo_kmer& kmer)
         map[kmer.key] = kmer.score;
     }
 }
+
+void xpas::accumulate(group_hash_map& map, const phylo_kmer& kmer,
+                      phylo_kmer::score_type default_value, phylo_kmer::score_type log_rev_threshold)
+{
+    const auto score = std::pow(10, kmer.score);
+    const auto log_rev_score = std::log10(1 - score);
+
+    //std::cout << kmer.score << " | " << score << " -> " << log_rev_score << std::endl;
+    if (auto it = map.find(kmer.key); it != map.end())
+    {
+        //std::cout << "\t" << map[kmer.key] << " -> " <<  map[kmer.key] - log_rev_threshold + log_rev_score << std::endl;
+        map[kmer.key] = map[kmer.key] - log_rev_threshold + log_rev_score;
+
+    }
+    else
+    {
+        //std::cout << "\t" <<  map[kmer.key] << " -> " <<  default_value - log_rev_threshold + log_rev_score << std::endl;
+        map[kmer.key] = default_value - log_rev_threshold + log_rev_score;
+    }
+}
 #endif
 
 size_t xpas::kmer_batch(phylo_kmer::key_type key, size_t n_ranges)

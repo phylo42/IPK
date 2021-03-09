@@ -57,6 +57,9 @@ namespace xpas::cli
 
         // k-mer filtering threshold
         double mu;
+
+        bool score_model_max;
+        bool score_model_exists;
     };
 
     std::string get_option_list();

@@ -30,14 +30,22 @@ AMINO_MODELS = ['LG', 'WAG', 'JTT', 'Dayhoff', 'DCMut', 'CpREV', 'mMtREV', 'MtMa
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
-KMER_FILTERS = ["no-filter", "entropy", "mif0", "mif1", "random"]
-
+KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
+SCORE_MODELS = ["max", "exists"]
 
 
 def validate_filter(ctx, param, value):
     value = value.lower()
     if value not in KMER_FILTERS:
         valid_values = ', '.join(v for v in KMER_FILTERS)
+        raise click.BadParameter('Filter must be one of: ' + valid_values)
+    return value
+
+
+def validate_score_model(ctx, param, value):
+    value = value.lower()
+    if value not in SCORE_MODELS:
+        valid_values = ', '.join(v for v in SCORE_MODELS)
         raise click.BadParameter('Filter must be one of: ' + valid_values)
     return value
 
@@ -128,8 +136,11 @@ def validate_filter(ctx, param, value):
               help="""Modifier levelling the threshold used during
                   phylo-kmer filtering, T=(omega/#states)^k""")
 @click.option('--filter',
-              callback=validate_filter,
+              type=click.Choice(KMER_FILTERS),
               default="no-filter", show_default=True)
+@click.option('--score-model',
+              type=click.Choice(SCORE_MODELS),
+              default="max", show_default=True)
 @click.option('-f', type=float, default=1.0)
 @click.option('-u', '--mu',
               type=float,
@@ -170,7 +181,7 @@ def build(arbinary, #database,
           alpha, categories, #ghosts,
           k, model, arparameters, convert_uo, #gap_jump_thresh,
           no_reduction, ratio_reduction, omega,
-          filter, f, mu, use_unrooted, merge_branches,
+          filter, score_model, f, mu, use_unrooted, merge_branches,
           ardir, keep_positions,
           threads, aronly):
     """
@@ -211,6 +222,7 @@ def build(arbinary, #database,
         "--reduction-ratio", str(ratio_reduction),
         "-o", str(omega),
         "--" + filter.lower(),
+        "--" + score_model.lower(),
         "-u", str(mu),
         "-j", str(threads)
     ]

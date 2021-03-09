@@ -44,6 +44,10 @@ namespace xpas::cli
     static std::string STD_DEVIATION = "sd";
     static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
+
+    static std::string SCORE_MAX = "max";
+    static std::string SCORE_EXISTS = "exists";
+
     static std::string MERGE_BRANCHES = "merge-branches";
     static std::string USE_UNROOTED = "use-unrooted";
 
@@ -62,6 +66,9 @@ namespace xpas::cli
     bool use_unrooted_flag = false;
     bool no_reduction_flag = false;
     bool ar_only_flag = false;
+
+    bool score_max_flag = true;
+    bool score_exists_flag = false;
 
     po::options_description get_opt_description()
     {
@@ -117,7 +124,11 @@ namespace xpas::cli
             ((STD_DEVIATION).c_str(), po::bool_switch(&std_deviation_filter_flag))
             ((LOG_STD_DEVIATION).c_str(), po::bool_switch(&log_std_deviation_filter_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
-            ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8));
+            ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
+
+
+            ((SCORE_MAX).c_str(), po::bool_switch(&score_max_flag))
+            ((SCORE_EXISTS).c_str(), po::bool_switch(&score_exists_flag));
         return desc;
     }
 
@@ -180,6 +191,9 @@ namespace xpas::cli
             parameters.random_filter = random_filter_flag;
             parameters.std_dev_filter = std_deviation_filter_flag;
             parameters.log_std_dev_filter = log_std_deviation_filter_flag;
+
+            parameters.score_model_max = score_max_flag;
+            parameters.score_model_exists = score_exists_flag;
         }
         catch (const po::error& e)
         {

@@ -11,6 +11,7 @@
 #include <xpas/phylo_tree.h>
 #include <xpas/newick.h>
 #include "db_builder.h"
+#include "alignment.h"
 #include "extended_tree.h"
 #include "proba_matrix.h"
 #include "ar.h"
@@ -32,11 +33,14 @@ namespace xpas
     {
         friend phylo_kmer_db build(const string& working_directory,
                                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                                   const alignment& extended_alignment,
                                    const proba_matrix& matrix,
                                    const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                                    bool merge_branches, size_t kmer_size,
                                    phylo_kmer::score_type omega,
-                                   filter_type filter, double mu, size_t num_threads);
+                                   filter_type filter, double mu,
+                                   score_model_type score_model,
+                                   size_t num_threads);
     public:
         /// Member types
 
@@ -52,10 +56,13 @@ namespace xpas
         /// Ctors, dtor and operator=
         db_builder(const string& working_directory,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                   const alignment& extended_alignment,
                    const proba_matrix& matrix,
                    const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                    bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
-                   filter_type filter, double mu, size_t num_threads);
+                   filter_type filter, double mu,
+                   score_model_type score_model,
+                   size_t num_threads);
         db_builder(const db_builder&) = delete;
         db_builder(db_builder&&) = delete;
         db_builder& operator=(const db_builder&) = delete;
@@ -102,6 +109,7 @@ namespace xpas
 
         const phylo_tree& _original_tree;
         const phylo_tree& _extended_tree;
+        const alignment& _extended_alignment;
 
         const proba_matrix& _matrix;
         const ghost_mapping& _extended_mapping;
@@ -112,10 +120,11 @@ namespace xpas
         size_t _kmer_size;
         xpas::phylo_kmer::score_type _omega;
 
-        double _reduction_ratio;
 
         xpas::filter_type _filter;
         double _mu;
+
+        score_model_type _score_model;
 
         /// The number of batches in which the space of k-mers is split
         const size_t _num_batches = 16;
@@ -127,13 +136,17 @@ namespace xpas
 
     db_builder::db_builder(const string& working_directory,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                           const alignment& extended_alignment,
                            const proba_matrix& matrix,
                            const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                            bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
-                           filter_type filter, double mu, size_t num_threads)
+                           filter_type filter, double mu,
+                           score_model_type score_model,
+                           size_t num_threads)
         : _working_directory{ working_directory }
         , _original_tree{ original_tree }
         , _extended_tree{ extended_tree }
+        , _extended_alignment{ extended_alignment }
         , _matrix{ matrix }
         , _extended_mapping{ mapping }
         , _ar_mapping{ ar_mapping }
@@ -142,6 +155,7 @@ namespace xpas
         , _omega{ omega }
         , _filter{ filter }
         , _mu{ mu }
+        , _score_model { score_model }
         , _num_threads{ num_threads }
         , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::to_newick(_original_tree)}
     {}
@@ -441,7 +455,12 @@ namespace xpas
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         size_t count = 0;
-        const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
+        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
+        const auto log_threshold = std::log10(threshold);
+        const auto log_reverse_th = std::log10(1 - threshold);
+        const auto A = _extended_alignment.width() - _kmer_size + 1;
+        const auto log_default_value = A * log_reverse_th;
+
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
@@ -454,10 +473,37 @@ namespace xpas
                 {
                     //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
-                    xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+
+                    if (_score_model == score_model_type::max)
+                    {
+                        xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                    }
+                    else if (_score_model == score_model_type::exists)
+                    {
+                        xpas::accumulate(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer, log_default_value,
+                                         log_reverse_th);
+                    }
                     ++count;
                 }
             }
+
+            if (_score_model == score_model_type::exists)
+            {
+                for (auto& batch_hash_map : hash_maps)
+                {
+                    for (const auto&[key, log_rev_score] : batch_hash_map)
+                    {
+                        const auto rev_score = std::pow(10, log_rev_score);
+
+                        //std::cout << "\t\t" << key << " " << xpas::decode_kmer(key, _kmer_size) << " -> "
+                        //          << log_rev_score << " " << rev_score << " " << 1 - rev_score << std::endl;
+
+                        const auto log_score = std::log10(1 - rev_score);
+                        batch_hash_map[key] = log_score;
+                    }
+                }
+            }
+
         }
 
         return {std::move(hash_maps), count};
@@ -472,16 +518,22 @@ namespace xpas
 
     phylo_kmer_db build(const string& working_directory,
                         const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                        const alignment& extended_alignment,
                         const proba_matrix& matrix,
                         const ghost_mapping& mapping, const ar::mapping& ar_mapping,
                         bool merge_branches,
-                        size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu, size_t num_threads)
+                        size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu,
+                        score_model_type score_model,
+                        size_t num_threads)
     {
         db_builder builder(working_directory,
                            original_tree, extended_tree,
+                           extended_alignment,
                            matrix,
                            mapping, ar_mapping,
-                           merge_branches, kmer_size, omega, filter, mu, num_threads);
+                           merge_branches, kmer_size, omega, filter, mu,
+                           score_model,
+                           num_threads);
         builder.run();
         return std::move(builder._phylo_kmer_db);
     }

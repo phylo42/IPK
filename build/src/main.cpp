@@ -124,6 +124,15 @@ xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
     return xpas::filter_type::no_filter;
 }
 
+xpas::score_model_type get_score_model_type(const xpas::cli::parameters& parameters)
+{
+    if (parameters.score_model_exists)
+    {
+        return xpas::score_model_type::exists;
+    }
+    return xpas::score_model_type::max;
+}
+
 return_code build_database(const xpas::cli::parameters& parameters)
 {
     if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
@@ -174,10 +183,12 @@ return_code build_database(const xpas::cli::parameters& parameters)
     /// Generate phylo k-mers
     const auto db = xpas::build(parameters.working_directory,
                                 original_tree, extended_tree,
+                                extended_alignment,
                                 proba_matrix,
                                 ghost_mapping, ar_mapping,
                                 parameters.merge_branches, parameters.kmer_size, parameters.omega,
                                 get_filter_type(parameters), parameters.mu,
+                                get_score_model_type(parameters),
                                 parameters.num_threads);
 
     /// Deserialize database
