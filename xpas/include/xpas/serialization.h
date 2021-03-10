@@ -24,11 +24,18 @@ namespace xpas
         static const int v0_2_WITHOUT_POSITIONS = 3;
         static const int v0_2_WITH_POSITIONS = 4;
 
+        /// The protocol is the same for v0.2.x - v0.3.0
+        static const int v0_3_0 = 5;
+
+        /// xpas v0.3.1+
+        static const int v0_3_1_WITHOUT_POSITIONS = 5;
+        static const int v0_3_1_WITH_POSITIONS = 5;
+
 
 #ifdef KEEP_POSITIONS
-        static const unsigned int CURRENT = v0_2_WITH_POSITIONS;
+        static const unsigned int CURRENT = v0_3_1_WITH_POSITIONS;
 #else
-        static const unsigned int CURRENT = v0_2_WITHOUT_POSITIONS;
+        static const unsigned int CURRENT = v0_3_1_WITHOUT_POSITIONS;
 #endif
     };
 
@@ -42,7 +49,7 @@ namespace xpas
 
         boost::archive::binary_iarchive ia(in);
 
-        xpas::phylo_kmer_db db { 0, 0.0, "", "" };
+        xpas::phylo_kmer_db db { 0, 0.0, "", "", score_model_type::MAX};
         ia & db;
         return db;
     }
@@ -52,7 +59,7 @@ namespace xpas
         std::ifstream ifs(filename);
         boost::archive::binary_iarchive ia(ifs);
 
-        xpas::phylo_kmer_db db { 0, 0.0, "", "" };
+        xpas::phylo_kmer_db db { 0, 0.0, "", "", score_model_type::MAX};
         ia & db;
         return db;
     }
@@ -97,7 +104,7 @@ namespace boost::serialization
     template<class Archive>
     inline void save(Archive& ar,
                      const xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
-                     unsigned int /*version*/)
+                     unsigned int version)
     {
         ar & std::string(db.sequence_type());
 
@@ -109,6 +116,15 @@ namespace boost::serialization
 
         xpas::phylo_kmer::score_type omega = db.omega();
         ar & omega;
+
+        if (version > xpas::protocol::v0_3_0)
+        {
+            xpas::score_model_type score_model = db.score_model();
+            ar & score_model;
+
+            xpas::phylo_kmer::score_type threshold = db.threshold();
+            ar & threshold;
+        }
 
         size_t table_size = db.size();
         ar & table_size;
@@ -128,7 +144,7 @@ namespace boost::serialization
     template<class Archive>
     inline void save(Archive& ar,
                      const xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
-                     unsigned int /*version*/)
+                     unsigned int version)
     {
         ar & std::string(db.sequence_type());
 
@@ -140,6 +156,15 @@ namespace boost::serialization
 
         xpas::phylo_kmer::score_type omega = db.omega();
         ar & omega;
+
+        if (version > xpas::protocol::v0_3_0)
+        {
+            xpas::score_model_type score_model = db.score_model();
+            ar & score_model;
+
+            xpas::phylo_kmer::score_type threshold = db.threshold();
+            ar & threshold;
+        }
 
         size_t table_size = db.size();
         ar & table_size;
@@ -191,6 +216,18 @@ namespace boost::serialization
             xpas::phylo_kmer::score_type omega = 0;
             ar & omega;
             db.set_omega(omega);
+
+            /// Deserialization of the content added in v0.3.1+
+            if (version > xpas::protocol::v0_3_0)
+            {
+                xpas::score_model_type score_model = xpas::score_model_type::MAX;
+                ar & score_model;
+                db.set_score_model(score_model);
+
+                xpas::phylo_kmer::score_type threshold = 0.0f;
+                ar & threshold;
+                db.set_threshold(threshold);
+            }
 
             size_t table_size = 0;
             ar & table_size;
@@ -244,6 +281,18 @@ namespace boost::serialization
         xpas::phylo_kmer::score_type omega = 0;
         ar & omega;
         db.set_omega(omega);
+
+        /// Deserialization of the content added in v0.3.1+
+        if (version > xpas::protocol::v0_3_0)
+        {
+            xpas::score_model_type score_model = xpas::score_model_type::MAX;
+            ar & score_model;
+            db.set_score_model(score_model);
+
+            xpas::phylo_kmer::score_type threshold = 0.0f;
+            ar & threshold;
+            db.set_threshold(threshold);
+        }
 
         size_t table_size = 0;
         ar & table_size;

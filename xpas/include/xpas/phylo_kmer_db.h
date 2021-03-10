@@ -34,11 +34,12 @@ namespace xpas
 
         /// Ctors, dtor and operator=
         _phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, std::string seq_type,
-                       std::string tree)
+                       std::string tree, score_model_type score_model)
             : _kmer_size{ kmer_size }
             , _omega{ omega }
             , _sequence_type(std::move(seq_type))
             , _tree(std::move(tree))
+            , _score_model{ score_model }
         {}
         _phylo_kmer_db(const _phylo_kmer_db&) noexcept = delete;
         _phylo_kmer_db(_phylo_kmer_db&&) noexcept = default;
@@ -104,6 +105,29 @@ namespace xpas
         void set_tree(std::string tree)
         {
             _tree = std::move(tree);
+        }
+
+        [[nodiscard]]
+        xpas::score_model_type score_model() const noexcept
+        {
+            return _score_model;
+        }
+
+        void set_score_model(xpas::score_model_type score_model)
+        {
+            _score_model = score_model;
+        }
+
+        /// \brief Returns the score threshold value. Can be different depending on the score model
+        [[nodiscard]]
+        xpas::phylo_kmer::score_type threshold() const noexcept
+        {
+            return _threshold;
+        }
+
+        void set_threshold(xpas::phylo_kmer::score_type threshold)
+        {
+            _threshold = threshold;
         }
 
         /// Access
@@ -204,6 +228,12 @@ namespace xpas
 
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;
+
+        /// The score model used for the score computation
+        xpas::score_model_type _score_model;
+
+        /// The score of a k-mer implied if the k-mer is not stored
+        xpas::phylo_kmer::score_type _threshold;
     };
 
     using phylo_kmer_db = _phylo_kmer_db<phylo_kmer>;

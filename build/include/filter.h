@@ -22,7 +22,8 @@ namespace xpas
     class kmer_filter
     {
     public:
-        kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold);
+        kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold,
+                    xpas::score_model_type score_model);
 
         virtual ~kmer_filter() noexcept = default;
 
@@ -35,12 +36,14 @@ namespace xpas
         size_t _num_batches;
         double _mu;
         phylo_kmer::score_type _threshold;
+        xpas::score_model_type _score_model;
     };
 
     std::unique_ptr<kmer_filter> make_filter(xpas::filter_type filter,
                                              size_t total_num_nodes,
                                              std::string working_dir, size_t num_batches,
-                                             double mu, phylo_kmer::score_type threshold);
+                                             double mu,
+                                             phylo_kmer::score_type threshold, xpas::score_model_type score_model);
 
 }
 

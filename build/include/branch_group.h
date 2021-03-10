@@ -34,7 +34,8 @@ namespace xpas
 
     /// Merges hashmaps of the same index into a database
     xpas::phylo_kmer_db merge_batch(const std::string& working_dir,
-                                    const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx);
+                                    const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx,
+                                    xpas::score_model_type score_model);
 
     /// Puts a kmer in the hash. Takes a maximum score between the existing value
     /// of the k-mer (if any) and the provided value.

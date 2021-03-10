@@ -8,6 +8,12 @@
 
 namespace xpas
 {
+    enum class score_model_type
+    {
+        MAX,
+        EXISTS
+    };
+
     /// \brief A phylo k-mer structure.
     /// \details A key-value pair for a phylo-kmer, where key is a key_type value of a k-mer, and value is
     /// posterior probability score of this k-mer. Branch node id, position etc. omitted here, because these values

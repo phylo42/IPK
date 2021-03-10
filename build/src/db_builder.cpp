@@ -157,7 +157,7 @@ namespace xpas
         , _mu{ mu }
         , _score_model { score_model }
         , _num_threads{ num_threads }
-        , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::to_newick(_original_tree)}
+        , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::to_newick(_original_tree), score_model }
     {}
 
     void db_builder::run()
@@ -222,7 +222,7 @@ namespace xpas
         /// Filter phylo k-mers
         const auto threshold = xpas::score_threshold(_omega, _kmer_size);
         auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
-                                        _working_directory, _num_batches, _mu, threshold);
+                                        _working_directory, _num_batches, _mu, threshold, _score_model);
         filter->filter(group_ids);
 
         size_t filtered_kmers = 0;
@@ -231,7 +231,7 @@ namespace xpas
         size_t filtered_entries = 0;
         for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
         {
-            const auto temp_db = xpas::merge_batch(_working_directory, group_ids, batch_idx);
+            const auto temp_db = xpas::merge_batch(_working_directory, group_ids, batch_idx, _score_model);
             for (const auto& [key, entries] : temp_db)
             {
                 total_entries += entries.size();
@@ -474,11 +474,11 @@ namespace xpas
                     //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
                     //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
 
-                    if (_score_model == score_model_type::max)
+                    if (_score_model == score_model_type::MAX)
                     {
                         xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     }
-                    else if (_score_model == score_model_type::exists)
+                    else if (_score_model == score_model_type::EXISTS)
                     {
                         xpas::accumulate(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer, log_default_value,
                                          log_reverse_th);
@@ -487,7 +487,7 @@ namespace xpas
                 }
             }
 
-            if (_score_model == score_model_type::exists)
+            if (_score_model == score_model_type::EXISTS)
             {
                 for (auto& batch_hash_map : hash_maps)
                 {

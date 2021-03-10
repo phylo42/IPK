@@ -38,8 +38,13 @@ std::string xpas::get_fvs_file(const std::string& working_dir, size_t batch_idx)
     return (fs::path{xpas::get_groups_dir(working_dir)} / fs::path(std::to_string(batch_idx) + ".fvs")).string();
 }
 
-kmer_filter::kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
-    : _working_dir{ std::move(working_dir) }, _num_batches{ num_batches }, _mu{ mu }, _threshold{ threshold }
+kmer_filter::kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold,
+                         xpas::score_model_type score_model)
+    : _working_dir{ std::move(working_dir) }
+    , _num_batches{ num_batches }
+    , _mu{ mu }
+    , _threshold{ threshold }
+    , _score_model{ score_model }
 {}
 
 xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_score)
@@ -50,8 +55,9 @@ xpas::phylo_kmer::score_type logscore_to_score(xpas::phylo_kmer::score_type log_
 class batched_filter : public kmer_filter
 {
 public:
-    batched_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
-        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold },
+    batched_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
+                   phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold, score_model },
         _total_num_groups{ total_num_groups }
     {}
 
@@ -70,7 +76,7 @@ public:
         for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
         {
             /// Merge hashmaps of the same batch
-            auto batch_db = merge_batch(_working_dir, group_ids, batch_idx);
+            auto batch_db = merge_batch(_working_dir, group_ids, batch_idx, _score_model);
             total_num_kmers += batch_db.size();
             total_num_entries += get_num_entries(batch_db);
 
@@ -144,8 +150,8 @@ class entropy_filter : public batched_filter
 {
 public:
     entropy_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
-                   phylo_kmer::score_type threshold)
-        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+                   phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold, score_model }
     {}
 
     ~entropy_filter() noexcept override = default;
@@ -222,8 +228,8 @@ class mif0_filter : public batched_filter
 {
 public:
     mif0_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
-                phylo_kmer::score_type threshold)
-        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+                phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold, score_model }
     {}
 
     ~mif0_filter() noexcept override = default;
@@ -314,8 +320,8 @@ class mif1_filter : public batched_filter
 {
 public:
     mif1_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
-                phylo_kmer::score_type threshold)
-        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+                phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold, score_model }
     {}
 
     ~mif1_filter() noexcept override = default;
@@ -423,9 +429,9 @@ private:
 class random_filter : public batched_filter
 {
 public:
-    random_filter(size_t total_num_groups, std::string working_dir,
-                  size_t num_batches, double mu, phylo_kmer::score_type threshold)
-        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold }
+    random_filter(size_t total_num_groups, std::string working_dir, size_t num_batches, double mu,
+                  phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : batched_filter{ total_num_groups, std::move(working_dir), num_batches, mu, threshold, score_model }
     {}
 
     ~random_filter() noexcept override = default;
@@ -456,8 +462,9 @@ private:
 class no_filter : public kmer_filter
 {
 public:
-    no_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
-        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
+    no_filter(std::string working_dir, size_t num_batches, double mu,
+              phylo_kmer::score_type threshold, xpas::score_model_type score_model)
+        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold, score_model }
     {}
 
     ~no_filter() noexcept override = default;
@@ -479,27 +486,33 @@ public:
 std::unique_ptr<kmer_filter> xpas::make_filter(xpas::filter_type filter,
                                                size_t total_num_nodes,
                                                std::string working_dir, size_t num_batches,
-                                               double mu, phylo_kmer::score_type threshold)
+                                               double mu,
+                                               phylo_kmer::score_type threshold, xpas::score_model_type score_model)
 {
     if (filter == filter_type::no_filter || mu == 1.0)
     {
-        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu, threshold);
+        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu,
+                                           threshold, score_model);
     }
     else if (filter == filter_type::entropy)
     {
-        return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+        return std::make_unique<entropy_filter>(total_num_nodes, std::move(working_dir), num_batches, mu,
+                                                threshold, score_model);
     }
     else if (filter == filter_type::mif0)
     {
-        return std::make_unique<mif0_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+        return std::make_unique<mif0_filter>(total_num_nodes, std::move(working_dir), num_batches, mu,
+                                             threshold, score_model);
     }
     else if (filter == filter_type::mif1)
     {
-        return std::make_unique<mif1_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+        return std::make_unique<mif1_filter>(total_num_nodes, std::move(working_dir), num_batches, mu,
+                                             threshold, score_model);
     }
     else if (filter == filter_type::random)
     {
-        return std::make_unique<random_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
+        return std::make_unique<random_filter>(total_num_nodes, std::move(working_dir), num_batches, mu,
+                                               threshold, score_model);
     }
     else
     {

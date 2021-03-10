@@ -128,9 +128,9 @@ xpas::score_model_type get_score_model_type(const xpas::cli::parameters& paramet
 {
     if (parameters.score_model_exists)
     {
-        return xpas::score_model_type::exists;
+        return xpas::score_model_type::EXISTS;
     }
-    return xpas::score_model_type::max;
+    return xpas::score_model_type::MAX;
 }
 
 return_code build_database(const xpas::cli::parameters& parameters)
