@@ -244,9 +244,17 @@ unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
 
 void dac_kmer_iterator::_select_suffix_bound()
 {
-    const auto residual_threshold = _threshold - _prefix_it->score;
-    _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
-                                         make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
+    if (_prefix_it == _prefixes.end())
+    {
+        _last_suffix_it = _suffixes.begin();
+    }
+    else
+    {
+        const auto residual_threshold = _threshold - _prefix_it->score;
+        _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
+                                             make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0),
+                                             kmer_score_comparator);
+    }
 }
 
 node_entry_view::node_entry_view(const node_entry* entry, phylo_kmer::score_type threshold,

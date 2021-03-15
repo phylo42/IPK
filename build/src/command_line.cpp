@@ -34,15 +34,8 @@ namespace xpas::cli
     /// Filtering options
     static std::string MU = "mu", MU_SHORT = "u";
     static std::string NO_FILTER = "no-filter";
-    static std::string ENTROPY = "entropy";
     static std::string MIF0 = "mif0";
     static std::string MIF1 = "mif1";
-    static std::string MAX_DEVIATION = "max-deviation";
-    static std::string LOG_MAX_DEVIATION = "log-max-deviation";
-    static std::string MAX_DIFF = "max-difference";
-    static std::string LOG_MAX_DIFF = "log-max-difference";
-    static std::string STD_DEVIATION = "sd";
-    static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
 
     static std::string SCORE_MAX = "max";
@@ -52,15 +45,8 @@ namespace xpas::cli
     static std::string USE_UNROOTED = "use-unrooted";
 
     bool no_filter_flag = true;
-    bool entropy_flag = false;
     bool mif0_flag = false;
     bool mif1_flag = false;
-    bool max_deviation_filter_flag = false;
-    bool log_max_deviation_filter_flag = false;
-    bool max_difference_filter_flag = false;
-    bool log_max_difference_filter_flag = false;
-    bool std_deviation_filter_flag = false;
-    bool log_std_deviation_filter_flag = false;
     bool random_filter_flag = false;
     bool merge_branches_flag = false;
     bool use_unrooted_flag = false;
@@ -114,15 +100,8 @@ namespace xpas::cli
 
 
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
-            ((ENTROPY).c_str(), po::bool_switch(&entropy_flag))
             ((MIF0).c_str(), po::bool_switch(&mif0_flag))
             ((MIF1).c_str(), po::bool_switch(&mif1_flag))
-            ((MAX_DEVIATION).c_str(), po::bool_switch(&max_deviation_filter_flag))
-            ((LOG_MAX_DEVIATION).c_str(), po::bool_switch(&log_max_deviation_filter_flag))
-            ((MAX_DIFF).c_str(), po::bool_switch(&max_difference_filter_flag))
-            ((LOG_MAX_DIFF).c_str(), po::bool_switch(&log_max_difference_filter_flag))
-            ((STD_DEVIATION).c_str(), po::bool_switch(&std_deviation_filter_flag))
-            ((LOG_STD_DEVIATION).c_str(), po::bool_switch(&log_std_deviation_filter_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
             ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
 
@@ -181,16 +160,9 @@ namespace xpas::cli
             parameters.no_reduction = no_reduction_flag;
 
             parameters.no_filter = no_filter_flag;
-            parameters.entropy_filter = entropy_flag;
             parameters.mif1_filter = mif1_flag;
             parameters.mif0_filter = mif0_flag;
-            parameters.max_dev_filter = max_deviation_filter_flag;
-            parameters.log_max_dev_filter = log_max_deviation_filter_flag;
-            parameters.max_diff_filter = max_difference_filter_flag;
-            parameters.log_max_diff_filter = log_max_difference_filter_flag;
             parameters.random_filter = random_filter_flag;
-            parameters.std_dev_filter = std_deviation_filter_flag;
-            parameters.log_std_dev_filter = log_std_deviation_filter_flag;
 
             parameters.score_model_max = score_max_flag;
             parameters.score_model_exists = score_exists_flag;

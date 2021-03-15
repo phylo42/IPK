@@ -120,14 +120,14 @@ namespace xpas
 
         /// \brief Returns the score threshold value. Can be different depending on the score model
         [[nodiscard]]
-        xpas::phylo_kmer::score_type threshold() const noexcept
+        xpas::phylo_kmer::score_type log_threshold() const noexcept
         {
-            return _threshold;
+            return _log_threshold;
         }
 
-        void set_threshold(xpas::phylo_kmer::score_type threshold)
+        void set_log_threshold(xpas::phylo_kmer::score_type log_threshold)
         {
-            _threshold = threshold;
+            _log_threshold = log_threshold;
         }
 
         /// Access
@@ -233,7 +233,7 @@ namespace xpas
         xpas::score_model_type _score_model;
 
         /// The score of a k-mer implied if the k-mer is not stored
-        xpas::phylo_kmer::score_type _threshold;
+        xpas::phylo_kmer::score_type _log_threshold;
     };
 
     using phylo_kmer_db = _phylo_kmer_db<phylo_kmer>;

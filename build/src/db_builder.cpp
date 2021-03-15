@@ -166,7 +166,18 @@ namespace xpas
                   "\tSequence type: " << xpas::seq_type::name << std::endl <<
                   "\tk: " << _kmer_size << std::endl <<
                   "\tomega: " << _omega << std::endl <<
+                  "\tscore model: " << (_score_model == score_model_type::MAX ? "MAX" : "EXISTS") << std::endl <<
                   "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
+
+        auto threshold = xpas::score_threshold(_omega, _kmer_size);
+        if (_score_model == score_model_type::EXISTS)
+        {
+            const auto A = _extended_alignment.width() - _kmer_size + 1;
+            auto kmer_threshold = 1 - std::pow(1 - threshold, A);
+            threshold = kmer_threshold;
+        }
+        const auto log_threshold = std::log10(threshold);
+        _phylo_kmer_db.set_log_threshold(log_threshold);
 
         /// The first stage of the algorithm: create a hashmap for every node group
         std::cout << "Building database: [stage 1 / 2]:" << std::endl;
@@ -214,15 +225,13 @@ namespace xpas
         }
     }
 
-
     unsigned long db_builder::merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
         const auto begin = std::chrono::steady_clock::now();
 
         /// Filter phylo k-mers
-        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
         auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
-                                        _working_directory, _num_batches, _mu, threshold, _score_model);
+                                        _working_directory, _num_batches, _mu, _phylo_kmer_db.log_threshold(), _score_model);
         filter->filter(group_ids);
 
         size_t filtered_kmers = 0;
@@ -305,6 +314,7 @@ namespace xpas
     {
         const string& label = node.get_label();
         return boost::ends_with(label, "_X0") || boost::ends_with(label, "_X1");
+        //return boost::ends_with(label, "_X1");
     }
 
     /// \brief Returns a list of ghost node ids
@@ -430,7 +440,8 @@ namespace xpas
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
 
-        const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
+        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
+        const auto log_threshold = std::log10(threshold);
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
@@ -452,15 +463,18 @@ namespace xpas
 
     std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
     {
-        auto hash_maps = std::vector<group_hash_map>(_num_batches);
+        auto hash_maps = std::vector<std::vector<group_hash_map>>(group.size(),
+            std::vector<group_hash_map>(_num_batches));
 
         size_t count = 0;
         const auto threshold = xpas::score_threshold(_omega, _kmer_size);
         const auto log_threshold = std::log10(threshold);
         const auto log_reverse_th = std::log10(1 - threshold);
         const auto A = _extended_alignment.width() - _kmer_size + 1;
+        //const auto log_default_value = (float)group.size() * A * log_reverse_th;
         const auto log_default_value = A * log_reverse_th;
 
+        size_t node_count = 0;
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
@@ -471,42 +485,73 @@ namespace xpas
                 //std::cout << "\tWINDOW " << window.get_start_pos() << std::endl;
                 for (const auto& kmer : window)
                 {
-                    //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
-                    //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
+                    /*if (kmer.key != 0)
+                    {
+                        continue;
+                    }
+                    {
 
+                        std::cout << "\t\t" << kmer.key << " [" << window.get_start_pos() << "] "
+                                  << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
+                                  << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
+                    }
+*/
+                    auto& hash_map = hash_maps[node_count][kmer_batch(kmer.key, _num_batches)];
                     if (_score_model == score_model_type::MAX)
                     {
-                        xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                        xpas::put(hash_map, kmer);
                     }
                     else if (_score_model == score_model_type::EXISTS)
                     {
-                        xpas::accumulate(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer, log_default_value,
-                                         log_reverse_th);
+                        xpas::accumulate(hash_map, kmer, log_default_value, log_reverse_th);
                     }
                     ++count;
                 }
             }
+            ++node_count;
+        }
 
-            if (_score_model == score_model_type::EXISTS)
+        if (_score_model == score_model_type::EXISTS)
+        {
+            for (auto& group_hash_maps : hash_maps)
             {
-                for (auto& batch_hash_map : hash_maps)
+                for (auto& batch_hash_map : group_hash_maps)
                 {
-                    for (const auto&[key, log_rev_score] : batch_hash_map)
+                    for (const auto& [key, log_rev_score] : batch_hash_map)
                     {
                         const auto rev_score = std::pow(10, log_rev_score);
 
-                        //std::cout << "\t\t" << key << " " << xpas::decode_kmer(key, _kmer_size) << " -> "
-                        //          << log_rev_score << " " << rev_score << " " << 1 - rev_score << std::endl;
-
+                        /*if (key == 0)
+                        {
+                            std::cout << "\t\t SAVE " << key << " " << xpas::decode_kmer(key, _kmer_size) << " -> "
+                                      << log_rev_score << " " << rev_score << " " << 1 - rev_score << std::endl;
+                        }
+    */
                         const auto log_score = std::log10(1 - rev_score);
                         batch_hash_map[key] = log_score;
+
                     }
                 }
             }
-
         }
 
-        return {std::move(hash_maps), count};
+        /// Take maximum scores between all grouped ghost branches
+        for (size_t i = 0; i < group.size(); ++i)
+        {
+            for (const auto& batch_hash_map : hash_maps[i])
+            {
+                for (const auto& [key, log_score] : batch_hash_map)
+                {
+                    auto& ghost0_batch_map = hash_maps[0][kmer_batch(key, _num_batches)];
+                    if (auto it = ghost0_batch_map.find(key); it != ghost0_batch_map.end() && it->second < log_score)
+                    {
+                        ghost0_batch_map[key] = log_score;
+                    }
+                }
+            }
+        }
+
+        return { std::move(hash_maps[0]), count };
     }
 
     #endif

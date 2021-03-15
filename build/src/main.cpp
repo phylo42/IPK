@@ -104,11 +104,7 @@ std::string save_rerooted_tree(const std::string& working_dir, const xpas::phylo
 
 xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
 {
-    if (parameters.entropy_filter)
-    {
-        return xpas::filter_type::entropy;
-    }
-    else if (parameters.mif0_filter)
+    if (parameters.mif0_filter)
     {
         return xpas::filter_type::mif0;
     }

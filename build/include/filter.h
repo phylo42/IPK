@@ -9,7 +9,6 @@ namespace xpas
     enum class filter_type
     {
         no_filter,
-        entropy,
         random,
         mif0,
         mif1
@@ -22,7 +21,7 @@ namespace xpas
     class kmer_filter
     {
     public:
-        kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold,
+        kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type log_threshold,
                     xpas::score_model_type score_model);
 
         virtual ~kmer_filter() noexcept = default;
@@ -35,7 +34,7 @@ namespace xpas
         std::string _working_dir;
         size_t _num_batches;
         double _mu;
-        phylo_kmer::score_type _threshold;
+        phylo_kmer::score_type _log_threshold;
         xpas::score_model_type _score_model;
     };
 
@@ -43,7 +42,7 @@ namespace xpas
                                              size_t total_num_nodes,
                                              std::string working_dir, size_t num_batches,
                                              double mu,
-                                             phylo_kmer::score_type threshold, xpas::score_model_type score_model);
+                                             phylo_kmer::score_type log_threshold, xpas::score_model_type score_model);
 
 }
 

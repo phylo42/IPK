@@ -106,12 +106,17 @@ void xpas::accumulate(group_hash_map& map, const phylo_kmer& kmer,
     if (auto it = map.find(kmer.key); it != map.end())
     {
         //std::cout << "\t" << map[kmer.key] << " -> " <<  map[kmer.key] - log_rev_threshold + log_rev_score << std::endl;
+        /*const auto log_score = map[kmer.key] - log_rev_threshold + log_rev_score;
+        const auto score = std::pow(10, log_score);
+        std::cout << "\t ACC " << map[kmer.key] << " -> " << log_score << " " << score << std::endl;*/
         map[kmer.key] = map[kmer.key] - log_rev_threshold + log_rev_score;
 
     }
     else
     {
-        //std::cout << "\t" <<  map[kmer.key] << " -> " <<  default_value - log_rev_threshold + log_rev_score << std::endl;
+        /*const auto log_score = default_value - log_rev_threshold + log_rev_score;
+        const auto score = std::pow(10, log_score);
+        std::cout << "\t ACC " << map[kmer.key] << " -> " << log_score << " " << score << std::endl;*/
         map[kmer.key] = default_value - log_rev_threshold + log_rev_score;
     }
 }

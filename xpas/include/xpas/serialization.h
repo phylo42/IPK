@@ -122,7 +122,7 @@ namespace boost::serialization
             xpas::score_model_type score_model = db.score_model();
             ar & score_model;
 
-            xpas::phylo_kmer::score_type threshold = db.threshold();
+            xpas::phylo_kmer::score_type threshold = db.log_threshold();
             ar & threshold;
         }
 
@@ -162,7 +162,7 @@ namespace boost::serialization
             xpas::score_model_type score_model = db.score_model();
             ar & score_model;
 
-            xpas::phylo_kmer::score_type threshold = db.threshold();
+            xpas::phylo_kmer::score_type threshold = db.log_threshold();
             ar & threshold;
         }
 
@@ -226,7 +226,7 @@ namespace boost::serialization
 
                 xpas::phylo_kmer::score_type threshold = 0.0f;
                 ar & threshold;
-                db.set_threshold(threshold);
+                db.set_log_threshold(threshold);
             }
 
             size_t table_size = 0;
@@ -291,7 +291,7 @@ namespace boost::serialization
 
             xpas::phylo_kmer::score_type threshold = 0.0f;
             ar & threshold;
-            db.set_threshold(threshold);
+            db.set_log_threshold(threshold);
         }
 
         size_t table_size = 0;
