@@ -124,6 +124,15 @@ xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
     return xpas::filter_type::no_filter;
 }
 
+std::string compression_status(const xpas::cli::parameters& parameters)
+{
+    if (parameters.uncompressed)
+    {
+        return "Compression: OFF";
+    }
+    return "Compression: ON";
+}
+
 return_code build_database(const xpas::cli::parameters& parameters)
 {
     if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
@@ -183,8 +192,9 @@ return_code build_database(const xpas::cli::parameters& parameters)
     /// Deserialize database
     const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
     std::cout << "Saving database to: " << db_filename.string() << "..." << std::endl;
+    std::cout << compression_status(parameters) << std::endl;
     const auto begin = std::chrono::steady_clock::now();
-    xpas::save(db, db_filename.string());
+    xpas::save(db, db_filename.string(), parameters.uncompressed);
     std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - begin).count() << std::endl << std::endl;
 

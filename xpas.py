@@ -30,7 +30,7 @@ AMINO_MODELS = ['LG', 'WAG', 'JTT', 'Dayhoff', 'DCMut', 'CpREV', 'mMtREV', 'MtMa
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
-KMER_FILTERS = ["no-filter", "entropy", "mif0", "mif1", "random"]
+KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
 
 
 
@@ -160,6 +160,10 @@ def validate_filter(ctx, param, value):
               is_flag=True,
               default=False,
               help="""Keeps phylo k-mers positions in the alignment. Makes databases larger in size.""")
+@click.option('--uncompressed',
+              is_flag=True,
+              default=False,
+              help="""Stores databases uncompressed.""")
 @click.option('--threads',
              type=int,
              default=4, show_default=True,
@@ -171,8 +175,9 @@ def build(arbinary, #database,
           k, model, arparameters, convert_uo, #gap_jump_thresh,
           no_reduction, ratio_reduction, omega,
           filter, f, mu, use_unrooted, merge_branches,
-          ardir, keep_positions,
-          threads, aronly):
+          ardir, aronly,
+          keep_positions, uncompressed,
+          threads):
     """
     Builds a database of phylo k-mers.
 
@@ -226,6 +231,8 @@ def build(arbinary, #database,
         command.append("--merge-branches")
     if use_unrooted:
         command.append("--use-unrooted")
+    if uncompressed:
+        command.append("--uncompressed")
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"

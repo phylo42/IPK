@@ -54,9 +54,11 @@ namespace xpas::cli
         bool std_dev_filter;
         bool log_std_dev_filter;
 
-
         // k-mer filtering threshold
         double mu;
+
+        // store databases uncompressed
+        bool uncompressed;
     };
 
     std::string get_option_list();
