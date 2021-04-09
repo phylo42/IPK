@@ -3,9 +3,9 @@
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/serialization.h>
 
-int get_num_entries(const xpas::phylo_kmer_db& db)
+uintmax_t get_num_entries(const xpas::phylo_kmer_db& db)
 {
-    int num_entries = 0;
+    uintmax_t num_entries = 0;
 
     for (const auto& [key, entries] : db)
     {
@@ -14,7 +14,7 @@ int get_num_entries(const xpas::phylo_kmer_db& db)
     return num_entries;
 }
 
-std::string humanize_size(int value)
+std::string humanize_size(boost::uintmax_t value)
 {
     const auto factors = std::vector<std::string>{ "b", "Kb", "Mb", "Gb", "Tb" };
     int i = 0;
