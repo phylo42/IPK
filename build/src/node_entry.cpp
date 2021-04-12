@@ -60,32 +60,49 @@ chain_window_iterator& chain_window_iterator::operator++()
     /// Suffix size for the next window
     const auto suffix_size = _kmer_size - prefix_size;
 
-    /// The start position of the last chain
-    const auto last_chain_pos = (_kmer_size % 2) ? _kmer_size / 2 : _kmer_size / 2 - 1;
-
-    /// continue the chain if possible
-    if (size_t(_view.get_end_pos() + suffix_size) < entry->get_alignment_size())
+    /// in the branch-and-bound, there are no saved suffixes, and we
+    /// chain windows just iteratively
+    if (prefix_size == 0)
     {
-        //std::cout << "\tOK MOVE from " << _view.get_start_pos() << " to " << _view.get_start_pos() + suffix_size << std::endl;
-        _view.set_start_pos(_view.get_start_pos() + suffix_size);
-        _view.set_end_pos(_view.get_end_pos() + suffix_size);
+        if (size_t(_view.get_end_pos() + 1) < entry->get_alignment_size())
+        {
+            _view.set_start_pos(_view.get_start_pos() + 1);
+            _view.set_end_pos(_view.get_end_pos() + 1);
+        }
+        else
+        {
+            _view = make_empty_view();
+        }
     }
-    /// if the chain is over, start the next one if possible
-    else if (_first_view_pos + 1 <= last_chain_pos)
-    {
-        ++_first_view_pos;
-
-        //std::cout << "\tOK MOVE " << _first_view_pos << std::endl;
-        _view.set_start_pos(_first_view_pos);
-        _view.set_end_pos(_first_view_pos + _kmer_size - 1);
-        _view.set_prefixes({});
-        _view.set_prefix_size(_kmer_size / 2);
-    }
-    /// otherwise, the iterator is over
+    /// in the divide-and-conquer, we chain windows in a special way
     else
     {
-        _view = make_empty_view();
+        /// The start position of the last chain
+        const auto last_chain_pos = (_kmer_size % 2) ? _kmer_size / 2 : _kmer_size / 2 - 1;
+
+        /// continue the chain if possible
+        if (size_t(_view.get_end_pos() + suffix_size) < entry->get_alignment_size())
+        {
+            _view.set_start_pos(_view.get_start_pos() + suffix_size);
+            _view.set_end_pos(_view.get_end_pos() + suffix_size);
+        }
+        /// if the chain is over, start the next one if possible
+        else if (_first_view_pos + 1 <= last_chain_pos)
+        {
+            ++_first_view_pos;
+
+            _view.set_start_pos(_first_view_pos);
+            _view.set_end_pos(_first_view_pos + _kmer_size - 1);
+            _view.set_prefixes({});
+            _view.set_prefix_size(_kmer_size / 2);
+        }
+        /// otherwise, the iterator is over
+        else
+        {
+            _view = make_empty_view();
+        }
     }
+
     return *this;
 }
 

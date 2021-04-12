@@ -2,6 +2,7 @@
 #define XPAS_NODE_ENTRY_VIEW_H
 
 #include "row.h"
+#include <stack>
 
 namespace xpas::impl
 {
@@ -26,6 +27,50 @@ namespace xpas
             size_t last_index;
             size_t next_index;
         };
+
+
+        /// \brief A forward access const iterator for phylo_kmer pairs [kmer value, score]. Iterates over
+        /// a fixed node_entry_view of size K. Implements a branch-and-bound approach to filter kmers by
+        /// threshold score value.
+        class bnb_kmer_iterator
+        {
+        public:
+
+            /// Member types
+            using iterator_category = std::forward_iterator_tag;
+            using reference = const xpas::phylo_kmer&;
+            using pointer = const xpas::phylo_kmer*;
+
+            using stack_type = std::vector<phylo_mmer>;
+
+            bnb_kmer_iterator() noexcept;
+            bnb_kmer_iterator(const node_entry* entry, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
+                              xpas::phylo_kmer::pos_type start_pos, stack_type&& stack) noexcept;
+            bnb_kmer_iterator(const bnb_kmer_iterator&) = delete;
+            bnb_kmer_iterator(bnb_kmer_iterator&&) = default;
+            bnb_kmer_iterator& operator=(const bnb_kmer_iterator&) = delete;
+            bnb_kmer_iterator& operator=(bnb_kmer_iterator&& rhs) noexcept;
+            ~bnb_kmer_iterator() noexcept = default;
+
+            bool operator==(const bnb_kmer_iterator& rhs) const noexcept;
+            bool operator!=(const bnb_kmer_iterator& rhs) const noexcept;
+            bnb_kmer_iterator& operator++();
+
+            reference operator*() const noexcept;
+            pointer operator->() const noexcept;
+
+        private:
+            phylo_mmer next_phylokmer();
+
+            const node_entry* _entry;
+            size_t _kmer_size;
+            xpas::phylo_kmer::pos_type _start_pos;
+            xpas::phylo_kmer::score_type _threshold;
+            stack_type _stack;
+            phylo_mmer _current;
+        };
+
+
 
         /// \brief Divide-and-conquer phylo-kmer iterator.
         class dac_kmer_iterator
@@ -78,7 +123,8 @@ namespace xpas
     class node_entry_view final
     {
     public:
-        using iterator = xpas::impl::dac_kmer_iterator;
+        //using iterator = xpas::impl::dac_kmer_iterator;
+        using iterator = xpas::impl::bnb_kmer_iterator;
         using reference = iterator::reference;
 
         node_entry_view(const node_entry* entry, xpas::phylo_kmer::score_type threshold,
