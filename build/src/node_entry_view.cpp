@@ -305,9 +305,9 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
                 //std::cout << "\t\t" << xpas::decode_kmer(it->key, kmer_size - _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
             }
 
-            //if (threshold > 0)
+            //if (omega > 0)
             {
-                std::sort(_suffixes.begin(), _suffixes.end(), kmer_score_comparator);
+                //std::sort(_suffixes.begin(), _suffixes.end(), kmer_score_comparator);
             }
 
             _suffix_it = _suffixes.begin();
@@ -445,18 +445,23 @@ node_entry_view::iterator node_entry_view::begin()
     const auto kmer_size = size_t{ (size_t)_end - _start + 1};
     //const node_entry* entry, size_t kmer_size, phylo_kmer::score_type threshold,
     //                                     phylo_kmer::pos_type start_pos, stack_type&& stack)
-    // DAC:
+
+    // DAC-CW:
     //return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
+
+    // DAC:
+    return { this, kmer_size, _threshold, _start, _prefix_size, {} };
+
     // BNB:
-    return make_bnb_begin_iterator(_entry, _start, kmer_size, _threshold);
+    //return make_bnb_begin_iterator(_entry, _start, kmer_size, _threshold);
 }
 
 node_entry_view::iterator node_entry_view::end() const noexcept
 {
     // DAC:
-    //return make_dac_end_iterator();
+    return make_dac_end_iterator();
     // BNB:
-    return make_bnb_end_iterator();
+    //return make_bnb_end_iterator();
 }
 
 node_entry_view& node_entry_view::operator=(node_entry_view&& other) noexcept

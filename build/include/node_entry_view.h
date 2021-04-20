@@ -123,8 +123,8 @@ namespace xpas
     class node_entry_view final
     {
     public:
-        //using iterator = xpas::impl::dac_kmer_iterator;
-        using iterator = xpas::impl::bnb_kmer_iterator;
+        using iterator = xpas::impl::dac_kmer_iterator;
+        //using iterator = xpas::impl::bnb_kmer_iterator;
         using reference = iterator::reference;
 
         node_entry_view(const node_entry* entry, xpas::phylo_kmer::score_type threshold,
