@@ -292,7 +292,15 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
             _prefix_it = _prefixes.begin();
         }
 
+        /// if there are no prefixes, the window is over
+        if (_prefixes.empty())
+        {
+            _suffixes.clear();
+            _finish_iterator();
+            _current = {};
+        }
         // Calculate suffixes
+        else
         {
             auto it = (_prefix_size < kmer_size)
                       ? dac_kmer_iterator(_entry_view, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
@@ -305,16 +313,10 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
                 //std::cout << "\t\t" << xpas::decode_kmer(it->key, kmer_size - _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
             }
 
-            //if (omega > 0)
-            {
-                //std::sort(_suffixes.begin(), _suffixes.end(), kmer_score_comparator);
-            }
-
             _suffix_it = _suffixes.begin();
             _select_suffix_bound();
+            _current = _next_phylokmer();
         }
-
-        _current = _next_phylokmer();
     }
 }
 
@@ -401,6 +403,19 @@ unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
     }
 
     /// If we reached this line, the iterator is over
+    _finish_iterator();
+    return {};
+}
+
+void dac_kmer_iterator::_select_suffix_bound()
+{
+    const auto residual_threshold = _threshold - _prefix_it->score;
+    _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
+                                         make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
+}
+
+void dac_kmer_iterator::_finish_iterator()
+{
     if (_entry_view != nullptr)
     {
         /// Save suffixes of this window as prefixes of the next window
@@ -411,14 +426,6 @@ unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
 
     /// Now we can safely mark the iterator as ended
     *this = make_dac_end_iterator();
-    return {};
-}
-
-void dac_kmer_iterator::_select_suffix_bound()
-{
-    const auto residual_threshold = _threshold - _prefix_it->score;
-    _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
-                                         make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
 }
 
 node_entry_view::node_entry_view(const node_entry* entry, phylo_kmer::score_type threshold,

@@ -99,6 +99,7 @@ namespace xpas
         private:
             xpas::unpositioned_phylo_kmer _next_phylokmer();
             void _select_suffix_bound();
+            void _finish_iterator();
 
             node_entry_view* _entry_view;
 
