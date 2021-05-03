@@ -292,15 +292,7 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
             _prefix_it = _prefixes.begin();
         }
 
-        /// if there are no prefixes, the window is over
-        if (_prefixes.empty())
-        {
-            _suffixes.clear();
-            _finish_iterator();
-            _current = {};
-        }
         // Calculate suffixes
-        else
         {
             auto it = (_prefix_size < kmer_size)
                       ? dac_kmer_iterator(_entry_view, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
@@ -314,6 +306,16 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
             }
 
             _suffix_it = _suffixes.begin();
+        }
+
+        /// if there are no prefixes, the window is over
+        if (_prefixes.empty())
+        {
+            _finish_iterator();
+            _current = {};
+        }
+        else
+        {
             _select_suffix_bound();
             _current = _next_phylokmer();
         }
@@ -454,10 +456,10 @@ node_entry_view::iterator node_entry_view::begin()
     //                                     phylo_kmer::pos_type start_pos, stack_type&& stack)
 
     // DAC-CW:
-    //return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
+    return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
 
     // DAC:
-    return { this, kmer_size, _threshold, _start, _prefix_size, {} };
+    //return { this, kmer_size, _threshold, _start, _prefix_size, {} };
 
     // BNB:
     //return make_bnb_begin_iterator(_entry, _start, kmer_size, _threshold);
