@@ -195,6 +195,7 @@ namespace xpas
         }
         catch (const std::exception& error)
         {
+            std::cerr << "Error: " << error.what() << std::endl;
             fs::remove_all(temp_dir);
             throw error;
         }
