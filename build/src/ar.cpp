@@ -617,6 +617,90 @@ namespace xpas::ar
 
     };
 
+    class raxml_wrapper : public ar_wrapper
+    {
+    public:
+        explicit raxml_wrapper(ar::parameters parameters)
+            : _params{ std::move(parameters) }
+        {
+        }
+
+        ~raxml_wrapper() noexcept override = default;
+
+        ar_result run() override
+        {
+            fs::path matrix_file;
+            fs::path tree_file;
+
+            /// --ar-dir not provided
+            if (_params.ar_dir.empty())
+            {
+                _run();
+
+                matrix_file = _params.alignment_file + ".raxml.ancestralProbs";
+                tree_file = _params.alignment_file + ".raxml.ancestralTree";
+
+                check_file(matrix_file);
+                check_file(tree_file);
+            }
+            /// look in the directory provided by --ar-dir
+            else
+            {
+                const auto ar_dir = _params.ar_dir;
+                if (fs::is_directory(_params.ar_dir))
+                {
+                    if (auto found_matrix = find_file_by_suffix(_params.ar_dir, ".raxml.ancestralProbs"); found_matrix)
+                    {
+                        matrix_file = *found_matrix;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Could not find \"*.raxml.ancestralTree\" in"
+                                                 "the folder provided by --ar-dir: " + _params.ar_dir);
+                    }
+
+                    if (auto found_tree = find_file_by_suffix(_params.ar_dir, ".raxml.ancestralTree"); found_tree)
+                    {
+                        tree_file = *found_tree;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Could not find \"*.raxml.ancestralTree\" in"
+                                                 "the folder provided by --ar-dir: " + _params.ar_dir);
+                    }
+                }
+                else
+                {
+                    throw std::runtime_error("Error! No such directory: " + _params.ar_dir);
+                }
+            }
+
+            std::cout << "Ancestral reconstruction results have been found: " << std::endl
+                      << '\t' << matrix_file.string() << std::endl
+                      << '\t' << tree_file.string() << std::endl;
+            return { matrix_file.string(), tree_file.string() };
+        }
+
+    private:
+
+        void _run()
+        {
+            throw std::runtime_error("RAXML-NG is not supported yet.");
+        }
+
+        void check_file(const fs::path& file)
+        {
+            if (!fs::exists(file) || fs::is_empty(file))
+            {
+                throw std::runtime_error("Error during ancestral reconstruction: could not find "
+                                         + file.string());
+            }
+        }
+
+        ar::parameters _params;
+
+    };
+
     std::unique_ptr<ar_wrapper> make_ar_wrapper(ar::software software, const ar::parameters& parameters)
     {
         if (software == ar::software::PHYML)
@@ -625,7 +709,7 @@ namespace xpas::ar
         }
         else if (software == ar::software::RAXML_NG)
         {
-            throw std::runtime_error("RAXML-NG is not supported yet.");
+            return std::make_unique<raxml_wrapper>(parameters);
         }
         else
         {
