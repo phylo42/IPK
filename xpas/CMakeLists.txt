@@ -83,6 +83,7 @@ add_library(xpas::aa_pos ALIAS xpas_aa_pos)
 target_sources(xpas_aa_pos PRIVATE ${SOURCES})
 target_link_libraries(xpas_aa_pos PUBLIC ${LINK_LIBRARIES})
 target_include_directories(xpas_aa_pos PUBLIC ${INCLUDE_DIRECTORIES})
+set_property(TARGET xpas_aa_pos PROPERTY CXX_STANDARD 17)
 target_compile_options(xpas_aa_pos PRIVATE ${COMPILE_OPTIONS})
 target_compile_features(xpas_aa_pos PUBLIC ${COMPILE_FEATURES})
 target_compile_definitions(xpas_aa_pos
@@ -102,6 +103,7 @@ target_link_libraries(xpas_dna PUBLIC ${LINK_LIBRARIES})
 target_include_directories(xpas_dna PUBLIC ${INCLUDE_DIRECTORIES})
 target_compile_options(xpas_dna PRIVATE ${COMPILE_OPTIONS})
 target_compile_features(xpas_dna PUBLIC ${COMPILE_FEATURES})
+set_property(TARGET xpas_dna PROPERTY CXX_STANDARD 17)
 target_compile_definitions(xpas_dna
         PUBLIC
             ${HASH_MAP}
