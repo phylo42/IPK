@@ -47,12 +47,15 @@ namespace xpas::cli
         bool mif0_filter;
         bool random_filter;
 
-
         // k-mer filtering threshold
         double mu;
 
         bool score_model_max;
         bool score_model_exists;
+
+        // store databases uncompressed
+        bool uncompressed;
+
     };
 
     std::string get_option_list();

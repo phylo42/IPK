@@ -43,6 +43,7 @@ namespace xpas::cli
 
     static std::string MERGE_BRANCHES = "merge-branches";
     static std::string USE_UNROOTED = "use-unrooted";
+    static std::string UNCOMPRESSED = "uncompressed";
 
     bool no_filter_flag = true;
     bool mif0_flag = false;
@@ -52,6 +53,7 @@ namespace xpas::cli
     bool use_unrooted_flag = false;
     bool no_reduction_flag = false;
     bool ar_only_flag = false;
+    bool uncompressed_flag = false;
 
     bool score_max_flag = true;
     bool score_exists_flag = false;
@@ -104,10 +106,9 @@ namespace xpas::cli
             ((MIF1).c_str(), po::bool_switch(&mif1_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
             ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
-
-
             ((SCORE_MAX).c_str(), po::bool_switch(&score_max_flag))
             ((SCORE_EXISTS).c_str(), po::bool_switch(&score_exists_flag));
+            ((UNCOMPRESSED).c_str(), po::bool_switch(&uncompressed_flag));
         return desc;
     }
 
@@ -166,6 +167,9 @@ namespace xpas::cli
 
             parameters.score_model_max = score_max_flag;
             parameters.score_model_exists = score_exists_flag;
+
+            parameters.uncompressed = uncompressed_flag;
+
         }
         catch (const po::error& e)
         {

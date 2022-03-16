@@ -2,6 +2,7 @@
 #define XPAS_NODE_ENTRY_VIEW_H
 
 #include "row.h"
+#include <stack>
 
 namespace xpas::impl
 {
@@ -54,6 +55,7 @@ namespace xpas
         private:
             xpas::unpositioned_phylo_kmer _next_phylokmer();
             void _select_suffix_bound();
+            void _finish_iterator();
 
             node_entry_view* _entry_view;
 
@@ -79,6 +81,7 @@ namespace xpas
     {
     public:
         using iterator = xpas::impl::dac_kmer_iterator;
+        //using iterator = xpas::impl::bnb_kmer_iterator;
         using reference = iterator::reference;
 
         node_entry_view(const node_entry* entry, xpas::phylo_kmer::score_type threshold,

@@ -49,7 +49,7 @@ namespace xpas
         /// \details The number of different *codes* of the alphabet. For DNA, 'T' and 'U' have the
         /// same code, which counts only once.
         static constexpr size_t alphabet_size = 4;
-        static constexpr size_t max_kmer_length = 12;
+        static constexpr size_t max_kmer_length = 31;
 
         /// A type returned by encoding an unambiguous character
         using unambiguous_code_t = optional<uint8_t>;
@@ -237,7 +237,7 @@ namespace xpas
 
         /// \brief Alphabet size
         static constexpr size_t alphabet_size = 20;
-        static constexpr size_t max_kmer_length = 6;
+        static constexpr size_t max_kmer_length = 13;
 
         /// A type returned by encoding an unambiguous character
         using unambiguous_code_t = optional<uint8_t>;

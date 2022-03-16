@@ -60,6 +60,8 @@ target_compile_options(build_dna
         -Wall -Wextra #-Werror #-Wpedantic
     )
 
+
+set_property(TARGET build_dna PROPERTY CXX_STANDARD 17)
 target_compile_features(build_dna
     PUBLIC
         cxx_std_17)
@@ -119,6 +121,7 @@ target_compile_options(build_aa_pos
         -Wall -Wextra #-Werror #-Wpedantic
         )
 
+set_property(TARGET build_aa_pos PROPERTY CXX_STANDARD 17)
 target_compile_features(build_aa_pos
         PUBLIC
         cxx_std_17)

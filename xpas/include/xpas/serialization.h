@@ -85,7 +85,7 @@ namespace xpas
         }
     }
 
-    void save(const xpas::phylo_kmer_db& db, const std::string& filename)
+    void save_compressed(const xpas::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream ofs(filename);
 
@@ -96,6 +96,25 @@ namespace xpas
 
         ::boost::archive::binary_oarchive oa(out);
         oa & db;
+    }
+
+    void save_uncompressed(const xpas::phylo_kmer_db& db, const std::string& filename)
+    {
+        std::ofstream out(filename);
+        ::boost::archive::binary_oarchive oa(out);
+        oa & db;
+    }
+
+    void save(const xpas::phylo_kmer_db& db, const std::string& filename, bool uncompressed=false)
+    {
+        if (uncompressed)
+        {
+            save_uncompressed(db, filename);
+        }
+        else
+        {
+            save_compressed(db, filename);
+        }
     }
 }
 

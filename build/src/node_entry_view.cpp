@@ -137,12 +137,21 @@ dac_kmer_iterator::dac_kmer_iterator(node_entry_view* view, size_t kmer_size, xp
                 _suffixes.push_back(*it);
                 //std::cout << "\t\t" << xpas::decode_kmer(it->key, kmer_size - _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
             }
-            std::sort(_suffixes.begin(), _suffixes.end(), kmer_score_comparator);
+
             _suffix_it = _suffixes.begin();
-            _select_suffix_bound();
         }
 
-        _current = _next_phylokmer();
+        /// if there are no prefixes, the window is over
+        if (_prefixes.empty())
+        {
+            _finish_iterator();
+            _current = {};
+        }
+        else
+        {
+            _select_suffix_bound();
+            _current = _next_phylokmer();
+        }
     }
 }
 
@@ -229,6 +238,19 @@ unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
     }
 
     /// If we reached this line, the iterator is over
+    _finish_iterator();
+    return {};
+}
+
+void dac_kmer_iterator::_select_suffix_bound()
+{
+    const auto residual_threshold = _threshold - _prefix_it->score;
+    _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
+                                         make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0), kmer_score_comparator);
+}
+
+void dac_kmer_iterator::_finish_iterator()
+{
     if (_entry_view != nullptr)
     {
         /// Save suffixes of this window as prefixes of the next window
@@ -239,22 +261,6 @@ unpositioned_phylo_kmer dac_kmer_iterator::_next_phylokmer()
 
     /// Now we can safely mark the iterator as ended
     *this = make_dac_end_iterator();
-    return {};
-}
-
-void dac_kmer_iterator::_select_suffix_bound()
-{
-    if (_prefix_it == _prefixes.end())
-    {
-        _last_suffix_it = _suffixes.begin();
-    }
-    else
-    {
-        const auto residual_threshold = _threshold - _prefix_it->score;
-        _last_suffix_it = ::std::lower_bound(_suffixes.begin(), _suffixes.end(),
-                                             make_phylo_kmer<unpositioned_phylo_kmer>(0, residual_threshold, 0),
-                                             kmer_score_comparator);
-    }
 }
 
 node_entry_view::node_entry_view(const node_entry* entry, phylo_kmer::score_type threshold,
@@ -279,12 +285,25 @@ node_entry_view::node_entry_view(const node_entry_view& other) noexcept
 node_entry_view::iterator node_entry_view::begin()
 {
     const auto kmer_size = size_t{ (size_t)_end - _start + 1};
+    //const node_entry* entry, size_t kmer_size, phylo_kmer::score_type threshold,
+    //                                     phylo_kmer::pos_type start_pos, stack_type&& stack)
+
+    // DAC-CW:
     return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
+
+    // DAC:
+    //return { this, kmer_size, _threshold, _start, _prefix_size, {} };
+
+    // BNB:
+    //return make_bnb_begin_iterator(_entry, _start, kmer_size, _threshold);
 }
 
 node_entry_view::iterator node_entry_view::end() const noexcept
 {
+    // DAC:
     return make_dac_end_iterator();
+    // BNB:
+    //return make_bnb_end_iterator();
 }
 
 node_entry_view& node_entry_view::operator=(node_entry_view&& other) noexcept
