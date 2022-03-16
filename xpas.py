@@ -13,6 +13,7 @@ from pathlib import Path
 import click
 import subprocess
 from pathlib import Path
+from enum import Enum
 
 
 @click.group()
@@ -31,7 +32,13 @@ ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
 KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
-SCORE_MODELS = ["max", "exists"]
+
+
+class ScoreModel(Enum):
+    MAX = 1
+    EXISTS = 2
+
+SCORE_MODELS = [e.name.lower() for e in ScoreModel]
 
 
 def validate_filter(ctx, param, value):

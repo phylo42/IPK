@@ -176,8 +176,7 @@ namespace xpas
             auto kmer_threshold = 1 - std::pow(1 - threshold, A);
             threshold = kmer_threshold;
         }
-        const auto log_threshold = std::log10(threshold);
-        _phylo_kmer_db.set_log_threshold(log_threshold);
+        _phylo_kmer_db.set_threshold(threshold);
 
         /// The first stage of the algorithm: create a hashmap for every node group
         std::cout << "Building database: [stage 1 / 2]:" << std::endl;
@@ -231,7 +230,7 @@ namespace xpas
 
         /// Filter phylo k-mers
         auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
-                                        _working_directory, _num_batches, _mu, _phylo_kmer_db.log_threshold(), _score_model);
+                                        _working_directory, _num_batches, _mu, _phylo_kmer_db.get_threshold(), _score_model);
         filter->filter(group_ids);
 
         size_t filtered_kmers = 0;
