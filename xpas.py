@@ -186,6 +186,28 @@ def build(arbinary, #database,
     \tpython xpas.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
 
     """
+    build_database(arbinary, #database,
+                  refalign, reftree, states, verbosity,
+                  workdir, write_reduction, #dbfilename,
+                  alpha, categories, #ghosts,
+                  k, model, arparameters, convert_uo, #gap_jump_thresh,
+                  no_reduction, ratio_reduction, omega,
+                  filter, f, mu, use_unrooted, merge_branches,
+                  ardir, aronly,
+                  keep_positions, uncompressed,
+                  threads)
+
+
+def build_database(arbinary, #database,
+                   refalign, reftree, states, verbosity,
+                   workdir, write_reduction, #dbfilename,
+                   alpha, categories, #ghosts,
+                   k, model, arparameters, convert_uo, #gap_jump_thresh,
+                   no_reduction, ratio_reduction, omega,
+                   filter, f, mu, use_unrooted, merge_branches,
+                   ardir, aronly,
+                   keep_positions, uncompressed,
+                   threads):
     # create working directory
     Path(workdir).mkdir(parents=True, exist_ok=True)
     current_dir = os.path.dirname(os.path.realpath(__file__))
