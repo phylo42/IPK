@@ -392,6 +392,7 @@ namespace xpas
             const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
+
             /// Get sub-matrices of probabilities for the group
             const auto matrices = get_submatrices(node_group);
 
@@ -447,14 +448,10 @@ namespace xpas
         {
             const auto& node_entry = node_entry_ref.get();
 
-            //std::cout << node_entry.get_label() << std::endl;
             for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             {
-                //std::cout << "\tWINDOW " << window.get_start_pos() << std::endl;
                 for (const auto& kmer : window)
                 {
-                    //std::cout << "\t\t" << kmer.key << " " << xpas::decode_kmer(kmer.key, _kmer_size) << " -> "
-                    //          << kmer.score << " " << std::pow(10, kmer.score) << std::endl;
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
