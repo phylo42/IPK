@@ -1,6 +1,6 @@
 # xpas, the phylo k-mer database construction library
 
-xpas is the shared part of RAPPAS2 and SHERPAS, which builds phylo k-mer databases and provides efficient access to previously built databases.
+xpas is the shared part of [RAPPAS2](https://github.com/phylo42/rappas2) and [SHERPAS](https://github.com/phylo42/sherpas), which builds phylo k-mer databases and provides efficient access to previously built databases.
 
 ## Dependencies
 xpas depends on:
