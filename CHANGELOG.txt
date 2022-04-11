@@ -1,3 +1,11 @@
+v0.3.1
+- Fixed a bug that sometimes lead to scores of phylo-k-mers to be lower than expected
+- Added --uncompressed flag (disables ZLIB compression of databases)
+- Relaxed restrictions on the value of k (now 31 for DNA and 13 for proteins)
+- --ar-dir now supports the results of RAxML-ng
+- Fixed a crash happened for extremely high values of omega
+- Minor changes of the python wrapper
+
 v0.3.0
 XPAS BUILD:
 - Database construction code moved to xpas.
