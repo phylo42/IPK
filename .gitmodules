@@ -25,3 +25,6 @@
 [submodule "strasser"]
 	path = strasser
 	url = https://github.com/nromashchenko/strasser.git
+[submodule "indicators"]
+	path = indicators
+	url = https://github.com/p-ranav/indicators.git

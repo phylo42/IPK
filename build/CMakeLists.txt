@@ -13,7 +13,8 @@ set(LINK_LIBRARIES Boost::program_options
         Boost::filesystem
         Boost::iostreams
         OpenMP::OpenMP_CXX
-        strasser::csv_parser)
+        strasser::csv_parser
+        indicators::indicators)
 
 
 set(SOURCES

@@ -6,6 +6,8 @@
 #include <queue>
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <indicators/cursor_control.hpp>
+#include <indicators/progress_bar.hpp>
 #include <xpas/phylo_kmer_db.h>
 #include <xpas/version.h>
 #include <xpas/phylo_tree.h>
@@ -376,6 +378,21 @@ namespace xpas
         /// in a hash map for every group separately on disk.
         std::vector<phylo_kmer::branch_type> node_postorder_ids(node_groups.size());
 
+
+        using namespace indicators;
+        ProgressBar bar{
+            option::BarWidth{60},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PostfixText{"Computing phylo-k-mers"},
+            option::ForegroundColor{Color::green},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+            option::MaxProgress{node_groups.size()}
+        };
+
         /*
         #pragma omp parallel for schedule(auto) reduction(+: count) num_threads(_num_threads) \
             shared(original_tree, node_postorder_ids, _matrix)
@@ -385,6 +402,8 @@ namespace xpas
             const auto& node_group = node_groups[i];
             assert(node_group.size() == ghosts_per_node);
             (void) ghosts_per_node;
+
+
 
             /// Having a label of a node in the extended tree, we need to find the corresponding node
             /// in the original tree. We take the first ghost node, because all of them correspond to
@@ -406,6 +425,11 @@ namespace xpas
                 save_group_map(hash_map, get_group_map_file(_working_directory, original_node_postorder_id, index));
                 ++index;
             }
+
+
+            // update progress bar
+            bar.set_option(option::PostfixText{std::to_string(i) + "/" + std::to_string(node_groups.size())});
+            bar.tick();
 
             count += branch_count;
         }
