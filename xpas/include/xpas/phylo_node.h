@@ -29,6 +29,14 @@ namespace xpas
         /// \brief Branch length type
         using branch_length_type = double;
 
+        /// Indexing information for every node.
+        /// This struct is auxilary, used in serialization.h
+        struct node_index
+        {
+            size_t subtree_num_nodes;
+            branch_length_type subtree_total_length;
+        };
+
         phylo_node();
         phylo_node(std::string label, branch_length_type branch_length, phylo_node* parent);
         phylo_node(const phylo_node& other) = delete;
@@ -59,6 +67,11 @@ namespace xpas
         branch_length_type get_branch_length() const noexcept;
 
         void set_branch_length(branch_length_type length);
+
+        [[nodiscard]]
+        branch_length_type get_subtree_branch_length() const noexcept;
+
+        void set_subtree_branch_length(branch_length_type length);
 
         /// Returns the total number of nodes in the subtree
         [[nodiscard]]
@@ -101,6 +114,9 @@ namespace xpas
 
         /// The length of the branch to the parent
         branch_length_type _branch_length;
+
+        /// The total branch length in the subtree
+        branch_length_type _subtree_branch_length;
 
         /// The total number of nodes in the subtree excluding this node
         size_t _num_nodes;

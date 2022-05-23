@@ -187,6 +187,9 @@ void phylo_tree::_index_nodes()
 
             /// By convention the number of leaves in the subtree of a leaf is one
             node.set_num_leaves(1);
+
+            /// There is no subtree
+            node.set_subtree_branch_length(0.0);
         }
         else
         {
@@ -195,6 +198,9 @@ void phylo_tree::_index_nodes()
             size_t total_num_nodes = node.get_children().size();
             size_t total_num_leaves = 0;
 
+            /// The total branch length in the subtree
+            phylo_node::branch_length_type subtree_branch_length = 0.0;
+
             for (const auto& child : node.get_children())
             {
                 ///  + the total number of nodes in subtrees of children
@@ -202,10 +208,13 @@ void phylo_tree::_index_nodes()
 
                 /// The number of leaves is the sum of leaves of all children
                 total_num_leaves += child->get_num_leaves();
+
+                subtree_branch_length += child->get_subtree_branch_length() + child->get_branch_length();
             }
 
             node.set_num_nodes(total_num_nodes);
             node.set_num_leaves(total_num_leaves);
+            node.set_subtree_branch_length(subtree_branch_length);
         }
     }
 }

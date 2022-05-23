@@ -8,6 +8,7 @@
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include "phylo_kmer_db.h"
+#include "phylo_node.h"
 #include "version.h"
 
 namespace fs = boost::filesystem;
@@ -18,17 +19,22 @@ namespace xpas
     struct protocol
     {
         /// xpas v0.1.x
-        static const int v0_1_x = 2;
+        static const unsigned int v0_1_x = 2;
 
-        /// xpas v0.2.x
-        static const int v0_2_WITHOUT_POSITIONS = 3;
-        static const int v0_2_WITH_POSITIONS = 4;
+        /// xpas v0.2.x + v0.3.1
+        static const unsigned int v0_2_WITHOUT_POSITIONS = 3;
+        static const unsigned int v0_2_WITH_POSITIONS = 4;
 
+        /// xpas v0.3.2, added tree indexing
+        static const unsigned int v0_3_2_WITHOUT_POSITIONS = 5;
+        static const unsigned int v0_3_2_WITH_POSITIONS = 6;
 
 #ifdef KEEP_POSITIONS
-        static const unsigned int CURRENT = v0_2_WITH_POSITIONS;
+        static const unsigned int EARLIEST_INDEX = v0_3_2_WITH_POSITIONS;
+        static const unsigned int CURRENT = v0_3_2_WITH_POSITIONS;
 #else
-        static const unsigned int CURRENT = v0_2_WITHOUT_POSITIONS;
+        static const unsigned int EARLIEST_INDEX = v0_3_2_WITHOUT_POSITIONS;
+        static const unsigned int CURRENT = v0_3_2_WITHOUT_POSITIONS;
 #endif
     };
 
@@ -120,6 +126,14 @@ namespace boost::serialization
     {
         ar & std::string(db.sequence_type());
 
+        /// Tree index
+        const auto& tree_index = db.tree_index();
+        ar & tree_index.size();
+        for (const auto& x : tree_index)
+        {
+            ar & x.subtree_num_nodes & x.subtree_total_length;
+        }
+
         const auto original_tree_view = std::string{ db.tree() };
         ar & original_tree_view;
 
@@ -151,18 +165,30 @@ namespace boost::serialization
     {
         ar & std::string(db.sequence_type());
 
+        /// Tree index
+        const auto& tree_index = db.tree_index();
+        ar & tree_index.size();
+        for (const auto& x : tree_index)
+        {
+            ar & x.subtree_num_nodes & x.subtree_total_length;
+        }
+
+        /// Tree newick
         const auto original_tree_view = std::string{ db.tree() };
         ar & original_tree_view;
 
+        /// DB construction parameters
         size_t kmer_size = db.kmer_size();
         ar & kmer_size;
 
         xpas::phylo_kmer::score_type omega = db.omega();
         ar & omega;
 
+        /// The number of different k-mers
         size_t table_size = db.size();
         ar & table_size;
 
+        /// Phylo-k-mers
         for (const auto& [key, entries] : db)
         {
             size_t entries_size = entries.size();
@@ -180,6 +206,8 @@ namespace boost::serialization
                      xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
                      const unsigned int version)
     {
+        db.set_version(version);
+
         /// Early versions are not supported
         if (version < xpas::protocol::v0_2_WITH_POSITIONS)
         {
@@ -195,6 +223,13 @@ namespace boost::serialization
             std::string sequence_type;
             ar & sequence_type;
             db.set_sequence_type(std::move(sequence_type));
+        }
+
+        /// Deserialization of the tree index, v0.3.2 and later
+        if (version >= xpas::protocol::v0_3_2_WITHOUT_POSITIONS)
+        {
+            std::vector<xpas::phylo_node::node_index> tree_index = load_tree_index(ar);
+            db.set_tree_index(std::move(tree_index));
         }
 
         /// Deserialization of the main content
@@ -231,11 +266,31 @@ namespace boost::serialization
         }
     }
 
+
+    /// Loads the tree index: the number of the nodes in the subtree for every node,
+    ///     the total branch length in the subtree
+    template<class Archive>
+    std::vector<xpas::phylo_node::node_index> load_tree_index(Archive& ar)
+    {
+        size_t num_nodes;
+        ar & num_nodes;
+
+        std::vector<xpas::phylo_node::node_index> index(num_nodes);
+        for (size_t i = 0; i < num_nodes; ++i)
+        {
+            ar & index[i].subtree_num_nodes;
+            ar & index[i].subtree_total_length;
+        }
+        return index;
+    }
+
     template<class Archive>
     inline void load(Archive& ar,
                      xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
                      const unsigned int version)
     {
+        db.set_version(version);
+
         /// Early versions are not supported
         if (version < xpas::protocol::v0_1_x)
         {
@@ -250,6 +305,13 @@ namespace boost::serialization
             std::string sequence_type;
             ar & sequence_type;
             db.set_sequence_type(std::move(sequence_type));
+        }
+
+        /// Deserialization of the tree index, v0.3.2 and later
+        if (version >= xpas::protocol::v0_3_2_WITHOUT_POSITIONS)
+        {
+            auto tree_index = load_tree_index(ar);
+            db.set_tree_index(std::move(tree_index));
         }
 
         std::string tree;

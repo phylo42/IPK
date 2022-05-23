@@ -156,6 +156,14 @@ namespace xpas
                   "\tomega: " << _omega << std::endl <<
                   "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
 
+        /// Fill the tree index from the tree
+        auto& index = _phylo_kmer_db.tree_index();
+        index.reserve(_original_tree.get_node_count());
+        for (const auto& node : xpas::visit_subtree(_original_tree.get_root()))
+        {
+            index.push_back(phylo_node::node_index{ node.get_num_nodes(), node.get_subtree_branch_length() });
+        }
+
         /// The first stage of the algorithm: create a hashmap for every node group
         std::cout << "Building database: [stage 1 / 2]:" << std::endl;
         const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
@@ -404,7 +412,6 @@ namespace xpas
             (void) ghosts_per_node;
 
 
-
             /// Having a label of a node in the extended tree, we need to find the corresponding node
             /// in the original tree. We take the first ghost node, because all of them correspond to
             /// the same original node
@@ -486,6 +493,7 @@ namespace xpas
     }
 
     #endif
+
 };
 
 

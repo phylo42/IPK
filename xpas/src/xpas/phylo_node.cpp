@@ -83,6 +83,16 @@ void phylo_node::set_branch_length(branch_length_type length)
     _branch_length = length;
 }
 
+phylo_node::branch_length_type phylo_node::get_subtree_branch_length() const noexcept
+{
+    return _subtree_branch_length;
+}
+
+void phylo_node::set_subtree_branch_length(branch_length_type length)
+{
+    _subtree_branch_length = length;
+}
+
 size_t phylo_node::get_num_nodes() const noexcept
 {
     return _num_nodes;

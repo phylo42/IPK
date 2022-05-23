@@ -4,6 +4,7 @@
 #include "hash_map.h"
 #include "phylo_kmer.h"
 #include "optional.h"
+#include "phylo_node.h"
 
 
 namespace xpas
@@ -39,6 +40,7 @@ namespace xpas
             , _omega{ omega }
             , _sequence_type(std::move(seq_type))
             , _tree(std::move(tree))
+            , _version(0)
         {}
         _phylo_kmer_db(const _phylo_kmer_db&) noexcept = delete;
         _phylo_kmer_db(_phylo_kmer_db&&) noexcept = default;
@@ -105,6 +107,24 @@ namespace xpas
         {
             _tree = std::move(tree);
         }
+
+        [[nodiscard]]
+        std::vector<xpas::phylo_node::node_index> tree_index() const noexcept
+        {
+            return _tree_index;
+        }
+
+        [[nodiscard]]
+        std::vector<xpas::phylo_node::node_index>& tree_index()
+        {
+            return _tree_index;
+        }
+
+        void set_tree_index(std::vector<xpas::phylo_node::node_index> index)
+        {
+            _tree_index = std::move(index);
+        }
+
 
         /// Access
         /// \brief Searches for a key against the database.
@@ -176,6 +196,18 @@ namespace xpas
             _map[key].push_back(value);
         }
 
+        /// Returns the serialation protocol version
+        [[nodiscard]]
+        unsigned int version() const noexcept
+        {
+            return _version;
+        }
+
+        void set_version(unsigned int version)
+        {
+            _version = version;
+        }
+
     private:
         storage _map;
 
@@ -204,6 +236,13 @@ namespace xpas
 
         /// \brief Newick formatted phylogenetic tree
         std::string _tree;
+
+        /// The tree index (# nodes in the subtree, total subtree branch length
+        /// for every node in a plain array indexed by postorder IDs
+        std::vector<xpas::phylo_node::node_index> _tree_index;
+
+        /// Serialization protocol version
+        unsigned int _version;
     };
 
     using phylo_kmer_db = _phylo_kmer_db<phylo_kmer>;
