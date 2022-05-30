@@ -1,5 +1,5 @@
 #include "node_entry.h"
-#include "node_entry_view.h"
+#include "window.h"
 #include <iostream>
 
 using namespace xpas;
@@ -36,12 +36,12 @@ bool operator==(const node_entry& lhs, const node_entry& rhs)
 
 using namespace impl;
 
-node_entry_view make_empty_view()
+window make_empty_view()
 {
-    return node_entry_view{ nullptr, 0.0, 0, 0 };
+    return window{ nullptr, 0.0, 0, 0 };
 }
 
-chain_window_iterator::chain_window_iterator(node_entry_view view,
+chain_window_iterator::chain_window_iterator(window view,
                                              size_t kmer_size, phylo_kmer::score_type threshold) noexcept
     : _view{ std::move(view) }
     , _kmer_size{ kmer_size }
@@ -55,7 +55,7 @@ chain_window_iterator& chain_window_iterator::operator++()
     const auto entry = _view.get_entry();
 
     /// Prefix size is the suffix size from the previous window,
-    /// see dac_kmer_iterator::_next_phylokmer
+    /// see dac_kmer_iterator::_next_kmer
     const auto prefix_size = _view.get_prefix_size();
     /// Suffix size for the next window
     const auto suffix_size = _kmer_size - prefix_size;
@@ -130,7 +130,7 @@ chain_windows::chain_windows(const node_entry& entry, size_t kmer_size, xpas::ph
 
 chain_windows::const_iterator chain_windows::begin() const
 {
-    auto first_window_view = node_entry_view(&_entry, _threshold, 0, _kmer_size - 1);
+    auto first_window_view = window(&_entry, _threshold, 0, _kmer_size - 1);
     return { std::move(first_window_view), _kmer_size, _threshold };
 }
 

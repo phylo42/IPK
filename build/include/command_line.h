@@ -5,6 +5,7 @@
 #include <string>
 #include <map>
 #include <xpas/phylo_kmer.h>
+#include <pk_compute.h>
 
 namespace xpas::cli
 {
@@ -46,19 +47,23 @@ namespace xpas::cli
         bool entropy_filter;
         bool mif1_filter;
         bool mif0_filter;
-        bool max_dev_filter;
-        bool log_max_dev_filter;
-        bool max_diff_filter;
-        bool log_max_diff_filter;
         bool random_filter;
-        bool std_dev_filter;
-        bool log_std_dev_filter;
+
+        /// Phylo-k-mer computation algorithms, mutually exclusize
+        bool bb;
+        bool dc;
+        bool dcla;
+        bool dccw;
 
         // k-mer filtering threshold
         double mu;
 
         // store databases uncompressed
         bool uncompressed;
+
+
+        // k-mer computation algorithm
+        xpas::algorithm algorithm;
     };
 
     std::string get_option_list();

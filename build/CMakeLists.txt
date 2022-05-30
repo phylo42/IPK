@@ -28,7 +28,8 @@ set(SOURCES
         src/filter.cpp include/filter.h
         src/main.cpp
         src/node_entry.cpp include/node_entry.h
-        src/node_entry_view.cpp include/node_entry_view.h
+        src/window.cpp include/window.h
+        src/pk_compute.cpp include/pk_compute.h
         src/proba_matrix.cpp include/proba_matrix.h
         include/return.h
         include/row.h

@@ -18,6 +18,7 @@
 #include "ar.h"
 #include "filter.h"
 #include "branch_group.h"
+#include "pk_compute.h"
 
 using std::string;
 using std::cout, std::endl;
@@ -35,10 +36,10 @@ namespace xpas
         friend phylo_kmer_db build(const string& working_directory,
                                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                                    const proba_matrix& matrix,
-                                   const ghost_mapping& mapping, const ar::mapping& ar_mapping,
-                                   bool merge_branches, size_t kmer_size,
-                                   phylo_kmer::score_type omega,
-                                   filter_type filter, double mu, size_t num_threads);
+                                   const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                                   xpas::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                                   filter_type filter, double mu,
+                                   size_t num_threads);
     public:
         /// Member types
 
@@ -52,12 +53,13 @@ namespace xpas
 
 
         /// Ctors, dtor and operator=
-        db_builder(const string& working_directory,
+        db_builder(std::string working_directory,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                    const proba_matrix& matrix,
-                   const ghost_mapping& mapping, const ar::mapping& ar_mapping,
-                   bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
-                   filter_type filter, double mu, size_t num_threads);
+                   const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                   xpas::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                   filter_type filter, double mu,
+                   size_t num_threads);
         db_builder(const db_builder&) = delete;
         db_builder(db_builder&&) = delete;
         db_builder& operator=(const db_builder&) = delete;
@@ -111,10 +113,9 @@ namespace xpas
 
         bool _merge_branches;
 
+        xpas::algorithm _algorithm;
         size_t _kmer_size;
         xpas::phylo_kmer::score_type _omega;
-
-        double _reduction_ratio;
 
         xpas::filter_type _filter;
         double _mu;
@@ -127,19 +128,21 @@ namespace xpas
 
     };
 
-    db_builder::db_builder(const string& working_directory,
+    db_builder::db_builder(std::string working_directory,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
                            const proba_matrix& matrix,
-                           const ghost_mapping& mapping, const ar::mapping& ar_mapping,
-                           bool merge_branches, size_t kmer_size, phylo_kmer::score_type omega,
-                           filter_type filter, double mu, size_t num_threads)
-        : _working_directory{ working_directory }
+                           const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                           xpas::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                           filter_type filter, double mu,
+                           size_t num_threads)
+        : _working_directory{ std::move(working_directory) }
         , _original_tree{ original_tree }
         , _extended_tree{ extended_tree }
         , _matrix{ matrix }
         , _extended_mapping{ mapping }
         , _ar_mapping{ ar_mapping }
         , _merge_branches{ merge_branches }
+        , _algorithm{ algorithm }
         , _kmer_size{ kmer_size }
         , _omega{ omega }
         , _filter{ filter }
@@ -481,11 +484,21 @@ namespace xpas
 
             for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             {
-                for (const auto& kmer : window)
+                auto ek = enumerate_kmers(_algorithm, &window, log_threshold, {});
+
+                for (auto it = ek.begin(); it != ek.end(); ++it)
+                //for (const auto& kmer : )
                 {
+                    const auto& kmer = *it;
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
+
+                /*for (const auto& kmer : window)
+                {
+                    xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                    ++count;
+                }*/
             }
         }
 
@@ -503,15 +516,16 @@ namespace xpas
     phylo_kmer_db build(const string& working_directory,
                         const phylo_tree& original_tree, const phylo_tree& extended_tree,
                         const proba_matrix& matrix,
-                        const ghost_mapping& mapping, const ar::mapping& ar_mapping,
-                        bool merge_branches,
-                        size_t kmer_size, xpas::phylo_kmer::score_type omega, filter_type filter, double mu, size_t num_threads)
+                        const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                        xpas::algorithm algorithm, size_t kmer_size, xpas::phylo_kmer::score_type omega,
+                        filter_type filter, double mu, size_t num_threads)
     {
         db_builder builder(working_directory,
                            original_tree, extended_tree,
                            matrix,
-                           mapping, ar_mapping,
-                           merge_branches, kmer_size, omega, filter, mu, num_threads);
+                           mapping, ar_mapping, merge_branches,
+                           algorithm, kmer_size, omega,
+                           filter, mu, num_threads);
         builder.run();
         return std::move(builder._phylo_kmer_db);
     }

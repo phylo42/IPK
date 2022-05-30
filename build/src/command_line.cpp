@@ -47,23 +47,30 @@ namespace xpas::cli
     static std::string MERGE_BRANCHES = "merge-branches";
     static std::string USE_UNROOTED = "use-unrooted";
     static std::string UNCOMPRESSED = "uncompressed";
+    static std::string BB = "BB";
+    static std::string DC = "DC";
+    static std::string DCLA = "DCLA";
+    static std::string DCCW = "DCCW";
 
+    /// Algorithm flags
+    bool bb_flag = false;
+    bool dc_flag = true;
+    bool dcla_flag = false;
+    bool dccw_flag = false;
+
+    /// Filters flags
     bool no_filter_flag = true;
-    bool entropy_flag = false;
     bool mif0_flag = false;
     bool mif1_flag = false;
-    bool max_deviation_filter_flag = false;
-    bool log_max_deviation_filter_flag = false;
-    bool max_difference_filter_flag = false;
-    bool log_max_difference_filter_flag = false;
-    bool std_deviation_filter_flag = false;
-    bool log_std_deviation_filter_flag = false;
     bool random_filter_flag = false;
+
+    /// Flags for other options
     bool merge_branches_flag = false;
     bool use_unrooted_flag = false;
     bool no_reduction_flag = false;
     bool ar_only_flag = false;
     bool uncompressed_flag = false;
+
 
     po::options_description get_opt_description()
     {
@@ -109,18 +116,15 @@ namespace xpas::cli
 
 
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
-            ((ENTROPY).c_str(), po::bool_switch(&entropy_flag))
             ((MIF0).c_str(), po::bool_switch(&mif0_flag))
             ((MIF1).c_str(), po::bool_switch(&mif1_flag))
-            ((MAX_DEVIATION).c_str(), po::bool_switch(&max_deviation_filter_flag))
-            ((LOG_MAX_DEVIATION).c_str(), po::bool_switch(&log_max_deviation_filter_flag))
-            ((MAX_DIFF).c_str(), po::bool_switch(&max_difference_filter_flag))
-            ((LOG_MAX_DIFF).c_str(), po::bool_switch(&log_max_difference_filter_flag))
-            ((STD_DEVIATION).c_str(), po::bool_switch(&std_deviation_filter_flag))
-            ((LOG_STD_DEVIATION).c_str(), po::bool_switch(&log_std_deviation_filter_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
             ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
-            ((UNCOMPRESSED).c_str(), po::bool_switch(&uncompressed_flag));
+            ((UNCOMPRESSED).c_str(), po::bool_switch(&uncompressed_flag))
+            ((BB).c_str(), po::bool_switch(&bb_flag))
+            ((DC).c_str(), po::bool_switch(&dc_flag))
+            ((DCLA).c_str(), po::bool_switch(&dcla_flag))
+            ((DCCW).c_str(), po::bool_switch(&dccw_flag));
         return desc;
     }
 
@@ -172,17 +176,17 @@ namespace xpas::cli
             parameters.use_unrooted = use_unrooted_flag;
             parameters.no_reduction = no_reduction_flag;
 
+            /// filters
             parameters.no_filter = no_filter_flag;
-            parameters.entropy_filter = entropy_flag;
             parameters.mif1_filter = mif1_flag;
             parameters.mif0_filter = mif0_flag;
-            parameters.max_dev_filter = max_deviation_filter_flag;
-            parameters.log_max_dev_filter = log_max_deviation_filter_flag;
-            parameters.max_diff_filter = max_difference_filter_flag;
-            parameters.log_max_diff_filter = log_max_difference_filter_flag;
             parameters.random_filter = random_filter_flag;
-            parameters.std_dev_filter = std_deviation_filter_flag;
-            parameters.log_std_dev_filter = log_std_deviation_filter_flag;
+
+            /// algorithms
+            parameters.bb = bb_flag;
+            parameters.dc = dc_flag;
+            parameters.dcla = dcla_flag;
+            parameters.dccw = dccw_flag;
 
             parameters.uncompressed = uncompressed_flag;
         }

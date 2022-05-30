@@ -14,6 +14,7 @@
 #include "ar.h"
 #include "proba_matrix.h"
 #include "filter.h"
+#include "pk_compute.h"
 
 namespace fs = boost::filesystem;
 
@@ -124,6 +125,23 @@ xpas::filter_type get_filter_type(const xpas::cli::parameters& parameters)
     return xpas::filter_type::no_filter;
 }
 
+xpas::algorithm get_algorithm_type(const xpas::cli::parameters& parameters)
+{
+    if (parameters.bb)
+    {
+        return xpas::algorithm::BB;
+    }
+    else if (parameters.dc)
+    {
+        return xpas::algorithm::DC;
+    }
+    else if (parameters.dcla)
+    {
+        return xpas::algorithm::DCLA;
+    }
+    return xpas::algorithm::DCCW;
+}
+
 std::string compression_status(const xpas::cli::parameters& parameters)
 {
     if (parameters.uncompressed)
@@ -185,7 +203,9 @@ return_code build_database(const xpas::cli::parameters& parameters)
                                 original_tree, extended_tree,
                                 proba_matrix,
                                 ghost_mapping, ar_mapping,
-                                parameters.merge_branches, parameters.kmer_size, parameters.omega,
+                                parameters.merge_branches,
+                                get_algorithm_type(parameters),
+                                parameters.kmer_size, parameters.omega,
                                 get_filter_type(parameters), parameters.mu,
                                 parameters.num_threads);
 

@@ -11,16 +11,14 @@ namespace xpas
     class alignment;
     class proba_matrix;
     enum class filter_type;
+    enum class algorithm;
 
     xpas::phylo_kmer_db build(const std::string& working_directory,
                               const phylo_tree& original_tree, const phylo_tree& extended_tree,
                               const proba_matrix& matrix,
-                              const ghost_mapping& mapping, const ar::mapping& ar_mapping,
-                              bool merge_branches,
-                              size_t kmer_size,
-                              xpas::phylo_kmer::score_type omega,
-                              filter_type filter,
-                              double mu,
+                              const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                              xpas::algorithm algorithm, size_t kmer_size, xpas::phylo_kmer::score_type omega,
+                              filter_type filter, double mu,
                               size_t num_threads);
 }
 

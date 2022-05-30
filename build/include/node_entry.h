@@ -2,7 +2,7 @@
 #define RAPPAS_CPP_NODE_ENTRY_H
 
 #include <vector>
-#include "node_entry_view.h"
+#include "window.h"
 
 namespace xpas
 {
@@ -57,9 +57,9 @@ namespace xpas
         {
         public:
             using iterator_category = std::forward_iterator_tag;
-            using reference = node_entry_view&;
+            using reference = window&;
 
-            chain_window_iterator(node_entry_view view, size_t kmer_size, phylo_kmer::score_type threshold) noexcept;
+            chain_window_iterator(window view, size_t kmer_size, phylo_kmer::score_type threshold) noexcept;
             chain_window_iterator(const chain_window_iterator&) = delete;
             chain_window_iterator(chain_window_iterator&&) = delete;
             chain_window_iterator& operator=(const chain_window_iterator&) = delete;
@@ -73,7 +73,7 @@ namespace xpas
 
             reference operator*() noexcept;
         private:
-            node_entry_view _view;
+            window _view;
 
             size_t _kmer_size;
             phylo_kmer::score_type _threshold;
@@ -91,7 +91,7 @@ namespace xpas
         using iterator_category = std::forward_iterator_tag;
         using const_iterator = impl::chain_window_iterator;
 
-        using reference = node_entry_view&;
+        using reference = window&;
 
         chain_windows(const node_entry& entry, size_t kmer_size, phylo_kmer::score_type threshold);
         chain_windows(const chain_windows&) = delete;
