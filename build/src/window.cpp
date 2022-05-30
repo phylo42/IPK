@@ -50,7 +50,7 @@ kmer_iterator_pimpl::pointer kmer_iterator_pimpl::operator->()  const noexcept
 
 ///////////////////////////////////////////////////////////////////////////////
 
-naive_dac_enumerator xpas::impl::make_dac_end_iterator()
+naive_DC_iterator xpas::impl::make_dac_end_iterator()
 {
     return { nullptr, 0, 0.0, 0, 0, {} };
 }
@@ -105,9 +105,9 @@ vector_type<xpas::unpositioned_phylo_kmer> join_mmers(const vector_type<xpas::un
     return result;
 }
 
-naive_dac_enumerator::naive_dac_enumerator(window* window, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
-                                           xpas::phylo_kmer::pos_type start_pos, size_t prefix_size,
-                                           vector_type<xpas::unpositioned_phylo_kmer> prefixes) noexcept
+naive_DC_iterator::naive_DC_iterator(window* window, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
+                                     xpas::phylo_kmer::pos_type start_pos, size_t prefix_size,
+                                     vector_type<xpas::unpositioned_phylo_kmer> prefixes) noexcept
     : kmer_iterator_pimpl{ window, kmer_size, threshold }
     , _prefix_size{ 0 }
     , _start_pos{ start_pos }
@@ -147,7 +147,7 @@ naive_dac_enumerator::naive_dac_enumerator(window* window, size_t kmer_size, xpa
             {
                 auto it = (_prefix_size == 0)
                           ? make_dac_end_iterator()
-                          : naive_dac_enumerator(_window, _prefix_size, threshold, start_pos, 0, {});
+                          : naive_DC_iterator(_window, _prefix_size, threshold, start_pos, 0, {});
                 const auto end = make_dac_end_iterator();
                 //std::cout << "\tprefix of " << _prefix_size << " from " << start_pos << ":" << std::endl;
                 for (; it != end; ++it)
@@ -171,7 +171,7 @@ naive_dac_enumerator::naive_dac_enumerator(window* window, size_t kmer_size, xpa
         // Calculate suffixes
         {
             auto it = (_prefix_size < kmer_size)
-                      ? naive_dac_enumerator(_window, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
+                      ? naive_DC_iterator(_window, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
                       : make_dac_end_iterator();
             const auto end = make_dac_end_iterator();
             //std::cout << "\tsuffix of " << kmer_size - _prefix_size << " from " << start_pos + _prefix_size << ":" << std::endl;
@@ -198,7 +198,7 @@ naive_dac_enumerator::naive_dac_enumerator(window* window, size_t kmer_size, xpa
     }
 }
 
-naive_dac_enumerator& naive_dac_enumerator::operator=(naive_dac_enumerator&& rhs) noexcept
+naive_DC_iterator& naive_DC_iterator::operator=(naive_DC_iterator&& rhs) noexcept
 {
     if (*this != rhs)
     {
@@ -217,23 +217,13 @@ naive_dac_enumerator& naive_dac_enumerator::operator=(naive_dac_enumerator&& rhs
     return *this;
 }
 
-bool naive_dac_enumerator::operator==(const naive_dac_enumerator& rhs) const noexcept
-{
-    return _window == rhs._window && _start_pos == rhs._start_pos && _kmer_size == rhs._kmer_size;
-}
-
-bool naive_dac_enumerator::operator!=(const naive_dac_enumerator& rhs) const noexcept
-{
-    return !(*this == rhs);
-}
-
-naive_dac_enumerator& naive_dac_enumerator::operator++()
+naive_DC_iterator& naive_DC_iterator::operator++()
 {
     _current = _next_kmer();
     return *this;
 }
 
-unpositioned_phylo_kmer naive_dac_enumerator::_next_kmer()
+unpositioned_phylo_kmer naive_DC_iterator::_next_kmer()
 {
     if (_prefix_it != _prefixes.end())
     {
@@ -276,14 +266,14 @@ unpositioned_phylo_kmer naive_dac_enumerator::_next_kmer()
     return {};
 }
 
-void naive_dac_enumerator::_select_suffix_bound()
+void naive_DC_iterator::_select_suffix_bound()
 {
     const auto residual_threshold = _threshold - _prefix_it->score;
     _last_suffix_it = std::partition(_suffixes.begin(), _suffixes.end(),
                                      [residual_threshold](auto pk) { return pk.score >= residual_threshold;});
 }
 
-void naive_dac_enumerator::_finish_iterator()
+void naive_DC_iterator::_finish_iterator()
 {
     if (_window != nullptr)
     {
@@ -297,15 +287,17 @@ void naive_dac_enumerator::_finish_iterator()
     *this = make_dac_end_iterator();
 }
 
-std::unique_ptr<kmer_iterator_pimpl> impl::make_enumerator(const algorithm& algorithm, window* window, size_t kmer_size,
-                                                           phylo_kmer::score_type threshold,
-                                                           vector_type<xpas::unpositioned_phylo_kmer> prefixes)
+std::unique_ptr<kmer_iterator_pimpl> impl::make_iterator(const algorithm& algorithm, window* window, size_t start_pos,
+                                                         size_t kmer_size, phylo_kmer::score_type threshold,
+                                                         vector_type<xpas::unpositioned_phylo_kmer> prefixes)
 {
-    return std::make_unique<naive_dac_enumerator>(window, kmer_size, threshold, 0, kmer_size, std::move(prefixes));
+    return std::make_unique<naive_DC_iterator>(window, kmer_size, threshold, start_pos, kmer_size / 2, std::move(prefixes));
 }
 
 kmer_iterator::kmer_iterator(const xpas::algorithm& algorithm, window* window, size_t kmer_size, phylo_kmer::score_type threshold)
-    : _pimpl(impl::make_enumerator(algorithm, window, kmer_size, threshold, {}))
+    : _pimpl(impl::make_iterator(algorithm, window,
+                                 (window == nullptr) ? 0 : (window->get_start_pos()), // for end() iterators there is no window
+                                 kmer_size, threshold, {}))
 {
 }
 
@@ -335,15 +327,16 @@ kmer_iterator& kmer_iterator::operator++()
     return *this;
 }
 
-enumerate_kmers::enumerate_kmers(const algorithm& algorithm, window* window, phylo_kmer::score_type threshold,
+enumerate_kmers::enumerate_kmers(const algorithm& algorithm, window* window,
+                                 size_t kmer_size, phylo_kmer::score_type threshold,
                                  impl::vector_type<unpositioned_phylo_kmer> prefixes)
-    : _algorithm(algorithm), _window(window), _threshold(threshold)
+    : _algorithm(algorithm), _window(window), _kmer_size(kmer_size), _threshold(threshold)
 {
 }
 
 enumerate_kmers::const_iterator enumerate_kmers::begin() const
 {
-    return { _algorithm, _window, _window->width(), _threshold };
+    return { _algorithm, _window, _kmer_size, _threshold };
 }
 
 enumerate_kmers::const_iterator enumerate_kmers::end() const noexcept
@@ -370,21 +363,6 @@ window::window(const window& other) noexcept
     assert(other._prefixes.empty());
 }
 
-window::iterator window::begin()
-{
-    const auto kmer_size = size_t{ (size_t)_end - _start + 1};
-
-    // DAC-CW:
-    //return { this, kmer_size, _threshold, _start, _prefix_size, std::move(_prefixes) };
-
-    // DAC:
-    return { this, kmer_size, _threshold, _start, _prefix_size, {} };
-}
-
-window::iterator window::end() const noexcept
-{
-    return make_dac_end_iterator();
-}
 
 window& window::operator=(window&& other) noexcept
 {
@@ -423,12 +401,6 @@ xpas::phylo_kmer::pos_type window::get_end_pos() const noexcept
 void window::set_end_pos(phylo_kmer::pos_type pos)
 {
     _end = pos;
-}
-
-[[nodiscard]]
-size_t window::width() const noexcept
-{
-    return _end - _start;
 }
 
 xpas::phylo_kmer::score_type window::get_threshold() const noexcept

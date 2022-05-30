@@ -65,22 +65,22 @@ namespace xpas
 
         /// \brief Enumerates phylo-k-mers in a given window using divide-and-conquer
         /// (without applying the lookahead technique)
-        class naive_dac_enumerator : public kmer_iterator_pimpl
+        class naive_DC_iterator : public kmer_iterator_pimpl
         {
         public:
-            naive_dac_enumerator(window* view, size_t kmer_size, phylo_kmer::score_type threshold,
-                                 phylo_kmer::pos_type start_pos, size_t prefix_size,
-                                 vector_type<unpositioned_phylo_kmer> prefixes) noexcept;
-            naive_dac_enumerator(const naive_dac_enumerator&) = delete;
-            naive_dac_enumerator(naive_dac_enumerator&&) = default;
-            naive_dac_enumerator& operator=(const naive_dac_enumerator&) = delete;
-            naive_dac_enumerator& operator=(naive_dac_enumerator&& rhs) noexcept;
-            ~naive_dac_enumerator() noexcept override = default;
+            naive_DC_iterator(window* view, size_t kmer_size, phylo_kmer::score_type threshold,
+                              phylo_kmer::pos_type start_pos, size_t prefix_size,
+                              vector_type<unpositioned_phylo_kmer> prefixes) noexcept;
+            naive_DC_iterator(const naive_DC_iterator&) = delete;
+            naive_DC_iterator(naive_DC_iterator&&) = default;
+            naive_DC_iterator& operator=(const naive_DC_iterator&) = delete;
+            naive_DC_iterator& operator=(naive_DC_iterator&& rhs) noexcept;
+            ~naive_DC_iterator() noexcept override = default;
 
-            bool operator==(const naive_dac_enumerator& rhs) const noexcept;
-            bool operator!=(const naive_dac_enumerator& rhs) const noexcept;
+            //bool operator==(const naive_dac_enumerator& rhs) const noexcept;
+            //bool operator!=(const naive_dac_enumerator& rhs) const noexcept;
 
-            naive_dac_enumerator& operator++() override;
+            naive_DC_iterator& operator++() override;
         private:
             unpositioned_phylo_kmer _next_kmer();
 
@@ -98,13 +98,13 @@ namespace xpas
             vector_type<unpositioned_phylo_kmer>::iterator _last_suffix_it;
         };
 
-        naive_dac_enumerator make_dac_end_iterator();
+        naive_DC_iterator make_dac_end_iterator();
 
         /// Creates a phylo-k-mer enumerator for the window based on the algorithm selected
-        std::unique_ptr<kmer_iterator_pimpl> make_enumerator(const algorithm& algorithm,
-                                                             window* window, size_t kmer_size,
-                                                             phylo_kmer::score_type threshold,
-                                                             impl::vector_type<unpositioned_phylo_kmer> prefixes);
+        std::unique_ptr<kmer_iterator_pimpl> make_iterator(const algorithm& algorithm,
+                                                           window* window, size_t start_pos,
+                                                           size_t kmer_size, phylo_kmer::score_type threshold,
+                                                           impl::vector_type<unpositioned_phylo_kmer> prefixes);
 
     }
 
@@ -144,7 +144,7 @@ namespace xpas
         using reference = kmer_iterator::reference;
 
         enumerate_kmers(const algorithm& algorithm,
-                        window* window, phylo_kmer::score_type threshold,
+                        window* window, size_t kmer_size, phylo_kmer::score_type threshold,
                         impl::vector_type<unpositioned_phylo_kmer> prefixes);
         enumerate_kmers(const enumerate_kmers&) = delete;
         enumerate_kmers(enumerate_kmers&&) = delete;
@@ -161,19 +161,16 @@ namespace xpas
     private:
         algorithm _algorithm;
         window* _window;
+        size_t _kmer_size;
         phylo_kmer::score_type _threshold;
     };
 
-    /// \brief A lightweight view of node_entry. Implements a "window" of size K over a node_entry.
+    /// \brief A lightweight view of node_entry. Implements a window of size k over a node_entry
     class window final
     {
     public:
-        using iterator = xpas::impl::naive_dac_enumerator;
-        //using iterator = xpas::impl::bnb_kmer_iterator;
-        using reference = iterator::reference;
-
-        window(const node_entry* entry, xpas::phylo_kmer::score_type threshold,
-                        xpas::phylo_kmer::pos_type start, xpas::phylo_kmer::pos_type end) noexcept;
+        window(const node_entry* entry, phylo_kmer::score_type threshold,
+               phylo_kmer::pos_type start, phylo_kmer::pos_type end) noexcept;
         window(const window& other) noexcept;
         window(window&&) = default;
         window& operator=(const window&) = delete;
@@ -181,29 +178,20 @@ namespace xpas
         ~window() noexcept = default;
 
         [[nodiscard]]
-        iterator begin();
-
-        [[nodiscard]]
-        iterator end() const noexcept;
-
-        [[nodiscard]]
         const node_entry* get_entry() const noexcept;
 
         [[nodiscard]]
         phylo_kmer::pos_type get_start_pos() const noexcept;
-        void set_start_pos(xpas::phylo_kmer::pos_type pos);
+        void set_start_pos(phylo_kmer::pos_type pos);
 
         [[nodiscard]]
         phylo_kmer::pos_type get_end_pos() const noexcept;
         void set_end_pos(phylo_kmer::pos_type pos);
 
         [[nodiscard]]
-        size_t width() const noexcept;
-
-        [[nodiscard]]
         phylo_kmer::score_type get_threshold() const noexcept;
 
-        void set_prefixes(impl::vector_type<xpas::unpositioned_phylo_kmer> prefixes);
+        void set_prefixes(impl::vector_type<unpositioned_phylo_kmer> prefixes);
 
         [[nodiscard]]
         size_t get_prefix_size() const noexcept;
@@ -213,9 +201,9 @@ namespace xpas
     private:
         const node_entry* _entry;
 
-        xpas::phylo_kmer::score_type _threshold;
-        xpas::phylo_kmer::pos_type _start;
-        xpas::phylo_kmer::pos_type _end;
+        phylo_kmer::score_type _threshold;
+        phylo_kmer::pos_type _start;
+        phylo_kmer::pos_type _end;
 
         /// The vector of precomputed prefixes for this window.
         /// Can be obtained from iteration of the previous window

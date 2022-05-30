@@ -481,28 +481,22 @@ namespace xpas
         for (auto node_entry_ref : group)
         {
             const auto& node_entry = node_entry_ref.get();
+            //std::cout << "NODE " << node_entry.get_label() << std::endl;
 
             for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             {
-                auto ek = enumerate_kmers(_algorithm, &window, log_threshold, {});
-
-                for (auto it = ek.begin(); it != ek.end(); ++it)
-                //for (const auto& kmer : )
+                //std::cout << "WINDOW " << window.get_start_pos() << std::endl;
+                for (const auto& kmer : enumerate_kmers(_algorithm, &window, _kmer_size, log_threshold, {}))
                 {
-                    const auto& kmer = *it;
+                    //std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
 
-                /*for (const auto& kmer : window)
-                {
-                    xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
-                    ++count;
-                }*/
             }
         }
 
-        return {std::move(hash_maps), count};
+        return { std::move(hash_maps), count };
     }
 
     #endif
