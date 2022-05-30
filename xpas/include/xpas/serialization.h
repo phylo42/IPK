@@ -201,6 +201,24 @@ namespace boost::serialization
         }
     }
 
+    /// Loads the tree index: the number of the nodes in the subtree for every node,
+    ///     the total branch length in the subtree
+    template<class Archive>
+    std::vector<xpas::phylo_node::node_index> load_tree_index(Archive& ar)
+    {
+        size_t num_nodes;
+        ar & num_nodes;
+
+        std::vector<xpas::phylo_node::node_index> index(num_nodes);
+        for (size_t i = 0; i < num_nodes; ++i)
+        {
+            ar & index[i].subtree_num_nodes;
+            ar & index[i].subtree_total_length;
+        }
+        return index;
+    }
+
+
     template<class Archive>
     inline void load(Archive& ar,
                      xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
@@ -264,24 +282,6 @@ namespace boost::serialization
                 }
             }
         }
-    }
-
-
-    /// Loads the tree index: the number of the nodes in the subtree for every node,
-    ///     the total branch length in the subtree
-    template<class Archive>
-    std::vector<xpas::phylo_node::node_index> load_tree_index(Archive& ar)
-    {
-        size_t num_nodes;
-        ar & num_nodes;
-
-        std::vector<xpas::phylo_node::node_index> index(num_nodes);
-        for (size_t i = 0; i < num_nodes; ++i)
-        {
-            ar & index[i].subtree_num_nodes;
-            ar & index[i].subtree_total_length;
-        }
-        return index;
     }
 
     template<class Archive>
