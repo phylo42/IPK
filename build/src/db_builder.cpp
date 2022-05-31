@@ -107,6 +107,7 @@ namespace xpas
         const phylo_tree& _original_tree;
         const phylo_tree& _extended_tree;
 
+        //const proba_matrix& _matrix;
         const proba_matrix& _matrix;
         const ghost_mapping& _extended_mapping;
         const ar::mapping& _ar_mapping;
@@ -478,15 +479,17 @@ namespace xpas
 
         size_t count = 0;
         const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
-        for (auto node_entry_ref : group)
+        for (auto node_matrix_ref : group)
         {
-            const auto& node_entry = node_entry_ref.get();
-            //std::cout << "NODE " << node_entry.get_label() << std::endl;
+            const auto& node_matrix = node_matrix_ref.get();
+            //std::cout << "NODE " << std::endl; //<< node_matrix.get_label() << std::endl;
 
-            for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
+            //for (const auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
+            for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
             {
-                //std::cout << "WINDOW " << window.get_start_pos() << std::endl;
-                for (const auto& kmer : enumerate_kmers(_algorithm, &window, _kmer_size, log_threshold, {}))
+                //std::cout << "WINDOW " << window.get_position() << std::endl;
+                const auto dcla = xpas::DCLA(window, _kmer_size, log_threshold);
+                for (const auto& kmer : dcla.get_result())
                 {
                     //std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);

@@ -10,7 +10,7 @@ size_t proba_matrix::num_branches() const
 
 size_t proba_matrix::num_sites() const
 {
-    return std::begin(_data)->second.get_alignment_size();
+    return std::begin(_data)->second.width();
 }
 
 proba_matrix::mapped_type& proba_matrix::operator[](const std::string& ar_label)

@@ -2,11 +2,11 @@
 #define RAPPAS_CPP_PROBA_MATRIX_H
 
 #include <unordered_map>
-#include "node_entry.h"
+#include <xpas/phylo_kmer.h>
+#include "window.h"
 
 namespace xpas
 {
-
     /// \brief A posterior probabilities matrix class.
     /// \details A matrix class for storing posterior probabilities, given by the ancestral reconstruction
     /// algorithm. So, this is a matrix of size [#branch_nodes x #sites x #variants], where:
@@ -19,8 +19,8 @@ namespace xpas
         using branch_type = xpas::phylo_kmer::branch_type;
         static const branch_type NOT_A_LABEL = std::numeric_limits<branch_type>::max();
 
-        /// a map for a fast access to a submatrix by branch node label
-        using storage = std::unordered_map<std::string, node_entry>;
+        /// to map node labels into corresponding matrices
+        using storage = std::unordered_map<std::string, matrix>;
         using iterator = typename storage::iterator;
         using const_iterator = typename storage::const_iterator;
         using mapped_type = storage::mapped_type;

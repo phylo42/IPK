@@ -102,6 +102,8 @@ namespace xpas::ar
         proba_matrix matrix;
         std::ifstream infile(_file_name);
 
+        throw std::runtime_error("PhyML is not supported in this version of XPAS.");
+
         bool is_header = true;
 
         string line;
@@ -140,13 +142,13 @@ namespace xpas::ar
                 auto it = matrix.find(node_label);
                 if (it != std::end(matrix))
                 {
-                    it->second.push_back(new_row);
+                    //it->second.push_back(new_row);
                 }
                 else
                 {
                     /// WARNING: it is cheap to copy new_row here in the case of DNA.
                     /// It is probably makes sense to move it in the case of amino acids though.
-                    matrix[node_label] = proba_matrix::mapped_type{ node_label, { new_row } };
+                    //matrix[node_label] = proba_matrix::mapped_type{ node_label, { new_row } };
                 }
             }
         }
@@ -198,12 +200,21 @@ namespace xpas::ar
 
         _in.read_header(::io::ignore_extra_column, "Node", "p_A", "p_C", "p_G", "p_T");
 
+        proba_matrix result;
+
         std::string node_label;
-        xpas::phylo_kmer::score_type a, c, g, t;
+        phylo_kmer::score_type a, c, g, t;
         while (_in.read_row(node_label, a, c, g, t))
         {
+            auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
+
             /// log-transform the probabilities
-            auto new_row = row_type { { { a, 0 }, { c, 1 }, { g, 2 }, { t, 3 } } };
+            auto log = [](auto value) { return std::log10(value); };
+            std::transform(begin(new_column), end(new_column), begin(new_column), log);
+
+            result[node_label].get_data().push_back(new_column);
+        }
+
 
 #elif SEQ_TYPE_AA
         ::io::CSVReader<21,
@@ -247,27 +258,8 @@ namespace xpas::ar
                              """SEQ_TYPE_DNA"""
                              """SEQ_TYPE_AA""");
 #endif
-            auto log = [](const proba_pair& p) { return proba_pair{ std::log10(p.score), p.index }; };
-            std::transform(begin(new_row), end(new_row), begin(new_row), log);
 
-            // sort them
-            auto compare = [](const proba_pair& p1, const proba_pair& p2) { return p1.score > p2.score; };
-            std::sort(begin(new_row), end(new_row), compare);
-
-            /// insert into the matrix
-            auto it = matrix.find(node_label);
-            if (it != std::end(matrix))
-            {
-                it->second.push_back(new_row);
-            }
-            else
-            {
-                /// WARNING: it is cheap to copy new_row here in the case of DNA.
-                /// It probably makes sense to move it in the case of amino acids though.
-                matrix[node_label] = proba_matrix::mapped_type{ node_label, { new_row } };
-            }
-        }
-        return matrix;
+        return result;
     }
 
     /// Figures out which AR software is used by running BINARY_FILE --help

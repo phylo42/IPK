@@ -2,7 +2,6 @@
 #define XPAS_WINDOW_H
 
 #include "row.h"
-#include "pk_compute.h"
 #include <stack>
 #include <memory>
 
@@ -10,147 +9,185 @@ namespace xpas::impl
 {
     template<class T>
     using vector_type = std::vector<T>;
+
+    using score_t = phylo_kmer::score_type;
 }
 
 namespace xpas
 {
-    class node_entry;
-    class window;
+    class matrix
+    {
+    public:
+        using column = impl::vector_type<impl::score_t>;
+
+        matrix() noexcept = default;
+        explicit matrix(std::vector<column> data);
+        matrix(const matrix&) = delete;
+        matrix(matrix&&) noexcept = default;
+        ~matrix() noexcept = default;
+
+        matrix& operator=(const matrix&) = delete;
+        matrix& operator=(matrix&&) noexcept = default;
+
+        [[nodiscard]]
+        impl::score_t get(size_t i, size_t j) const;
+
+        [[nodiscard]]
+        size_t width() const;
+
+        [[nodiscard]]
+        bool empty() const;
+
+        [[nodiscard]]
+        std::pair<size_t, impl::score_t> max_at(size_t column) const;
+
+        [[nodiscard]]
+        const std::vector<column>& get_data() const;
+
+        std::vector<column>& get_data();
+
+        [[nodiscard]]
+        const column& get_column(size_t j) const;
+
+        [[nodiscard]]
+        impl::score_t range_product(size_t start_pos, size_t len) const;
+
+    private:
+        std::vector<column> _data;
+
+        std::vector<impl::score_t> _best_scores;
+    };
 
     namespace impl
     {
-
-        /// An abstract class for phylo-k-mer iterators. Used as part of
-        /// "pointer to implementation" idiom in kmer_iterator
-        /// An iterator takes a window and implements an algorithm that
-        /// enumerates all alive k-mers in this window given the threshold.
-        /// Needed to be able to plug in and compare different phylo-k-mer
-        /// computation algorithms
-        class kmer_iterator_pimpl
-        {
-        public:
-            /// Member types
-            using iterator_category = std::forward_iterator_tag;
-            using reference = const xpas::unpositioned_phylo_kmer&;
-            using pointer = const xpas::unpositioned_phylo_kmer*;
-
-            /// Constructors and a virtual destructor
-            kmer_iterator_pimpl(window* window, size_t kmer_size, phylo_kmer::score_type threshold);
-            virtual ~kmer_iterator_pimpl() noexcept = default;
-            kmer_iterator_pimpl(const kmer_iterator_pimpl&) = delete;
-            kmer_iterator_pimpl(kmer_iterator_pimpl&&) = default;
-
-            /// Only move assignment is allowed
-            kmer_iterator_pimpl& operator=(const kmer_iterator_pimpl&) = delete;
-            /// not virtual
-            kmer_iterator_pimpl& operator=(kmer_iterator_pimpl&& rhs) noexcept;
-
-            bool operator==(const kmer_iterator_pimpl& rhs) const noexcept;
-            bool operator!=(const kmer_iterator_pimpl& rhs) const noexcept;
-
-            virtual kmer_iterator_pimpl& operator++() = 0;
-
-            reference operator*() const noexcept;
-            pointer operator->() const noexcept;
-
-        protected:
-            window* _window;
-
-            size_t _kmer_size;
-            phylo_kmer::score_type _threshold;
-
-            xpas::unpositioned_phylo_kmer _current;
-        };
-
-
-        /// \brief Enumerates phylo-k-mers in a given window using divide-and-conquer
-        /// (without applying the lookahead technique)
-        class naive_DC_iterator : public kmer_iterator_pimpl
-        {
-        public:
-            naive_DC_iterator(window* view, size_t kmer_size, phylo_kmer::score_type threshold,
-                              phylo_kmer::pos_type start_pos, size_t prefix_size,
-                              vector_type<unpositioned_phylo_kmer> prefixes) noexcept;
-            naive_DC_iterator(const naive_DC_iterator&) = delete;
-            naive_DC_iterator(naive_DC_iterator&&) = default;
-            naive_DC_iterator& operator=(const naive_DC_iterator&) = delete;
-            naive_DC_iterator& operator=(naive_DC_iterator&& rhs) noexcept;
-            ~naive_DC_iterator() noexcept override = default;
-
-            //bool operator==(const naive_dac_enumerator& rhs) const noexcept;
-            //bool operator!=(const naive_dac_enumerator& rhs) const noexcept;
-
-            naive_DC_iterator& operator++() override;
-        private:
-            unpositioned_phylo_kmer _next_kmer();
-
-            void _select_suffix_bound();
-            void _finish_iterator();
-
-            size_t _prefix_size;
-            phylo_kmer::pos_type _start_pos;
-
-            vector_type<unpositioned_phylo_kmer> _prefixes;
-            vector_type<unpositioned_phylo_kmer>::iterator _prefix_it;
-
-            vector_type<unpositioned_phylo_kmer> _suffixes;
-            vector_type<unpositioned_phylo_kmer>::iterator _suffix_it;
-            vector_type<unpositioned_phylo_kmer>::iterator _last_suffix_it;
-        };
-
-        naive_DC_iterator make_dac_end_iterator();
-
-        /// Creates a phylo-k-mer enumerator for the window based on the algorithm selected
-        std::unique_ptr<kmer_iterator_pimpl> make_iterator(const algorithm& algorithm,
-                                                           window* window, size_t start_pos,
-                                                           size_t kmer_size, phylo_kmer::score_type threshold,
-                                                           impl::vector_type<unpositioned_phylo_kmer> prefixes);
-
+        class window_iterator;
+        class chained_window_iterator;
     }
 
-    /// Iterates over alive k-mers in a given window.
-    /// This is just a composition-based wrapper for impl::kmer_iterator_pimpl
-    class kmer_iterator
+    class window
     {
+        friend class impl::window_iterator;
+        friend class impl::chained_window_iterator;
     public:
-        using reference = impl::kmer_iterator_pimpl::reference;
-        using pointer = impl::kmer_iterator_pimpl::pointer;
+        window(const matrix* m, size_t start_pos, size_t size);
+        window(const window&) = delete;
+        window(window&&) noexcept = default;
+        //window& operator=(const window& other) = default;
+        window& operator=(const window& other) = delete;
+        window& operator=(window&&) noexcept = default;
 
-        kmer_iterator(const xpas::algorithm& algorithm, window* window,
-                      size_t kmer_size, phylo_kmer::score_type threshold);
-        kmer_iterator(const kmer_iterator&) = delete;
-        kmer_iterator(kmer_iterator&&) = default;
-        kmer_iterator& operator=(const kmer_iterator&) = delete;
-        kmer_iterator& operator=(kmer_iterator&& rhs) noexcept = default;
-        ~kmer_iterator() noexcept = default;
+        bool operator==(const window& other) const;
+        bool operator!=(const window& other) const;
 
-        reference operator*() const noexcept;
-        pointer operator->() const noexcept;
+        [[nodiscard]]
+        impl::score_t get(size_t i, size_t j) const;
 
-        bool operator==(const kmer_iterator& rhs) const noexcept;
-        bool operator!=(const kmer_iterator& rhs) const noexcept;
+        [[nodiscard]]
+        size_t size() const;
 
-        kmer_iterator& operator++();
+        [[nodiscard]]
+        bool empty() const;
+
+        [[nodiscard]]
+        size_t get_position() const;
+
+
+        [[nodiscard]]
+        std::pair<size_t, impl::score_t> max_at(size_t column) const;
+
+        [[nodiscard]]
+        matrix::column get_column(size_t j) const;
+
+
     private:
-        std::unique_ptr<impl::kmer_iterator_pimpl> _pimpl;
+        const matrix* _matrix;
+        size_t _start_pos;
+        size_t _size;
     };
 
-    /// A range-based wrapper for kmer_iterator
-    class enumerate_kmers
+    namespace impl
+    {
+        class window_iterator
+        {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using reference = window&;
+
+            window_iterator(const matrix* matrix, size_t kmer_size) noexcept;
+            window_iterator(const window_iterator&) = delete;
+            window_iterator(window_iterator&&) = delete;
+            window_iterator& operator=(const window_iterator&) = delete;
+            window_iterator& operator=(window_iterator&&) = delete;
+            ~window_iterator() = default;
+
+            window_iterator& operator++();
+
+            bool operator==(const window_iterator& rhs) const noexcept;
+            bool operator!=(const window_iterator& rhs) const noexcept;
+
+            reference operator*() noexcept;
+        private:
+            const matrix* _matrix;
+
+            window _window;
+
+            size_t _kmer_size;
+
+            size_t _current_pos;
+        };
+
+        class chained_window_iterator
+        {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using reference = window&;
+
+            chained_window_iterator(const matrix* matrix, size_t kmer_size);
+            chained_window_iterator(const chained_window_iterator&) = delete;
+            chained_window_iterator(window_iterator&&) = delete;
+            chained_window_iterator& operator=(const chained_window_iterator&) = delete;
+            chained_window_iterator& operator=(chained_window_iterator&&) = delete;
+            ~chained_window_iterator() = default;
+
+            chained_window_iterator& operator++();
+
+            bool operator==(const chained_window_iterator& rhs) const noexcept;
+            bool operator!=(const chained_window_iterator& rhs) const noexcept;
+
+            std::tuple<reference, reference, reference> operator*() noexcept;
+        private:
+            window _get_next_window();
+
+            const matrix* _matrix;
+
+            window _window;
+            window _previous_window;
+            window _next_window;
+
+            size_t _kmer_size;
+
+            // the first position j of the current chain of windows
+            size_t _chain_start;
+
+            // the first position j of the last chain possible
+            size_t _last_chain_pos;
+        };
+    }
+
+    class chain_windows
     {
     public:
         using iterator_category = std::forward_iterator_tag;
-        using const_iterator = kmer_iterator;
-        using reference = kmer_iterator::reference;
+        using const_iterator = impl::chained_window_iterator;
 
-        enumerate_kmers(const algorithm& algorithm,
-                        window* window, size_t kmer_size, phylo_kmer::score_type threshold,
-                        impl::vector_type<unpositioned_phylo_kmer> prefixes);
-        enumerate_kmers(const enumerate_kmers&) = delete;
-        enumerate_kmers(enumerate_kmers&&) = delete;
-        enumerate_kmers& operator=(const enumerate_kmers&) = delete;
-        enumerate_kmers& operator=(enumerate_kmers&& other) = delete;
-        ~enumerate_kmers() noexcept = default;
+        using reference = window&;
+
+        chain_windows(const matrix* matrix, size_t kmer_size);
+        chain_windows(const chain_windows&) = delete;
+        chain_windows(chain_windows&&) = delete;
+        chain_windows& operator=(const chain_windows&) = delete;
+        chain_windows& operator=(chain_windows&&) = delete;
+        ~chain_windows() noexcept = default;
 
         [[nodiscard]]
         const_iterator begin() const;
@@ -159,65 +196,8 @@ namespace xpas
         const_iterator end() const noexcept;
 
     private:
-        algorithm _algorithm;
-        window* _window;
+        const matrix* _matrix;
         size_t _kmer_size;
-        phylo_kmer::score_type _threshold;
     };
-
-    /// \brief A lightweight view of node_entry. Implements a window of size k over a node_entry
-    class window final
-    {
-    public:
-        window(const node_entry* entry, phylo_kmer::score_type threshold,
-               phylo_kmer::pos_type start, phylo_kmer::pos_type end) noexcept;
-        window(const window& other) noexcept;
-        window(window&&) = default;
-        window& operator=(const window&) = delete;
-        window& operator=(window&& other) noexcept;
-        ~window() noexcept = default;
-
-        [[nodiscard]]
-        const node_entry* get_entry() const noexcept;
-
-        [[nodiscard]]
-        phylo_kmer::pos_type get_start_pos() const noexcept;
-        void set_start_pos(phylo_kmer::pos_type pos);
-
-        [[nodiscard]]
-        phylo_kmer::pos_type get_end_pos() const noexcept;
-        void set_end_pos(phylo_kmer::pos_type pos);
-
-        [[nodiscard]]
-        phylo_kmer::score_type get_threshold() const noexcept;
-
-        void set_prefixes(impl::vector_type<unpositioned_phylo_kmer> prefixes);
-
-        [[nodiscard]]
-        size_t get_prefix_size() const noexcept;
-
-        void set_prefix_size(size_t size);
-
-    private:
-        const node_entry* _entry;
-
-        phylo_kmer::score_type _threshold;
-        phylo_kmer::pos_type _start;
-        phylo_kmer::pos_type _end;
-
-        /// The vector of precomputed prefixes for this window.
-        /// Can be obtained from iteration of the previous window
-        /// (according to the order of windows, given by chain_windows)
-        impl::vector_type<xpas::unpositioned_phylo_kmer> _prefixes;
-
-        /// The length of the precomputed prefixes stored in _prefixes.
-        /// It is zero if _prefixes if empty.
-        size_t _prefix_size;
-    };
-
-    bool operator==(const xpas::window& a, const xpas::window& b) noexcept;
-    bool operator!=(const xpas::window& a, const xpas::window& b) noexcept;
-
 }
-
 #endif //XPAS_WINDOW_H

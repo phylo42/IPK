@@ -1,436 +1,283 @@
 #include <cmath>
 #include <algorithm>
 #include <xpas/seq.h>
-#include <node_entry.h>
 #include <window.h>
 #include <cassert>
 
 using namespace xpas;
 using namespace xpas::impl;
 
-kmer_iterator_pimpl::kmer_iterator_pimpl(window* window, size_t kmer_size, phylo_kmer::score_type threshold)
-    : _window{window}
-    , _kmer_size{kmer_size}
-    , _threshold{threshold}
-    , _current{ unpositioned_phylo_kmer::na_key, unpositioned_phylo_kmer::na_score }
+matrix::matrix(std::vector<column> data)
+    : _data(std::move(data))
 {
-}
-
-kmer_iterator_pimpl& kmer_iterator_pimpl::operator=(kmer_iterator_pimpl&& rhs) noexcept
-{
-    if (*this != rhs)
+    _best_scores = std::vector<score_t>(_data.size() + 1, 1.0f);
+    score_t product = 1.0f;
+    for (size_t j = 0; j < _data.size(); ++j)
     {
-        _window = rhs._window;
-        _kmer_size = rhs._kmer_size;
-        _threshold = rhs._threshold;
-        _current = rhs._current;
+        const auto& [index_best, score_best] = max_at(j);
+        product *= score_best;
+        _best_scores[j + 1] = product;
     }
-    return *this;
 }
 
-bool kmer_iterator_pimpl::operator==(const kmer_iterator_pimpl& rhs) const noexcept
+score_t matrix::get(size_t i, size_t j) const
 {
-    return _window == rhs._window && _kmer_size == rhs._kmer_size && _threshold == rhs._threshold;
+    return _data[j][i];
 }
 
-bool kmer_iterator_pimpl::operator!=(const kmer_iterator_pimpl& rhs) const noexcept
+size_t matrix::width() const
 {
-    return !(*this == rhs);
+    return _data.size();
 }
 
-kmer_iterator_pimpl::reference kmer_iterator_pimpl::operator*() const noexcept
+bool matrix::empty() const
 {
-    return _current;
+    return _data.empty();
 }
 
-kmer_iterator_pimpl::pointer kmer_iterator_pimpl::operator->()  const noexcept
+std::pair<size_t, score_t> matrix::max_at(size_t column) const
 {
-    return &_current;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
-naive_DC_iterator xpas::impl::make_dac_end_iterator()
-{
-    return { nullptr, 0, 0.0, 0, 0, {} };
-}
-
-bool kmer_score_comparator(const unpositioned_phylo_kmer& k1, const unpositioned_phylo_kmer& k2)
-{
-    return k1.score > k2.score;
-}
-
-bool is_odd(int x)
-{
-    return x % 2;
-}
-
-/// Creates a vector of 1-mers from a column of PP matrix
-vector_type<xpas::unpositioned_phylo_kmer> get_column(const node_entry& entry, size_t pos)
-{
-    vector_type<xpas::unpositioned_phylo_kmer> column;
-    for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
+    size_t max_index = 0;
+    score_t max_score = _data[0][column];
+    for (size_t i = 1; i < _data.size(); ++i)
     {
-        const auto& letter = entry.at(pos, i);
-        column.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(letter.index, letter.score, pos));
-    }
-    return column;
-}
-
-/// Creates all combinations of prefixes and suffixes
-/// It does the same as dac_kmer_iterator::_next_kmer, but calculates all in one go, not on demand
-vector_type<xpas::unpositioned_phylo_kmer> join_mmers(const vector_type<xpas::unpositioned_phylo_kmer>& prefixes,
-                                                      const vector_type<xpas::unpositioned_phylo_kmer>& suffixes,
-                                                      size_t suffix_size,
-                                                      phylo_kmer::score_type threshold)
-{
-    vector_type<xpas::unpositioned_phylo_kmer> result;
-
-    for (const auto& prefix : prefixes)
-    {
-        const auto residual_threshold = threshold - prefix.score;
-
-        for (const auto& suffix : suffixes)
+        if (_data[i][column] > max_score)
         {
-            if (suffix.score < residual_threshold)
-            {
-                break;
-            }
-
-            const auto full_key = (prefix.key << (suffix_size * xpas::bit_length<xpas::seq_type>())) | suffix.key;
-            const auto full_score = prefix.score + suffix.score;
-            result.push_back(make_phylo_kmer<unpositioned_phylo_kmer>(full_key, full_score, 0));
+            max_score = _data[i][column];
+            max_index = i;
         }
     }
-    return result;
+    return { max_index, max_score };
 }
 
-naive_DC_iterator::naive_DC_iterator(window* window, size_t kmer_size, xpas::phylo_kmer::score_type threshold,
-                                     xpas::phylo_kmer::pos_type start_pos, size_t prefix_size,
-                                     vector_type<xpas::unpositioned_phylo_kmer> prefixes) noexcept
-    : kmer_iterator_pimpl{ window, kmer_size, threshold }
-    , _prefix_size{ 0 }
-    , _start_pos{ start_pos }
+const std::vector<matrix::column>& matrix::get_data() const
 {
-    /// if prefixes are not given, figure out their size
-    if (prefixes.empty())
-    {
-        /// kmer_size can also be zero, which means the end() iterator
-        const auto halfsize = size_t{ kmer_size / 2 };
-        _prefix_size = (halfsize >= 1) ? halfsize : kmer_size;
-    }
-    else
-    {
-        _prefix_size = prefix_size;
-    }
-
-    /// for the window of size 1, k-mers are trivial
-    if (kmer_size == 1)
-    {
-        _prefixes = get_column(*_window->get_entry(), _start_pos);
-        _prefix_it = _prefixes.begin();
-        _current = _next_kmer();
-    }
-    /// for all other window sizes:
-    /// if it is not the end()
-    else if (_prefix_size > 0)
-    {
-        // Calculate prefixes
-        {
-            /// if prefixes are provided, they are already calculated from the previous window
-            if (!prefixes.empty())
-            {
-                _prefixes = std::move(prefixes);
-            }
-            /// otherwise it's the very first window in the chain: calculate prefixes
-            else
-            {
-                auto it = (_prefix_size == 0)
-                          ? make_dac_end_iterator()
-                          : naive_DC_iterator(_window, _prefix_size, threshold, start_pos, 0, {});
-                const auto end = make_dac_end_iterator();
-                //std::cout << "\tprefix of " << _prefix_size << " from " << start_pos << ":" << std::endl;
-                for (; it != end; ++it)
-                {
-                    _prefixes.push_back(*it);
-                    //std::cout << "\t\t" << xpas::decode_kmer(it->key, _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
-                }
-            }
-
-            /// if k is odd, we need to join one more column to the window of prefixes
-            if (is_odd(kmer_size))
-            {
-                const auto temp_prefixes = std::move(_prefixes);
-                const auto central_column = get_column(*_window->get_entry(), _start_pos + _prefix_size);
-                _prefixes = join_mmers(temp_prefixes, central_column, 1, _threshold);
-                ++_prefix_size;
-            }
-            _prefix_it = _prefixes.begin();
-        }
-
-        // Calculate suffixes
-        {
-            auto it = (_prefix_size < kmer_size)
-                      ? naive_DC_iterator(_window, kmer_size - _prefix_size, threshold, start_pos + _prefix_size, 0, {})
-                      : make_dac_end_iterator();
-            const auto end = make_dac_end_iterator();
-            //std::cout << "\tsuffix of " << kmer_size - _prefix_size << " from " << start_pos + _prefix_size << ":" << std::endl;
-            for (; it != end; ++it)
-            {
-                _suffixes.push_back(*it);
-                //std::cout << "\t\t" << xpas::decode_kmer(it->key, kmer_size - _prefix_size)  << " " << std::pow(10, it->score) << std::endl;
-            }
-
-            _suffix_it = _suffixes.begin();
-        }
-
-        /// if there are no prefixes, the window is over
-        if (_prefixes.empty())
-        {
-            _finish_iterator();
-            _current = {};
-        }
-        else
-        {
-            _select_suffix_bound();
-            _current = _next_kmer();
-        }
-    }
+    return _data;
 }
 
-naive_DC_iterator& naive_DC_iterator::operator=(naive_DC_iterator&& rhs) noexcept
+std::vector<matrix::column>& matrix::get_data()
 {
-    if (*this != rhs)
-    {
-        _window = rhs._window;
-        _kmer_size = rhs._kmer_size;
-        _prefix_size = rhs._prefix_size;
-        _start_pos = rhs._start_pos;
-        _threshold = rhs._threshold;
-        _current = rhs._current;
-        _prefixes = std::move(rhs._prefixes);
-        _prefix_it = rhs._prefix_it;
-        _suffixes = std::move(rhs._suffixes);
-        _suffix_it = rhs._suffix_it;
-        _last_suffix_it = rhs._last_suffix_it;
-    }
-    return *this;
+    return _data;
 }
 
-naive_DC_iterator& naive_DC_iterator::operator++()
+const matrix::column& matrix::get_column(size_t j) const
 {
-    _current = _next_kmer();
-    return *this;
+    return _data[j];
 }
 
-unpositioned_phylo_kmer naive_DC_iterator::_next_kmer()
+score_t matrix::range_product(size_t start_pos, size_t len) const
 {
-    if (_prefix_it != _prefixes.end())
-    {
-        if (_kmer_size > 1)
-        {
-            while ((_suffix_it == _last_suffix_it) && (_prefix_it != _prefixes.end()))
-            {
-                ++_prefix_it;
-                _suffix_it = _suffixes.begin();
-                _select_suffix_bound();
-            }
-
-            if (_prefix_it != _prefixes.end())
-            {
-                const auto prefix = *_prefix_it;
-                const auto suffix = *_suffix_it;
-                const auto full_key =
-                    (prefix.key << ((_kmer_size - _prefix_size) * xpas::bit_length<xpas::seq_type>()))
-                    | suffix.key;
-                const auto full_score = prefix.score + suffix.score;
-                ++_suffix_it;
-                /*std::cout << "\t\tpairing "
-                    << xpas::decode_kmer(prefix.key, _prefix_size)  << " " << std::pow(10, prefix.score) << " "
-                    << xpas::decode_kmer(suffix.key, _kmer_size - _prefix_size)  << " " << std::pow(10, suffix.score) << " "
-                    << "= " << xpas::decode_kmer(full_key, _kmer_size)  << " " << std::pow(10, full_score) << std::endl;
-                    */
-                return make_phylo_kmer<unpositioned_phylo_kmer>(full_key, full_score, 0);
-            }
-        }
-        else
-        {
-            const auto kmer = *_prefix_it;
-            ++_prefix_it;
-            return kmer;
-        }
-    }
-
-    /// If we reached this line, the iterator is over
-    _finish_iterator();
-    return {};
+    return _best_scores[start_pos + len] / _best_scores[start_pos];
 }
 
-void naive_DC_iterator::_select_suffix_bound()
-{
-    const auto residual_threshold = _threshold - _prefix_it->score;
-    _last_suffix_it = std::partition(_suffixes.begin(), _suffixes.end(),
-                                     [residual_threshold](auto pk) { return pk.score >= residual_threshold;});
-}
-
-void naive_DC_iterator::_finish_iterator()
-{
-    if (_window != nullptr)
-    {
-        /// Save suffixes of this window as prefixes of the next window
-        _window->set_prefixes(std::move(_suffixes));
-        /// save their length
-        _window->set_prefix_size(_kmer_size - _prefix_size);
-    }
-
-    /// Now we can safely mark the iterator as ended
-    *this = make_dac_end_iterator();
-}
-
-std::unique_ptr<kmer_iterator_pimpl> impl::make_iterator(const algorithm& algorithm, window* window, size_t start_pos,
-                                                         size_t kmer_size, phylo_kmer::score_type threshold,
-                                                         vector_type<xpas::unpositioned_phylo_kmer> prefixes)
-{
-    return std::make_unique<naive_DC_iterator>(window, kmer_size, threshold, start_pos, kmer_size / 2, std::move(prefixes));
-}
-
-kmer_iterator::kmer_iterator(const xpas::algorithm& algorithm, window* window, size_t kmer_size, phylo_kmer::score_type threshold)
-    : _pimpl(impl::make_iterator(algorithm, window,
-                                 (window == nullptr) ? 0 : (window->get_start_pos()), // for end() iterators there is no window
-                                 kmer_size, threshold, {}))
+window::window(const matrix* m, size_t start_pos, size_t size)
+    : _matrix(m), _start_pos(start_pos), _size(size)
 {
 }
-
-kmer_iterator::reference kmer_iterator::operator*() const noexcept
-{
-    return _pimpl->operator*();
-}
-
-kmer_iterator::pointer kmer_iterator::operator->() const noexcept
-{
-    return _pimpl->operator->();
-}
-
-bool kmer_iterator::operator==(const kmer_iterator& rhs) const noexcept
-{
-    return *_pimpl == *(rhs._pimpl);
-}
-
-bool kmer_iterator::operator!=(const kmer_iterator& rhs) const noexcept
-{
-    return !(*this == rhs);
-}
-
-kmer_iterator& kmer_iterator::operator++()
-{
-    _pimpl->operator++();
-    return *this;
-}
-
-enumerate_kmers::enumerate_kmers(const algorithm& algorithm, window* window,
-                                 size_t kmer_size, phylo_kmer::score_type threshold,
-                                 impl::vector_type<unpositioned_phylo_kmer> prefixes)
-    : _algorithm(algorithm), _window(window), _kmer_size(kmer_size), _threshold(threshold)
-{
-}
-
-enumerate_kmers::const_iterator enumerate_kmers::begin() const
-{
-    return { _algorithm, _window, _kmer_size, _threshold };
-}
-
-enumerate_kmers::const_iterator enumerate_kmers::end() const noexcept
-{
-    return { _algorithm, nullptr, 0, 0.0 };
-}
-
-window::window(const node_entry* entry, phylo_kmer::score_type threshold,
-               phylo_kmer::pos_type start, phylo_kmer::pos_type end) noexcept
-    : _entry{ entry }
-    , _threshold{ threshold }
-    , _start{ start }
-    , _end{ end }
-    /// _prefix_size will be set by the dac_iterator later
-    , _prefix_size{ 0 }
-    /// same for _prefixes. At the beginning it's empty
-{}
-
-window::window(const window& other) noexcept
-    : window{ other._entry, other._threshold, other._start, other._end }
-{
-    /// We need the copy constructor, but only for windows without precomputed prefixes.
-    /// Check that we never copy those around
-    assert(other._prefixes.empty());
-}
-
-
+/*
 window& window::operator=(window&& other) noexcept
 {
     if (*this != other)
     {
-        _entry = other._entry;
-        _start = other._start;
-        _end = other._end;
-        other._entry = nullptr;
-        other._start = 0;
-        other._end = 0;
+        _matrix = std::move(other._matrix);
+        _start_pos = other._start_pos;
+        _size = other._size;
+        _best_scores = other._best_scores;
+    }
+    return *this;
+}*/
+
+bool window::operator==(const window& other) const
+{
+    /// FIXME:
+    /// Let us imagine those windows are over the same matrix
+    return _start_pos == other._start_pos && _size == other._size;
+}
+
+bool window::operator!=(const window& other) const
+{
+    return !(*this == other);
+}
+
+score_t window::get(size_t i, size_t j) const
+{
+    return _matrix->get(i, _start_pos + j);
+}
+
+size_t window::size() const
+{
+    return _size;
+}
+
+bool window::empty() const
+{
+    return _size == 0;
+}
+
+size_t window::get_position() const
+{
+    return _start_pos;
+}
+
+matrix::column window::get_column(size_t j) const
+{
+    return _matrix->get_column(j);
+}
+
+std::pair<size_t, score_t> window::max_at(size_t column) const
+{
+    size_t max_index = 0;
+    score_t max_score = get(0, column);
+    for (size_t i = 1; i < seq_traits::alphabet_size; ++i)
+    {
+        if (get(i, column) > max_score)
+        {
+            max_score = get(i, column);
+            max_index = i;
+        }
+    }
+    return { max_index, max_score };
+}
+
+impl::window_iterator::window_iterator(const matrix* matrix, size_t kmer_size) noexcept
+    : _matrix(matrix), _window(matrix, 0, kmer_size), _kmer_size(kmer_size), _current_pos(0)
+{
+}
+
+impl::window_iterator& impl::window_iterator::operator++()
+{
+    _current_pos++;
+    if (_current_pos + _kmer_size < _matrix->width())
+    {
+        //_window = window(_matrix, _current_pos, _kmer_size);
+        _window._start_pos = _current_pos;
+        _window._size = _kmer_size;
+    }
+    else
+    {
+        // end iterator
+        //_window = window(_matrix, 0, 0);
+        _window._start_pos = 0;
+        _window._size = 0;
+        _kmer_size = 0;
     }
     return *this;
 }
 
-const node_entry* window::get_entry() const noexcept
+bool impl::window_iterator::operator==(const window_iterator& rhs) const noexcept
 {
-    return _entry;
+    return _window == rhs._window;
 }
 
-xpas::phylo_kmer::pos_type window::get_start_pos() const noexcept
+bool impl::window_iterator::operator!=(const window_iterator& rhs) const noexcept
 {
-    return _start;
+    return !(*this == rhs);
 }
 
-void window::set_start_pos(xpas::phylo_kmer::pos_type pos)
+impl::window_iterator::reference impl::window_iterator::operator*() noexcept
 {
-    _start = pos;
+    return _window;
 }
 
-xpas::phylo_kmer::pos_type window::get_end_pos() const noexcept
+
+impl::chained_window_iterator::chained_window_iterator(const matrix* matrix, size_t kmer_size)
+    : _matrix(matrix),
+    _window(matrix, 0, kmer_size),
+    _previous_window(matrix, 0, 0),
+    _next_window(matrix, 0, 0),
+    _kmer_size(kmer_size)
 {
-    return _end;
+    if (_kmer_size > matrix->width())
+    {
+        throw std::runtime_error("Window is too small");
+    }
+
+    /// The start position of the last possible chain
+    _last_chain_pos = _kmer_size / 2 - 1;
+    _chain_start = 0;
+
+    // There is no previous window
+    _previous_window = window(_matrix, 0, 0);
+
+    const auto prefix_size = _kmer_size / 2;
+    const auto suffix_size = _kmer_size - prefix_size;
+    /// see if the next window is in the current chain
+    if (size_t(_window.get_position() + suffix_size + _kmer_size) <= _matrix->width())
+    {
+        _next_window = { _matrix, _window.get_position() + suffix_size, _kmer_size };
+    }
+    /// if not, see if there is another chain
+    else if ((_chain_start + 1 <= _last_chain_pos) && (_chain_start + 1 + _kmer_size <= _matrix->width()))
+    {
+        _next_window = { _matrix, _chain_start + 1, _kmer_size };
+    }
+    /// otherwise, there is only one window
+    else
+    {
+        _next_window = { _matrix, 0, 0 };
+    }
 }
 
-void window::set_end_pos(phylo_kmer::pos_type pos)
+impl::chained_window_iterator& impl::chained_window_iterator::operator++()
 {
-    _end = pos;
+    _previous_window = std::move(_window);
+    _window = std::move(_next_window);
+    _next_window = _get_next_window();
+    return *this;
 }
 
-xpas::phylo_kmer::score_type window::get_threshold() const noexcept
+window impl::chained_window_iterator::_get_next_window()
 {
-    return _threshold;
+    /// Size of prefixes saved from the last window
+    /// Only even k
+    const auto prefix_size = _kmer_size / 2;
+    const auto suffix_size = _kmer_size - prefix_size;
+
+    /// continue the chain if possible
+    if (size_t(_window.get_position() + suffix_size + _kmer_size) <= _matrix->width())
+    {
+        return { _matrix, _window.get_position() + suffix_size, _kmer_size };
+    }
+    /// if the chain is over, start the next one if possible
+    else if ((_chain_start + 1 <= _last_chain_pos) && (_chain_start + 1 + _kmer_size <= _matrix->width()))
+    {
+        ++_chain_start;
+        return { _matrix, _chain_start, _kmer_size };
+    }
+    /// otherwise, the iterator is over
+    else
+    {
+        _kmer_size = 0;
+        return { _matrix, 0, 0 };
+    }
 }
 
-void window::set_prefixes(impl::vector_type<xpas::unpositioned_phylo_kmer> prefixes)
+
+bool impl::chained_window_iterator::operator==(const chained_window_iterator& rhs) const noexcept
 {
-    _prefixes = std::move(prefixes);
+    return _window == rhs._window;
 }
 
-size_t window::get_prefix_size() const noexcept
+bool impl::chained_window_iterator::operator!=(const chained_window_iterator& rhs) const noexcept
 {
-    return _prefix_size;
+    return !(*this == rhs);
 }
 
-void window::set_prefix_size(size_t size)
+std::tuple<window&, window&, window&> impl::chained_window_iterator::operator*() noexcept
 {
-    _prefix_size = size;
+    return { _previous_window, _window, _next_window };
 }
 
-bool xpas::operator==(const window& a, const window& b) noexcept
+chain_windows::chain_windows(const matrix* matrix, size_t kmer_size)
+    : _matrix{ matrix }, _kmer_size{ kmer_size }
+{}
+
+chain_windows::const_iterator chain_windows::begin() const
 {
-    return (a.get_start_pos() == b.get_start_pos()) &&
-           (a.get_end_pos() == b.get_end_pos()) &&
-           (a.get_entry() == b.get_entry());
+    return { _matrix, _kmer_size };
 }
 
-bool xpas::operator!=(const window& a, const window& b) noexcept
+chain_windows::const_iterator chain_windows::end() const noexcept
 {
-    return !(a == b);
+    return { _matrix, 0 };
 }

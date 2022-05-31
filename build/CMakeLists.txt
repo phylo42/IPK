@@ -27,7 +27,6 @@ set(SOURCES
         src/extended_tree.cpp include/extended_tree.h
         src/filter.cpp include/filter.h
         src/main.cpp
-        src/node_entry.cpp include/node_entry.h
         src/window.cpp include/window.h
         src/pk_compute.cpp include/pk_compute.h
         src/proba_matrix.cpp include/proba_matrix.h
