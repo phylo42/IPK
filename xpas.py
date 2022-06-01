@@ -267,5 +267,14 @@ def build_database(arbinary, #database,
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
 
+def db_diff(db1: str, db2: str) -> bool:
+    return False
+
+
+@xpas.command()
+def diff():
+    pass
+
+
 if __name__ == "__main__":
     xpas()
