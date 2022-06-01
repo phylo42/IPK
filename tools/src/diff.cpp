@@ -21,7 +21,7 @@ public:
         T b_value;
     };
 
-    int check()
+    int check(bool verbose)
     {
         {
             const auto& [match, va, vb] = check_sequence_type();
@@ -76,6 +76,23 @@ public:
                       << va << "\t" << vb << std::endl;
         }
 
+        {
+            const auto& [match, diffs] = check_phylo_kmers();
+            std::cout << "Phylo-k-mer scores:\t" << bool_to_OK(match) << std::endl;
+
+            if (verbose)
+            {
+                auto val_or_nan_to_string = [](auto score) { return std::isnan(score) ? "-" : std::to_string(score); };
+
+                std::cout << "\t\tcode\tk-mer\tbranch\tA score\tB score\n";
+                for (const auto& [kmer, branch, a_score, b_score] : diffs)
+                {
+                    std::cout << "\t\t" << kmer << "\t" << xpas::decode_kmer(kmer, a.kmer_size()) << "\t" << branch << "\t"
+                              << val_or_nan_to_string(a_score) << "\t"
+                              << val_or_nan_to_string(b_score) << "\t" << std::endl;
+                }
+            }
+        }
         return 0;
     }
 
@@ -148,8 +165,95 @@ public:
         return { a_size == b_size, a_size, b_size };
     }
 
+    using pk_map = std::unordered_map<xpas::phylo_kmer::branch_type, xpas::phylo_kmer::score_type>;
 
+    template<class T>
+    pk_map to_map(const T& x)
+    {
+        pk_map va;
+        for (const auto& [a_branch, a_score] : x)
+        {
+            va[a_branch] = a_score;
+        }
+        return va;
+    }
 
+    struct pk_diff
+    {
+        xpas::phylo_kmer::key_type kmer;
+        xpas::phylo_kmer::branch_type branch;
+        xpas::phylo_kmer::score_type a_value;
+        xpas::phylo_kmer::score_type b_value;
+    };
+
+    std::tuple<bool, std::vector<pk_diff>> check_phylo_kmers()
+    {
+        const double EPS = 1e-6;
+
+        bool match = true;
+        std::vector<pk_diff> diffs;
+
+        for (const auto& [kmer, a_entries] : a)
+        {
+            const auto va = to_map(a_entries);
+
+            if (auto b_entries = b.search(kmer); b_entries)
+            {
+                for (const auto& [b_branch, b_score] : *b_entries)
+                {
+                    /// (kmer, branch) is scored in both A and B, check the values
+                    if (const auto& it = va.find(b_branch); it != va.end())
+                    {
+                        const auto a_score = it->second;
+                        bool score_match = std::fabs(a_score - b_score) < EPS;
+
+                        /// scored differently
+                        if (!score_match)
+                        {
+                            diffs.push_back({ kmer, b_branch, a_score, b_score });
+                        }
+
+                        match &= score_match;
+                    }
+                    /// the k-mer exists in both A and B, but in B there is a branch
+                    /// that is not scored in A
+                    else
+                    {
+                        match = false;
+                    }
+                }
+            }
+            /// this k-mer does not exist in B, report all branches
+            else
+            {
+                match = false;
+
+                for (const auto& [a_branch, a_score] : a_entries)
+                {
+                    diffs.push_back({ kmer, a_branch, a_score, xpas::phylo_kmer::na_score });
+                }
+            }
+        }
+
+        /// We also need to find k-mers in B that do not exist in A.
+        /// Those are not covered by the loop above
+        for (const auto& [kmer, b_entries] : b)
+        {
+            auto a_entries = a.search(kmer);
+            if (!a_entries)
+            {
+                /// this k-mer does not exist in A, report all branches
+                match = false;
+
+                for (const auto& [b_branch, b_score] : b_entries)
+                {
+                    diffs.push_back({ kmer, b_branch, xpas::phylo_kmer::na_score, b_score });
+                }
+
+            }
+        }
+        return { match, diffs };
+    }
 
 private:
     std::string a_filename;
@@ -159,16 +263,15 @@ private:
 };
 
 
-
-
 int main(int argc, char** argv)
 {
-    if (argc != 3)
+    if (argc != 4)
     {
-        std::cout << "Usage:\n\t" << argv[0] << " DB_FILE1 DB_FILE2" << std::endl;
+        std::cout << "Usage:\n\t" << argv[0] << "[0/1 VERBOSE] DB_FILE1 DB_FILE2" << std::endl;
         return -1;
     }
+    bool verbose = std::string(argv[1]) == "1";
 
-    diff checker(argv[1], argv[2]);
-    return checker.check();
+    diff checker(argv[2], argv[3]);
+    return checker.check(verbose);
 }
