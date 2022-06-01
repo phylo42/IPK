@@ -8,13 +8,8 @@ target_sources(diff PRIVATE src/diff.cpp)
 
 target_link_libraries(diff PRIVATE xpas::dna)
 
-target_include_directories(diff
-        PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/
-        )
-
-target_compile_options(diff PRIVATE -Wall -Wextra -Werror) #-Wpedantic)
+target_compile_options(diff PRIVATE -Wall -Wextra -Werror -Wpedantic)
 
 set_property(TARGET diff PROPERTY CXX_STANDARD 17)
+
 target_compile_features(diff PUBLIC cxx_std_17)
