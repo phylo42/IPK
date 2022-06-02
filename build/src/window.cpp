@@ -7,8 +7,8 @@
 using namespace xpas;
 using namespace xpas::impl;
 
-matrix::matrix(std::vector<column> data)
-    : _data(std::move(data))
+matrix::matrix(std::vector<column> data, std::string label)
+    : _data(std::move(data)), _label(std::move(label))
 {
     _best_scores = std::vector<score_t>(_data.size() + 1, 1.0f);
     score_t product = 1.0f;
@@ -50,6 +50,11 @@ std::pair<size_t, score_t> matrix::max_at(size_t column) const
     return { max_index, max_score };
 }
 
+void matrix::set_label(const std::string& label)
+{
+    _label = label;
+}
+
 const std::vector<matrix::column>& matrix::get_data() const
 {
     return _data;
@@ -58,6 +63,11 @@ const std::vector<matrix::column>& matrix::get_data() const
 std::vector<matrix::column>& matrix::get_data()
 {
     return _data;
+}
+
+std::string matrix::get_label() const
+{
+    return _label;
 }
 
 const matrix::column& matrix::get_column(size_t j) const
@@ -147,7 +157,7 @@ impl::window_iterator::window_iterator(const matrix* matrix, size_t kmer_size) n
 impl::window_iterator& impl::window_iterator::operator++()
 {
     _current_pos++;
-    if (_current_pos + _kmer_size < _matrix->width())
+    if (_current_pos + _kmer_size <= _matrix->width())
     {
         //_window = window(_matrix, _current_pos, _kmer_size);
         _window._start_pos = _current_pos;

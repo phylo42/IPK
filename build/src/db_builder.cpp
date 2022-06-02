@@ -99,7 +99,7 @@ namespace xpas
         ///        in the group correspond to one original node
         /// \return A hash map with phylo-kmers stored and a number of explored phylo-kmers
         [[nodiscard]]
-        std::pair<std::vector<group_hash_map>, size_t> explore_group(const proba_group& group) const;
+        std::pair<std::vector<group_hash_map>, size_t> explore_group(const proba_group& group, size_t postorder_id) const;
 
         /// \brief Working and output directory
         string _working_directory;
@@ -427,7 +427,7 @@ namespace xpas
             const auto matrices = get_submatrices(node_group);
 
             /// Explore k-mers of the group and store results in a hash map
-            const auto& [hash_maps, branch_count] = explore_group(matrices);
+            const auto& [hash_maps, branch_count] = explore_group(matrices, original_node_postorder_id);
 
             /// Save the group hashmap on disk
             size_t index = 0;
@@ -473,7 +473,7 @@ namespace xpas
     }
     #else
 
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
     {
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
@@ -482,19 +482,30 @@ namespace xpas
         for (auto node_matrix_ref : group)
         {
             const auto& node_matrix = node_matrix_ref.get();
-            //std::cout << "NODE " << std::endl; //<< node_matrix.get_label() << std::endl;
+
+            bool print = (postorder_id == 681);
+            /*bool print = true;
+            if (print)
+            {
+                std::cout << "NODE " << node_matrix.get_label() << " " << postorder_id << std::endl;// << " " << postorder_id << std::endl;
+            }*/
 
             //for (const auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
             //for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
-                //std::cout << "WINDOW " << window.get_position() << std::endl;
-                const auto dcla = xpas::DCLA(window, _kmer_size, log_threshold);
-                //const auto dcla = xpas::DCLA(window, _kmer_size, xpas::score_threshold(_omega, _kmer_size));
+                //if (print && window.get_position() == 1677)
+                //    std::cout << "WINDOW " << window.get_position() << std::endl;
 
-                for (const auto& kmer : dcla.get_result())
+                const auto alg = xpas::DCLA(window, _kmer_size, log_threshold);
+                //const auto alg = xpas::DCLA(window, _kmer_size, xpas::score_threshold(_omega, _kmer_size));
+                //const auto alg = xpas::BB(window, _kmer_size, log_threshold);
+
+                for (const auto& kmer : alg.get_result())
                 {
-                    //std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
+                    //if (print && xpas::decode_kmer(kmer.key, _kmer_size) == "AAAAGC")
+                    //    std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
+
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }

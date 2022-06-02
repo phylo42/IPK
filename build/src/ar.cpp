@@ -212,7 +212,9 @@ namespace xpas::ar
             auto log = [](auto value) { return std::log10(value); };
             std::transform(begin(new_column), end(new_column), begin(new_column), log);
 
-            result[node_label].get_data().push_back(new_column);
+            auto& matrix = result[node_label];
+            matrix.set_label(node_label);
+            matrix.get_data().push_back(new_column);
         }
 
 

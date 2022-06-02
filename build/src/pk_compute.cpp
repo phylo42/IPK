@@ -145,3 +145,97 @@ const std::vector<phylo_kmer>& DCLA::get_result() const
 {
     return _result_list;
 }
+
+
+
+
+BB::BB(const window& window, size_t k, phylo_kmer::score_type eps)
+    : _window(window)
+      , _k(k)
+      , _best_suffix_score()
+{
+    if (_window.empty())
+    {
+        throw std::runtime_error("The matrix is empty.");
+    }
+
+    if (_window.size() != k)
+    {
+        throw std::runtime_error("The size of the window is not k");
+    }
+
+    preprocess();
+
+    run(eps);
+}
+
+void BB::run(phylo_kmer::score_type eps)
+{
+    // Recursive BB
+    for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
+    {
+        bb(i, 0, 0, 1.0, eps);
+    }
+}
+
+void BB::bb(size_t i, size_t j, phylo_kmer::key_type prefix, phylo_kmer::score_type score, phylo_kmer::score_type eps)
+{
+    score = score + _window.get(i, j);
+    //score = score * _window.get(i, j);
+    prefix = (prefix << 2) | i;
+
+    if (j == _k - 1)
+    {
+        if (score > eps)
+        {
+            _result_list.push_back({prefix, score});
+            //_map[prefix] = score;
+            return;
+        }
+        else
+        {
+            return;
+        }
+    }
+
+    const auto best_suffix = _best_suffix_score[_k - (j + 2)];
+    if (score + best_suffix <= eps)
+    //if (score * best_suffix <= eps)
+    {
+        return;
+    }
+    else
+    {
+        for (size_t i2 = 0; i2 < seq_traits::alphabet_size; ++i2)
+        {
+            bb(i2, j + 1, prefix, score, eps);
+        }
+        return;
+    }
+}
+
+const std::vector<phylo_kmer>& BB::get_result() const
+{
+    return _result_list;
+}
+
+void BB::preprocess()
+{
+    // precalc the scores of the best suffixes
+    phylo_kmer::key_type prefix = 0;
+    //phylo_kmer::score_type score = 1.0;
+    phylo_kmer::score_type score = 0.0;
+
+    for (size_t i = 0; i < _k; ++i)
+    {
+        const auto& [index_best, score_best] = _window.max_at(_k - i - 1);
+
+        prefix = (index_best << i * 2) | prefix;
+        //score = score * score_best;
+        score = score + score_best;
+
+        _best_suffix_score.push_back(score);
+    }
+}
+
+

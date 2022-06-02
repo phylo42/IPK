@@ -21,7 +21,7 @@ namespace xpas
         using column = impl::vector_type<impl::score_t>;
 
         matrix() noexcept = default;
-        explicit matrix(std::vector<column> data);
+        matrix(std::vector<column> data, std::string label);
         matrix(const matrix&) = delete;
         matrix(matrix&&) noexcept = default;
         ~matrix() noexcept = default;
@@ -41,10 +41,15 @@ namespace xpas
         [[nodiscard]]
         std::pair<size_t, impl::score_t> max_at(size_t column) const;
 
+        void set_label(const std::string& label);
+
         [[nodiscard]]
         const std::vector<column>& get_data() const;
 
         std::vector<column>& get_data();
+
+        [[nodiscard]]
+        std::string get_label() const;
 
         [[nodiscard]]
         const column& get_column(size_t j) const;
@@ -54,6 +59,8 @@ namespace xpas
 
     private:
         std::vector<column> _data;
+
+        std::string _label;
 
         std::vector<impl::score_t> _best_scores;
     };
