@@ -174,6 +174,32 @@ namespace xpas
         };
     }
 
+    class to_windows
+    {
+    public:
+        using iterator_category = std::forward_iterator_tag;
+        using const_iterator = impl::window_iterator;
+
+        using reference = window&;
+
+        to_windows(const matrix* matrix, size_t kmer_size);
+        to_windows(const to_windows&) = delete;
+        to_windows(to_windows&&) = delete;
+        to_windows& operator=(const to_windows&) = delete;
+        to_windows& operator=(to_windows&&) = delete;
+        ~to_windows() noexcept = default;
+
+        [[nodiscard]]
+        const_iterator begin() const;
+
+        [[nodiscard]]
+        const_iterator end() const noexcept;
+
+    private:
+        const matrix* _matrix;
+        size_t _kmer_size;
+    };
+
     class chain_windows
     {
     public:

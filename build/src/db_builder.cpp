@@ -485,10 +485,13 @@ namespace xpas
             //std::cout << "NODE " << std::endl; //<< node_matrix.get_label() << std::endl;
 
             //for (const auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
-            for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
+            //for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
+            for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
                 //std::cout << "WINDOW " << window.get_position() << std::endl;
                 const auto dcla = xpas::DCLA(window, _kmer_size, log_threshold);
+                //const auto dcla = xpas::DCLA(window, _kmer_size, xpas::score_threshold(_omega, _kmer_size));
+
                 for (const auto& kmer : dcla.get_result())
                 {
                     //std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;

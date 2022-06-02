@@ -56,6 +56,9 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
         phylo_kmer::score_type eps_l = eps - best_score(j + h / 2, h - h / 2);
         phylo_kmer::score_type eps_r = eps - best_score(j, h / 2);
 
+        //phylo_kmer::score_type eps_l = eps / best_score(j + h / 2, h - h / 2);
+        //phylo_kmer::score_type eps_r = eps / best_score(j, h / 2);
+
         auto l = DC(j, h / 2, eps_l);
         auto r = DC(j + h / 2, h - h / 2, eps_r);
 
@@ -71,8 +74,6 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
         {
             std::sort(min.begin(), min.end(), kmer_score_comparator);
 
-            //for (const auto& [a, a_score] : max)
-            //{
             size_t i = 0;
             while (i < max.size())
             {
@@ -92,6 +93,7 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
                     }
 
                     const auto score = a_score + b_score;
+                    //const auto score = a_score * b_score;
                     if (score <= eps)
                     {
                         break;
@@ -125,6 +127,7 @@ void DCLA::preprocess()
     {
         const auto& [index_best, score_best] = _window.max_at(j);
         product += score_best;
+        //product *= score_best;
         _best_scores[j + 1] = product;
     }
 
@@ -134,6 +137,7 @@ void DCLA::preprocess()
 phylo_kmer::score_type DCLA::best_score(size_t start_pos, size_t h)
 {
     return _best_scores[start_pos + h] - _best_scores[start_pos];
+    //return _best_scores[start_pos + h] / _best_scores[start_pos];
 }
 
 

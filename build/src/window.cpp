@@ -268,6 +268,21 @@ std::tuple<window&, window&, window&> impl::chained_window_iterator::operator*()
     return { _previous_window, _window, _next_window };
 }
 
+to_windows::to_windows(const matrix* matrix, size_t kmer_size)
+    : _matrix{ matrix }, _kmer_size{ kmer_size }//, _start_pos{ 0 }
+{}
+
+to_windows::const_iterator to_windows::begin() const
+{
+    return { _matrix, _kmer_size };
+}
+
+to_windows::const_iterator to_windows::end() const noexcept
+{
+    return { _matrix, 0 };
+}
+
+
 chain_windows::chain_windows(const matrix* matrix, size_t kmer_size)
     : _matrix{ matrix }, _kmer_size{ kmer_size }
 {}
