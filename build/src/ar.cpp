@@ -212,11 +212,15 @@ namespace xpas::ar
             auto log = [](auto value) { return std::log10(value); };
             std::transform(begin(new_column), end(new_column), begin(new_column), log);
 
-            auto& matrix = result[node_label];
-            matrix.set_label(node_label);
-            matrix.get_data().push_back(new_column);
+            auto& node_matrix = result[node_label];
+            node_matrix.set_label(node_label);
+            node_matrix.get_data().push_back(new_column);
         }
 
+        for (auto& [label, node_matrix] : result)
+        {
+            node_matrix.preprocess();
+        }
 
 #elif SEQ_TYPE_AA
         ::io::CSVReader<21,

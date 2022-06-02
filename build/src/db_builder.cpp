@@ -475,6 +475,8 @@ namespace xpas
 
     std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
     {
+        (void)postorder_id;
+
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         size_t count = 0;
@@ -483,27 +485,30 @@ namespace xpas
         {
             const auto& node_matrix = node_matrix_ref.get();
 
-            bool print = (postorder_id == 681);
-            /*bool print = true;
+            /*bool print = (postorder_id == 0);
+            //bool print = true;
             if (print)
             {
-                std::cout << "NODE " << node_matrix.get_label() << " " << postorder_id << std::endl;// << " " << postorder_id << std::endl;
+                std::cout << "NODE " << node_matrix.get_label() << " " << postorder_id
+                          << std::endl;// << " " << postorder_id << std::endl;
             }*/
 
             //for (const auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
-            //for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
-            for (const auto& window : to_windows(&node_matrix, _kmer_size))
+            for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
+            //for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
                 //if (print && window.get_position() == 1677)
+                //if (print)
                 //    std::cout << "WINDOW " << window.get_position() << std::endl;
 
-                const auto alg = xpas::DCLA(window, _kmer_size, log_threshold);
+                auto alg = xpas::DCLA(window, _kmer_size);
+                alg.run(log_threshold);
                 //const auto alg = xpas::DCLA(window, _kmer_size, xpas::score_threshold(_omega, _kmer_size));
                 //const auto alg = xpas::BB(window, _kmer_size, log_threshold);
 
                 for (const auto& kmer : alg.get_result())
                 {
-                    //if (print && xpas::decode_kmer(kmer.key, _kmer_size) == "AAAAGC")
+                    //if (print && xpas::decode_kmer(kmer.key, _kmer_size) == "GAAAAA")
                     //    std::cout << "\t" << xpas::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
 
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);

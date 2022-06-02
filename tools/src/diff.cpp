@@ -41,16 +41,20 @@ public:
                       << va << "\t" << vb << std::endl;
         }
 
-        {
-            const auto& [match, va, vb] = check_kmer_size();
-            std::cout << "k-mer size:\t" << bool_to_OK(match) << "\t"
-                      << va << "\t" << vb << std::endl;
-        }
+
+        const auto& [k_match, a_k, b_k] = check_kmer_size();
+        std::cout << "k-mer size:\t" << bool_to_OK(k_match) << "\t"
+                  << a_k << "\t" << b_k << std::endl;
+
 
         {
             const auto& [match, va, vb] = check_omega();
             std::cout << "Omega:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
+
+            auto eps = [](float omega, size_t k) { return std::log10(xpas::score_threshold(omega, k)); };
+            std::cout << "Threshold:\t" << bool_to_OK(match) << "\t"
+                      << eps(va, a_k) << "\t" << eps(vb, b_k) << std::endl;
         }
 
         {
@@ -193,35 +197,53 @@ public:
         bool match = true;
         std::vector<pk_diff> diffs;
 
+        /// Check the k-mers of A
         for (const auto& [kmer, a_entries] : a)
         {
             const auto va = to_map(a_entries);
 
+            /// Search for the k-mer in B
             if (auto b_entries = b.search(kmer); b_entries)
             {
-                for (const auto& [b_branch, b_score] : *b_entries)
+                const auto vb = to_map(*b_entries);
+
+                for (const auto& [a_branch, a_score] : a_entries)
                 {
                     /// (kmer, branch) is scored in both A and B, check the values
-                    if (const auto& it = va.find(b_branch); it != va.end())
+                    if (const auto& it = vb.find(a_branch); it != va.end())
                     {
-                        const auto a_score = it->second;
+                        const auto b_score = it->second;
                         bool score_match = std::fabs(a_score - b_score) < EPS;
 
                         /// scored differently
                         if (!score_match)
                         {
-                            diffs.push_back({ kmer, b_branch, a_score, b_score });
+                            diffs.push_back({kmer, a_branch, a_score, b_score});
                         }
 
                         match &= score_match;
                     }
-                    /// the k-mer exists in both A and B, but in B there is a branch
-                    /// that is not scored in A
+                    /// the k-mer exists in both A and B, but in A there is a branch
+                    /// that is not scored in B
                     else
                     {
+                        diffs.push_back({kmer, a_branch, a_score, xpas::phylo_kmer::na_score});
                         match = false;
                     }
                 }
+
+                /// Now, check the branches and scores for this k-mer in B
+                for (const auto& [b_branch, b_score] : *b_entries)
+                {
+                    /// the k-mer exists in both A and B, but in B there is a branch
+                    /// that is not scored in A
+                    if (const auto& it = va.find(b_branch); it == va.end())
+                    {
+                        diffs.push_back({ kmer, b_branch, xpas::phylo_kmer::na_score, b_score });
+                        match = false;
+                    }
+                }
+
             }
             /// this k-mer does not exist in B, report all branches
             else

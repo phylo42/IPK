@@ -29,6 +29,9 @@ namespace xpas
         matrix& operator=(const matrix&) = delete;
         matrix& operator=(matrix&&) noexcept = default;
 
+        /// Range product query for the max values of every column
+        void preprocess();
+
         [[nodiscard]]
         impl::score_t get(size_t i, size_t j) const;
 
@@ -37,9 +40,6 @@ namespace xpas
 
         [[nodiscard]]
         bool empty() const;
-
-        [[nodiscard]]
-        std::pair<size_t, impl::score_t> max_at(size_t column) const;
 
         void set_label(const std::string& label);
 
@@ -55,7 +55,7 @@ namespace xpas
         const column& get_column(size_t j) const;
 
         [[nodiscard]]
-        impl::score_t range_product(size_t start_pos, size_t len) const;
+        impl::score_t range_max_sum(size_t start_pos, size_t len) const;
 
     private:
         std::vector<column> _data;
@@ -98,6 +98,8 @@ namespace xpas
         [[nodiscard]]
         size_t get_position() const;
 
+        [[nodiscard]]
+        phylo_kmer::score_type range_max_product(size_t pos, size_t len) const;
 
         [[nodiscard]]
         std::pair<size_t, impl::score_t> max_at(size_t column) const;

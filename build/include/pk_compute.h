@@ -24,28 +24,57 @@ namespace xpas
     /// Divide-and-conquer with the lookahead trick
     class DCLA
     {
-        friend class dccw;
+        friend class DCCW;
     public:
-        DCLA(const window& window, size_t k, phylo_kmer::score_type threshold);
+        DCLA(const window& window, size_t k);
+
+        void run(phylo_kmer::score_type threshold);
 
         const std::vector<phylo_kmer>& get_result() const;
 
-        std::vector<phylo_kmer> DC(size_t j, size_t h, phylo_kmer::score_type eps);
     private:
 
-        void preprocess();
-
-        phylo_kmer::score_type best_score(size_t j, size_t h);
+        std::vector<phylo_kmer> DC(size_t j, size_t h, phylo_kmer::score_type eps);
 
         const window& _window;
         size_t _k;
-        size_t _eps;
-        size_t _prefix_size;
 
         std::vector<phylo_kmer> _prefixes;
         std::vector<phylo_kmer> _suffixes;
 
-        std::vector<phylo_kmer::score_type> _best_scores;
+        std::vector<phylo_kmer> _result_list;
+    };
+
+    class DCCW
+    {
+    public:
+        DCCW(const window& window, std::vector<phylo_kmer>& prefixes,
+             size_t k, phylo_kmer::score_type lookbehind, phylo_kmer::score_type lookahead);
+
+
+        const std::vector<phylo_kmer>& get_result() const;
+
+        std::vector<phylo_kmer>&& get_suffixes();
+
+
+    private:
+        void run(phylo_kmer::score_type omega);
+
+        std::vector<phylo_kmer> DC(phylo_kmer::score_type omega, size_t j, size_t h, phylo_kmer::score_type eps);
+
+        phylo_kmer::score_type get_best_suffix_score() const;
+
+        const window& _window;
+        size_t _k;
+
+        // The second score bound for suffixes: the best suffix score of the next window
+        phylo_kmer::score_type _lookahead;
+
+        // The second score bound for prefixes: the best prefix score of the previous window
+        phylo_kmer::score_type _lookbehind;
+
+        std::vector<phylo_kmer>& _prefixes;
+        std::vector<phylo_kmer> _suffixes;
 
         std::vector<phylo_kmer> _result_list;
     };

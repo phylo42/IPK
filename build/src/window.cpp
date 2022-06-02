@@ -10,12 +10,18 @@ using namespace xpas::impl;
 matrix::matrix(std::vector<column> data, std::string label)
     : _data(std::move(data)), _label(std::move(label))
 {
-    _best_scores = std::vector<score_t>(_data.size() + 1, 1.0f);
-    score_t product = 1.0f;
+    preprocess();
+}
+
+void matrix::preprocess()
+{
+    _best_scores = std::vector<score_t>(_data.size() + 1, 0.0f);
+    score_t product = 0.0f;
     for (size_t j = 0; j < _data.size(); ++j)
     {
-        const auto& [index_best, score_best] = max_at(j);
-        product *= score_best;
+        const auto& column = get_column(j);
+        const auto best_score = *std::max_element(column.begin(), column.end());
+        product += best_score;
         _best_scores[j + 1] = product;
     }
 }
@@ -33,21 +39,6 @@ size_t matrix::width() const
 bool matrix::empty() const
 {
     return _data.empty();
-}
-
-std::pair<size_t, score_t> matrix::max_at(size_t column) const
-{
-    size_t max_index = 0;
-    score_t max_score = _data[0][column];
-    for (size_t i = 1; i < _data.size(); ++i)
-    {
-        if (_data[i][column] > max_score)
-        {
-            max_score = _data[i][column];
-            max_index = i;
-        }
-    }
-    return { max_index, max_score };
 }
 
 void matrix::set_label(const std::string& label)
@@ -75,9 +66,9 @@ const matrix::column& matrix::get_column(size_t j) const
     return _data[j];
 }
 
-score_t matrix::range_product(size_t start_pos, size_t len) const
+score_t matrix::range_max_sum(size_t start_pos, size_t len) const
 {
-    return _best_scores[start_pos + len] / _best_scores[start_pos];
+    return _best_scores[start_pos + len] - _best_scores[start_pos];
 }
 
 window::window(const matrix* m, size_t start_pos, size_t size)
@@ -127,6 +118,11 @@ bool window::empty() const
 size_t window::get_position() const
 {
     return _start_pos;
+}
+
+phylo_kmer::score_type window::range_max_product(size_t pos, size_t len) const
+{
+    return _matrix->range_max_sum(_start_pos + pos, len);
 }
 
 matrix::column window::get_column(size_t j) const
@@ -203,6 +199,7 @@ impl::chained_window_iterator::chained_window_iterator(const matrix* matrix, siz
     }
 
     /// The start position of the last possible chain
+    /// FIXME: odd k only
     _last_chain_pos = _kmer_size / 2 - 1;
     _chain_start = 0;
 
