@@ -99,10 +99,8 @@ namespace xpas::ar
 #ifdef SEQ_TYPE_DNA
         std::ios::sync_with_stdio(false);
 
-        proba_matrix matrix;
+        proba_matrix result;
         std::ifstream infile(_file_name);
-
-        throw std::runtime_error("PhyML is not supported in this version of XPAS.");
 
         bool is_header = true;
 
@@ -129,30 +127,23 @@ namespace xpas::ar
                     throw std::runtime_error("Parsing error: could not parse the line " + line);
                 }
 
+                auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
+
                 /// log-transform the probabilities
-                auto new_row = row_type { { { a, 0 }, { c, 1 }, { g, 2 }, { t, 3 } } };
-                auto log = [](const proba_pair& p) { return proba_pair{ std::log10(p.score), p.index }; };
-                std::transform(begin(new_row), end(new_row), begin(new_row), log);
+                auto log = [](auto value) { return std::log10(value); };
+                std::transform(begin(new_column), end(new_column), begin(new_column), log);
 
-                // sort them
-                auto compare = [](const proba_pair& p1, const proba_pair& p2) { return p1.score > p2.score; };
-                std::sort(begin(new_row), end(new_row), compare);
-
-                /// insert
-                auto it = matrix.find(node_label);
-                if (it != std::end(matrix))
-                {
-                    //it->second.push_back(new_row);
-                }
-                else
-                {
-                    /// WARNING: it is cheap to copy new_row here in the case of DNA.
-                    /// It is probably makes sense to move it in the case of amino acids though.
-                    //matrix[node_label] = proba_matrix::mapped_type{ node_label, { new_row } };
-                }
+                auto& node_matrix = result[node_label];
+                node_matrix.set_label(node_label);
+                node_matrix.get_data().push_back(new_column);
             }
         }
-        return matrix;
+
+        for (auto& [label, node_matrix] : result)
+        {
+            node_matrix.preprocess();
+        }
+        return result;
 #elif SEQ_TYPE_AA
         throw std::runtime_error("PhyML for proteins is not supported yet.");
 #else
