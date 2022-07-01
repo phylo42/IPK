@@ -485,26 +485,12 @@ namespace xpas
         {
             const auto& node_matrix = node_matrix_ref.get();
 
-            /*bool print = (postorder_id == 0);
-            //bool print = true;
-            if (print)
-            {
-                std::cout << "NODE " << node_matrix.get_label() << " " << postorder_id
-                          << std::endl;// << " " << postorder_id << std::endl;
-            }*/
-
             //for (const auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
-            for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
-            //for (const auto& window : to_windows(&node_matrix, _kmer_size))
+            //for (const auto& [prev, window, next] : chain_windows(&node_matrix, _kmer_size))
+            for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
-                //if (print && window.get_position() == 1677)
-                //if (print)
-                //    std::cout << "WINDOW " << window.get_position() << std::endl;
-
                 auto alg = xpas::DCLA(window, _kmer_size);
                 alg.run(log_threshold);
-                //const auto alg = xpas::DCLA(window, _kmer_size, xpas::score_threshold(_omega, _kmer_size));
-                //const auto alg = xpas::BB(window, _kmer_size, log_threshold);
 
                 for (const auto& kmer : alg.get_result())
                 {
