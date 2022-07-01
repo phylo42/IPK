@@ -9,7 +9,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem iostreams)
 
 target_link_libraries(test_dna
         PRIVATE
-            xpas::dna
+            xcl::dna
             Catch2::Catch2
             Boost::filesystem
             Boost::iostreams

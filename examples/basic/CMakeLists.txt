@@ -8,7 +8,7 @@ target_sources(xpas_example_basic
         src/main.cpp
 )
 
-target_link_libraries(xpas_example_basic PRIVATE xpas::dna)
+target_link_libraries(xpas_example_basic PRIVATE xcl::dna)
 
 # Turn on the warnings and treat them as errors
 target_compile_options(xpas_example_basic

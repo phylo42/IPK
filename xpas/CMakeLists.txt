@@ -1,136 +1,123 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 
-if(${HASH_MAP} STREQUAL USE_SKA_FLAT_HASH_MAP)
-    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
-    set(HASH_MAP_EXPORT flat_hash_map)
-elseif(${HASH_MAP} STREQUAL USE_SKA_BYTELL_HASH_MAP)
-    message(WARNING "Using ska::flat_hash_map instead")
-    set(HASH_MAP_IMPLEMENTATION skarupke::flat_hash_map)
-    set(HASH_MAP_EXPORT flat_hash_map)
-elseif(${HASH_MAP} STREQUAL USE_ABSL_FLAT_HASH_MAP)
-    set(HASH_MAP_IMPLEMENTATION absl::flat_hash_map)
-    set(HASH_MAP_EXPORT absl::flat_hash_map)
-elseif(${HASH_MAP} STREQUAL USE_FOLLY_F14_FAST_MAP)
-    set(HASH_MAP_IMPLEMENTATION folly_base)
-    set(HASH_MAP_EXPORT folly_base)
-elseif(${HASH_MAP} STREQUAL USE_PHMAP_FLAT_HASH_MAP)
-    set(HASH_MAP_IMPLEMENTATION phmap)
-    set(HASH_MAP_EXPORT phmap)
-elseif(${HASH_MAP} STREQUAL USE_TSL_ROBIN_MAP)
-    set(HASH_MAP_IMPLEMENTATION tsl::robin_map)
-    set(HASH_MAP_EXPORT robin_map)
-elseif(${HASH_MAP} STREQUAL USE_TSL_HOPSCOTCH_MAP)
-    set(HASH_MAP_IMPLEMENTATION tsl::hopscotch_map)
-    set(HASH_MAP_EXPORT hopscotch_map)
-endif()
+######################################################################################################
+# Dependencies
+# WARNING: some dependencies are not listed here. See the top-level CMake file
+# for more details
+find_package(Boost REQUIRED COMPONENTS program_options filesystem iostreams)
+find_package(OpenMP REQUIRED)
 
+# The code and the libraries are the same for all targets.
+# The only difference is the version of xpas we link against (xpas::dna, xpas::aa)
+set(LINK_LIBRARIES Boost::program_options
+        Boost::filesystem
+        Boost::iostreams
+        OpenMP::OpenMP_CXX
+        strasser::csv_parser
+        indicators::indicators)
 
-find_package(Boost REQUIRED COMPONENTS serialization iostreams system filesystem)
-find_package(ZLIB)
 
 set(SOURCES
-        src/xpas/fasta.cpp include/xpas/fasta.h
-        src/xpas/file_io.cpp include/xpas/file_io.h
-        include/xpas/hash_map.h
-        src/xpas/kmer_iterator.cpp include/xpas/kmer_iterator.h
-        src/xpas/newick.cpp include/xpas/newick.h
-        include/xpas/optional.h
-        src/xpas/phylo_kmer.cpp include/xpas/phylo_kmer.h
-        include/xpas/phylo_kmer_db.h
-        src/xpas/phylo_node.cpp include/xpas/phylo_node.h
-        src/xpas/phylo_tree.cpp include/xpas/phylo_tree.h
-        src/xpas/seq.cpp include/xpas/seq.h
-        src/xpas/seq_record.cpp include/xpas/seq_record.h
-        include/xpas/serialization.h
-        include/xpas/version.h)
-
-
-set(LINK_LIBRARIES
-        Boost::serialization Boost::iostreams Boost::system Boost::filesystem
-        ZLIB::ZLIB
-        ${HASH_MAP_IMPLEMENTATION})
-
-set(INCLUDE_DIRECTORIES $<INSTALL_INTERFACE:include>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-
-# Turn on the warnings and treat them as errors
-set(COMPILE_OPTIONS -Wall -Wextra -Wpedantic)
-
-# explicitly require c++17 standard
-# TODO: check this out if it is possible to relax this to PUBLIC cxx_std_14 and PRIVATE cxx_std_17
-set(COMPILE_FEATURES cxx_std_17)
-
-##########################################################################################
-# Proteins
-add_library(xpas_aa STATIC "")
-add_library(xpas::aa ALIAS xpas_aa)
-
-target_sources(xpas_aa PRIVATE ${SOURCES})
-target_link_libraries(xpas_aa PUBLIC ${LINK_LIBRARIES})
-target_include_directories(xpas_aa PUBLIC ${INCLUDE_DIRECTORIES})
-target_compile_options(xpas_aa PRIVATE ${COMPILE_OPTIONS})
-target_compile_features(xpas_aa PUBLIC ${COMPILE_FEATURES})
-target_compile_definitions(xpas_aa
-        PUBLIC
-        ${HASH_MAP}
-        SEQ_TYPE_AA)
-
-##########################################################################################
-# Proteins, positions included
-add_library(xpas_aa_pos STATIC "")
-add_library(xpas::aa_pos ALIAS xpas_aa_pos)
-
-target_sources(xpas_aa_pos PRIVATE ${SOURCES})
-target_link_libraries(xpas_aa_pos PUBLIC ${LINK_LIBRARIES})
-target_include_directories(xpas_aa_pos PUBLIC ${INCLUDE_DIRECTORIES})
-set_property(TARGET xpas_aa_pos PROPERTY CXX_STANDARD 17)
-target_compile_options(xpas_aa_pos PRIVATE ${COMPILE_OPTIONS})
-target_compile_features(xpas_aa_pos PUBLIC ${COMPILE_FEATURES})
-target_compile_definitions(xpas_aa_pos
-        PUBLIC
-            ${HASH_MAP}
-            SEQ_TYPE_AA
-            KEEP_POSITIONS)
-
-##########################################################################################
-# DNA
-# Create a library target and set properties
-add_library(xpas_dna STATIC "")
-add_library(xpas::dna ALIAS xpas_dna)
-
-target_sources(xpas_dna PRIVATE ${SOURCES})
-target_link_libraries(xpas_dna PUBLIC ${LINK_LIBRARIES})
-target_include_directories(xpas_dna PUBLIC ${INCLUDE_DIRECTORIES})
-target_compile_options(xpas_dna PRIVATE ${COMPILE_OPTIONS})
-target_compile_features(xpas_dna PUBLIC ${COMPILE_FEATURES})
-set_property(TARGET xpas_dna PROPERTY CXX_STANDARD 17)
-target_compile_definitions(xpas_dna
-        PUBLIC
-            ${HASH_MAP}
-            SEQ_TYPE_DNA)
+        src/alignment.cpp include/alignment.h
+        src/ar.cpp include/ar.h
+        src/branch_group.cpp include/branch_group.h
+        src/command_line.cpp include/command_line.h
+        src/db_builder.cpp include/db_builder.h
+        src/exceptions.cpp include/exceptions.h
+        src/extended_tree.cpp include/extended_tree.h
+        src/filter.cpp include/filter.h
+        src/main.cpp
+        src/window.cpp include/window.h
+        src/pk_compute.cpp include/pk_compute.h
+        src/proba_matrix.cpp include/proba_matrix.h
+        include/return.h
+        include/row.h
+        include/utils.h
+        )
 
 ######################################################################################################
-# Library installation
-include(GNUInstallDirs)
+# Application target and properties
+add_executable(xpas_dna "")
+target_sources(xpas_dna PRIVATE ${SOURCES})
 
-# Exporting the core target
-# 'make install' to the correct locations (provided by GNUInstallDirs)
-# TODO: check if it works with 'make install'
-install(TARGETS xpas_dna
-        EXPORT xpasDnaTargets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+target_include_directories(xpas_dna
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/
+            ${CMAKE_CURRENT_SOURCE_DIR}/include/
+)
 
-install(TARGETS xpas_aa
-        EXPORT xpasAaTargets
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+target_link_libraries(xpas_dna
+        PUBLIC
+            ${LINK_LIBRARIES}
+            xcl::dna
 
-export(TARGETS xpas_dna xpas_aa ${HASH_MAP_EXPORT}
-        FILE ${CMAKE_BINARY_DIR}/xpasConfig.cmake)
+        )
 
-export(PACKAGE xpas)
+# Turn on the warnings and treat them as errors
+target_compile_options(xpas_dna
+    PRIVATE
+        -Wall -Wextra #-Werror #-Wpedantic
+    )
+
+
+set_property(TARGET xpas_dna PROPERTY CXX_STANDARD 17)
+target_compile_features(xpas_dna
+    PUBLIC
+        cxx_std_17)
+
+######################################################################################################
+## Amino acids
+#add_executable(xpas_aa "")
+#target_sources(xpas_aa PRIVATE ${SOURCES})
+#
+#target_include_directories(xpas_aa
+#        PRIVATE
+#        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+#        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+#        )
+#
+#target_link_libraries(xpas_aa
+#        PRIVATE
+#        ${LINK_LIBRARIES}
+#        xcl::aa
+#        )
+#
+## Turn on the warnings and treat them as errors
+#target_compile_options(xpas_aa
+#        PRIVATE
+#        -Wall -Wextra #-Werror #-Wpedantic
+#        )
+#
+#target_compile_features(xpas_aa
+#        PUBLIC
+#        cxx_std_17)
+
+######################################################################################################
+# Amino acids, positions included
+
+#add_executable(xpas_aa_pos "")
+#
+#target_sources(xpas_aa_pos PRIVATE ${SOURCES})
+#
+#target_include_directories(xpas_aa_pos
+#        PRIVATE
+#        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+#        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+#        )
+#
+#target_link_libraries(xpas_aa_pos
+#        PRIVATE
+#        ${LINK_LIBRARIES}
+#        xcl::aa_pos
+#        )
+#
+## Turn on the warnings and treat them as errors
+#target_compile_options(xpas_aa_pos
+#        PRIVATE
+#        -Wall -Wextra #-Werror #-Wpedantic
+#        )
+#
+#set_property(TARGET xpas_aa_pos PROPERTY CXX_STANDARD 17)
+#target_compile_features(xpas_aa_pos
+#        PUBLIC
+#        cxx_std_17)

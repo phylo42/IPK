@@ -6,7 +6,7 @@ set_target_properties(diff PROPERTIES OUTPUT_NAME xpas-diff)
 
 target_sources(diff PRIVATE src/diff.cpp)
 
-target_link_libraries(diff PRIVATE xpas::dna)
+target_link_libraries(diff PRIVATE xcl::dna)
 
 target_compile_options(diff PRIVATE -Wall -Wextra -Werror -Wpedantic)
 

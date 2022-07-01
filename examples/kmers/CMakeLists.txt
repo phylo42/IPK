@@ -10,7 +10,7 @@ target_sources(xpas_example_kmers
 
 target_link_libraries(xpas_example_kmers
     PRIVATE
-        xpas::dna
+        xcl::dna
 )
 
 # Turn on the warnings and treat them as errors

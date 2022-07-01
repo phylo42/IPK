@@ -12,7 +12,7 @@ find_package(Boost REQUIRED COMPONENTS filesystem)
 
 target_link_libraries(xpas_example_tree
     PRIVATE
-        xpas::dna
+        xcl::dna
         Boost::filesystem
 )
 
