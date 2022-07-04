@@ -1,4 +1,4 @@
-XPAS's documentation
+XPAS: computation of phylo-*k*-mers
 ===================================
 
 XPAS (a recursive acronym for XPAS: Phylo-*k*-mers of Ancestral Sequences) is a

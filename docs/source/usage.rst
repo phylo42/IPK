@@ -6,29 +6,45 @@ Usage
 Installation
 ------------
 
-To use Lumache, first install it using pip:
+XPAS depends on a few libraries you need to install from your distro repository: `boost` (v1.67+) and `zlib`. 
+Other depencies are provided as submodules and should be compiled within XPAS.
+
+On a Debian-based system, it can be installed with the following command:
 
 .. code-block:: console
 
-   (.venv) $ pip install lumache
+   $ sudo apt-get update
+   $ sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
 
-Creating recipes
-----------------
+When you clone the repository, do not forget to clone the submodules:
 
-To retrieve a list of random ingredients,
-you can use the ``lumache.get_random_ingredients()`` function:
+.. code-block:: console
 
-.. autofunction:: lumache.get_random_ingredients
+    git clone --recursive https://github.com/phylo42/xpas.git
 
-The ``kind`` parameter should be either ``"meat"``, ``"fish"``,
-or ``"veggies"``. Otherwise, :py:func:`lumache.get_random_ingredients`
-will raise an exception.
 
-.. autoexception:: lumache.InvalidKindError
+To compile the library:
 
-For example:
+.. code-block:: console
 
->>> import lumache
->>> lumache.get_random_ingredients()
-['shells', 'gorgonzola', 'parsley']
+    cd xpas && mkdir bin && cd bin
+    cmake -DHASH_MAP=USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
+    make -j4
 
+.. _dependencies:
+
+Other dependencies
+------------
+
+To compute phylo-*k*-mers, you need to install `raxml-ng` or `phyml`.
+
+.. _computing:
+
+Computing a database
+------------
+
+Use the python wrapper `xpas.py` to create a new database:
+
+.. code-block:: console
+
+    python xpas.py build -s [nucl|amino] -b `which raxml-ng` -w workdir -r alignment.fasta -t tree.newick -k 10
