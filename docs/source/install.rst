@@ -1,10 +1,10 @@
 Installation
-=====
+============
 
 .. _dependencies:
 
 Install dependencies and build source code
-------------
+------------------------------------------
 
 The source code of XPAS depends on libraries you need to install from your distro's repository: boost_ (v1.67+) and zlib_. 
 Other depencies are provided as submodules and should be compiled within XPAS.
@@ -39,7 +39,7 @@ Compile the library:
     $ make -j4
 
 Other dependencies
-------------
+------------------
 
 To run XPAS, you will also need to install either ``raxml-ng`` or ``phyml``. 
 Both of them are available in Bioconda_:
@@ -60,7 +60,7 @@ Or:
 .. _test
 
 Check installation
-------------
+------------------
 
 To check that installation is complete, run the following command to see the help message:
 
