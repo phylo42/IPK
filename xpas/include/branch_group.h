@@ -7,6 +7,8 @@
 
 namespace xpas
 {
+    using xcl::phylo_kmer;
+    using xcl::hash_map;
 
     /// \brief A hash map to store all the phylo-kmers, placed to one original node
 #ifdef KEEP_POSITIONS
@@ -33,7 +35,7 @@ namespace xpas
                                    const phylo_kmer::branch_type& group, size_t batch_idx);
 
     /// Merges hashmaps of the same index into a database
-    xpas::phylo_kmer_db merge_batch(const std::string& working_dir,
+    xcl::phylo_kmer_db merge_batch(const std::string& working_dir,
                                     const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx);
 
     /// Puts a kmer in the hash. Takes a maximum score between the existing value

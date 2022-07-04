@@ -1,6 +1,6 @@
 #include <xcl/seq_record.h>
 
-using namespace xpas;
+using namespace xcl;
 using std::string;
 
 //------------------------------------------------------------------------------------

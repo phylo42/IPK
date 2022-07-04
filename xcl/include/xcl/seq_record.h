@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace xpas
+namespace xcl
 {
     class seq_record
     {

@@ -6,7 +6,7 @@
 #include <tuple>
 #include "phylo_kmer.h"
 
-namespace xpas
+namespace xcl
 {
     /// \brief An iterator class for k-mers of an input sequence.
     /// \details Iterates over all the k-mers of a given sequence and encodes them

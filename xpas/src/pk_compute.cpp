@@ -2,6 +2,7 @@
 #include "pk_compute.h"
 
 using namespace xpas;
+using namespace xcl;
 using xpas::impl::vector_type;
 
 bool kmer_score_comparator(const phylo_kmer& k1, const phylo_kmer& k2)

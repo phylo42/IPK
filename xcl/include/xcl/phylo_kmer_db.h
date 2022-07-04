@@ -7,7 +7,7 @@
 #include "phylo_node.h"
 
 
-namespace xpas
+namespace xcl
 {
     namespace impl {
         template <typename PhyloKmer>
@@ -34,7 +34,7 @@ namespace xpas
         using const_iterator = typename storage::const_iterator;
 
         /// Ctors, dtor and operator=
-        _phylo_kmer_db(size_t kmer_size, xpas::phylo_kmer::score_type omega, std::string seq_type,
+        _phylo_kmer_db(size_t kmer_size, phylo_kmer::score_type omega, std::string seq_type,
                        std::string tree)
             : _kmer_size{ kmer_size }
             , _omega{ omega }
@@ -72,7 +72,7 @@ namespace xpas
             _kmer_size = kmer_size;
         }
 
-        /// \brief Returns omega (the parameter of xpas::score_threshold)
+        /// \brief Returns omega (the parameter of xcl::score_threshold)
         [[nodiscard]]
         phylo_kmer::score_type omega() const noexcept
         {
@@ -109,18 +109,18 @@ namespace xpas
         }
 
         [[nodiscard]]
-        std::vector<xpas::phylo_node::node_index> tree_index() const noexcept
+        std::vector<phylo_node::node_index> tree_index() const noexcept
         {
             return _tree_index;
         }
 
         [[nodiscard]]
-        std::vector<xpas::phylo_node::node_index>& tree_index()
+        std::vector<phylo_node::node_index>& tree_index()
         {
             return _tree_index;
         }
 
-        void set_tree_index(std::vector<xpas::phylo_node::node_index> index)
+        void set_tree_index(std::vector<phylo_node::node_index> index)
         {
             _tree_index = std::move(index);
         }
@@ -222,7 +222,7 @@ namespace xpas
 
         /// \brief Score threshold paramenter.
         /// \sa core::score_threshold
-        xpas::phylo_kmer::score_type _omega;
+        phylo_kmer::score_type _omega;
 
         /// \brief Sequence type: DNA or Proteins.
         /// \details Serialized within the database, needed to ensure
@@ -239,7 +239,7 @@ namespace xpas
 
         /// The tree index (# nodes in the subtree, total subtree branch length
         /// for every node in a plain array indexed by postorder IDs
-        std::vector<xpas::phylo_node::node_index> _tree_index;
+        std::vector<phylo_node::node_index> _tree_index;
 
         /// Serialization protocol version
         unsigned int _version;

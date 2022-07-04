@@ -7,15 +7,21 @@
 #include <xcl/seq.h>
 #include <xcl/seq_record.h>
 
+namespace xcl
+{
+    class phylo_tree;
+}
+
 namespace xpas
 {
+    using xcl::seq_record;
     class alignment;
-    class phylo_tree;
-    alignment extend_alignment(alignment original_alignment, const phylo_tree& tree);
+
+    alignment extend_alignment(alignment original_alignment, const xcl::phylo_tree& tree);
 
     class alignment
     {
-        friend alignment extend_alignment(alignment original_alignment, const phylo_tree& tree);
+        friend alignment extend_alignment(alignment original_alignment, const xcl::phylo_tree& tree);
     public:
         using iterator = std::vector<seq_record>::iterator;
         using const_iterator = std::vector<seq_record>::const_iterator;
@@ -60,9 +66,7 @@ namespace xpas
                                    double reduction_ratio,
                                    bool no_reduction);
 
-    class phylo_tree;
-
-    alignment extend_alignment(alignment original_alignment, const phylo_tree& tree);
+    alignment extend_alignment(alignment original_alignment, const xcl::phylo_tree& tree);
 
 
     enum class alignment_format

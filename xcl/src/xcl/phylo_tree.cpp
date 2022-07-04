@@ -5,8 +5,8 @@
 #include <algorithm>
 
 namespace fs = boost::filesystem;
-using namespace xpas;
-using namespace xpas::impl;
+using namespace xcl;
+using namespace xcl::impl;
 using std::vector;
 using std::string;
 using std::move;
@@ -37,22 +37,22 @@ phylo_tree::~phylo_tree() noexcept
     delete _root;
 }
 
-phylo_tree::const_iterator xpas::phylo_tree::begin() const noexcept
+phylo_tree::const_iterator phylo_tree::begin() const noexcept
 {
     return visit_subtree(_root).begin();
 }
 
-phylo_tree::const_iterator xpas::phylo_tree::end() const noexcept
+phylo_tree::const_iterator phylo_tree::end() const noexcept
 {
     return visit_subtree(_root).end();
 }
 
-phylo_tree::iterator xpas::phylo_tree::begin() noexcept
+phylo_tree::iterator phylo_tree::begin() noexcept
 {
     return visit_subtree<postorder_tree_iterator<false>>(_root).begin();
 }
 
-phylo_tree::iterator xpas::phylo_tree::end() noexcept
+phylo_tree::iterator phylo_tree::end() noexcept
 {
     return visit_subtree<postorder_tree_iterator<false>>(_root).end();
 }
@@ -117,7 +117,7 @@ optional<const phylo_node*> phylo_tree::get_by_postorder_id(phylo_node::id_type 
     }
 }
 
-optional<const xpas::phylo_node*> phylo_tree::get_by_label(const std::string& label) const noexcept
+optional<const phylo_node*> phylo_tree::get_by_label(const std::string& label) const noexcept
 {
     if (const auto it = _label_to_node.find(label); it != _label_to_node.end())
     {
@@ -140,7 +140,7 @@ void phylo_tree::_index_preorder_id()
     _preorder_id_to_node.clear();
 
     phylo_node::id_type preorder_id = 0;
-    for (auto& node : xpas::visit_subtree<preorder_tree_iterator<false>>(_root))
+    for (auto& node : visit_subtree<preorder_tree_iterator<false>>(_root))
     {
         node._preorder_id = preorder_id;
         _preorder_id_to_node[preorder_id] = &node;
@@ -153,7 +153,7 @@ void phylo_tree::_index_postorder_id()
     _postorder_id_node_mapping.clear();
 
     phylo_node::id_type postorder_id = 0;
-    for (auto& node : xpas::visit_subtree<postorder_tree_iterator<false>>(_root))
+    for (auto& node : visit_subtree<postorder_tree_iterator<false>>(_root))
     {
         node._postorder_id = postorder_id;
         _postorder_id_node_mapping[postorder_id] = &node;
@@ -165,7 +165,7 @@ void phylo_tree::_index_labels()
 {
     _label_to_node.clear();
 
-    for (auto& node : xpas::visit_subtree(_root))
+    for (auto& node : visit_subtree(_root))
     {
         _label_to_node[node.get_label()] = &node;
     }
@@ -175,7 +175,7 @@ void phylo_tree::_index_nodes()
 {
     _node_count = 0;
 
-    for (auto& node : xpas::visit_subtree<iterator>(_root))
+    for (auto& node : visit_subtree<iterator>(_root))
     {
         (void)node;
         ++_node_count;
@@ -219,11 +219,11 @@ void phylo_tree::_index_nodes()
     }
 }
 
-namespace xpas
+namespace xcl
 {
     void save_tree(const phylo_tree& tree, const std::string& filename)
     {
         std::ofstream out(filename);
-        out << xpas::io::to_newick(tree);
+        out << xcl::io::to_newick(tree);
     }
 }

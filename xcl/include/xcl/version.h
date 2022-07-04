@@ -1,7 +1,7 @@
 #ifndef XPAS_VERSION_H
 #define XPAS_VERSION_H
 
-namespace xpas
+namespace xcl
 {
     /// \brief xpas version class. Follows the rules of semantic versioning 2.0.
     /// \sa Semantic versioning 2.0: https://semver.org/

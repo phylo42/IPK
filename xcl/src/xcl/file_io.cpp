@@ -4,7 +4,7 @@
 
 #include <xcl/file_io.h>
 
-using namespace xpas::io;
+using namespace xcl::io;
 using std::string;
 using std::fpos;
 using std::ifstream;
@@ -81,7 +81,7 @@ void buffered_reader::_read_next_chunk()
     }
 }
 
-std::string xpas::io::read_as_string(const std::string& filename)
+std::string xcl::io::read_as_string(const std::string& filename)
 {
     /// FIXME: error handling
     std::ifstream stream(filename);

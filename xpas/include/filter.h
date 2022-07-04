@@ -6,6 +6,8 @@
 
 namespace xpas
 {
+    using xcl::phylo_kmer;
+
     enum class filter_type
     {
         no_filter,

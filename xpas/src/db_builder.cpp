@@ -23,6 +23,7 @@
 using std::string;
 using std::cout, std::endl;
 using std::to_string;
+using namespace xcl;
 using namespace xpas;
 namespace fs = boost::filesystem;
 
@@ -149,21 +150,21 @@ namespace xpas
         , _filter{ filter }
         , _mu{ mu }
         , _num_threads{ num_threads }
-        , _phylo_kmer_db{ kmer_size, omega, xpas::seq_type::name, xpas::io::to_newick(_original_tree)}
+        , _phylo_kmer_db{ kmer_size, omega, seq_type::name, xcl::io::to_newick(_original_tree)}
     {}
 
     void db_builder::run()
     {
         std::cout << "Construction parameters:" << std::endl <<
-                  "\tSequence type: " << xpas::seq_type::name << std::endl <<
+                  "\tSequence type: " << seq_type::name << std::endl <<
                   "\tk: " << _kmer_size << std::endl <<
                   "\tomega: " << _omega << std::endl <<
-                  "\tKeep positions: " << (xpas::keep_positions ? "true" : "false") << std::endl << std::endl;
+                  "\tKeep positions: " << (keep_positions ? "true" : "false") << std::endl << std::endl;
 
         /// Fill the tree index from the tree
         auto& index = _phylo_kmer_db.tree_index();
         index.reserve(_original_tree.get_node_count());
-        for (const auto& node : xpas::visit_subtree(_original_tree.get_root()))
+        for (const auto& node : visit_subtree(_original_tree.get_root()))
         {
             index.push_back(phylo_node::node_index{ node.get_num_nodes(), node.get_subtree_branch_length() });
         }
@@ -221,7 +222,7 @@ namespace xpas
         const auto begin = std::chrono::steady_clock::now();
 
         /// Filter phylo k-mers
-        const auto threshold = xpas::score_threshold(_omega, _kmer_size);
+        const auto threshold = score_threshold(_omega, _kmer_size);
         auto filter = xpas::make_filter(_filter, _original_tree.get_node_count(),
                                         _working_directory, _num_batches, _mu, threshold);
         filter->filter(group_ids);
@@ -480,7 +481,7 @@ namespace xpas
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         size_t count = 0;
-        const auto log_threshold = std::log10(xpas::score_threshold(_omega, _kmer_size));
+        const auto log_threshold = std::log10(score_threshold(_omega, _kmer_size));
         for (auto node_matrix_ref : group)
         {
             const auto& node_matrix = node_matrix_ref.get();

@@ -1,7 +1,7 @@
 #include <xcl/phylo_kmer.h>
 #include <xcl/phylo_node.h>
 
-using namespace xpas;
+using namespace xcl;
 using std::vector;
 using std::string;
 using std::move;

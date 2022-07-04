@@ -9,7 +9,7 @@
 #include <vector>
 #include <xcl/seq_record.h>
 
-namespace xpas::io
+namespace xcl::io
 {
     namespace impl
     {
@@ -21,7 +21,7 @@ namespace xpas::io
         class fasta_iterator
         {
         public:
-            using value_type = const xpas::seq_record&;
+            using value_type = const xcl::seq_record&;
 
             fasta_iterator(const std::string& filename, size_t batch_size, bool clean_sequences=true);
             fasta_iterator(const fasta_iterator&) = delete;
@@ -54,14 +54,14 @@ namespace xpas::io
 
             std::string _header;
 
-            /// Indicates if we need to clean sequences on-the-fly with xpas::clean_sequence
+            /// Indicates if we need to clean sequences on-the-fly with xcl::clean_sequence
             bool _clean_sequences;
         };
     }
 
     /// Reads fasta file in batches. Cleans the sequences with clean_sequence
     /// Usage:
-    ///     for (const auto& seq: xpas::io::read_fasta(filename)) { ... }
+    ///     for (const auto& seq: xcl::io::read_fasta(filename)) { ... }
     class read_fasta
     {
         using const_iterator = impl::fasta_iterator;
@@ -86,6 +86,6 @@ namespace xpas::io
 
 
 /// \brief Outputs a collection of fasta records
-std::ostream& operator<<(std::ostream& out, const std::vector<xpas::seq_record>& sequences);
+std::ostream& operator<<(std::ostream& out, const std::vector<xcl::seq_record>& sequences);
 
 #endif //RAPPAS_CORE_FASTA_H

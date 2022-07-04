@@ -5,6 +5,7 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/filesystem.hpp>
 
+using namespace xcl;
 using namespace xpas;
 namespace fs = boost::filesystem;
 
@@ -41,7 +42,7 @@ phylo_kmer_db xpas::merge_batch(const std::string& working_dir,
                                 const std::vector<phylo_kmer::branch_type>& group_ids, size_t batch_idx)
 {
     //std::cout << "Merging hash maps [batch index = " << batch_idx << "]..." << std::endl;
-    phylo_kmer_db temp_db(0, 1.0, xpas::seq_type::name, "");
+    phylo_kmer_db temp_db(0, 1.0, seq_type::name, "");
 
     /// Load hash maps and merge them
     for (const auto group_id : group_ids)

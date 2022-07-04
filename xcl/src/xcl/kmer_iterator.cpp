@@ -2,7 +2,7 @@
 #include "xcl/kmer_iterator.h"
 #include "xcl/phylo_kmer.h"
 
-using namespace xpas;
+using namespace xcl;
 
 /// No ambiguity policy
 template<>
@@ -23,7 +23,7 @@ std::tuple<no_ambiguity_policy::value_type,
         const auto kmer_view = _sequence_view.substr(_kmer_position, _kmer_size);
 
         /// correct k-mer with gaps
-        if (auto code = xpas::encode_kmer<no_ambiguity_policy>(kmer_view); code)
+        if (auto code = xcl::encode_kmer<no_ambiguity_policy>(kmer_view); code)
         {
             key = *code;
             success = true;
@@ -65,11 +65,11 @@ std::tuple<no_ambiguity_policy::value_type,
         const auto new_base = _sequence_view[position + _kmer_size - 1];
 
         /// check for non-valid symbols (gaps, '*', '.' etc.)
-        if (auto new_code = xpas::encode<no_ambiguity_policy>(new_base); new_code)
+        if (auto new_code = xcl::encode<no_ambiguity_policy>(new_base); new_code)
         {
             /// shift bits and remove the first base of the current k-mer
-            key <<= xpas::bit_length<xpas::seq_type>();
-            key &= ((1u << (xpas::bit_length<xpas::seq_type>() * _kmer_size)) - 1);
+            key <<= bit_length<seq_type>();
+            key &= ((1u << (bit_length<seq_type>() * _kmer_size)) - 1);
 
             /// add the new base
             key |= *new_code;
@@ -108,7 +108,7 @@ std::tuple<one_ambiguity_policy::value_type,
         const auto kmer_view = _sequence_view.substr(_kmer_position, _kmer_size);
 
         /// resolve ambiguities
-        if (auto codes = xpas::encode_kmer<one_ambiguity_policy>(kmer_view); codes)
+        if (auto codes = xcl::encode_kmer<one_ambiguity_policy>(kmer_view); codes)
         {
             keys = *codes;
             success = true;
@@ -144,19 +144,19 @@ std::tuple<one_ambiguity_policy::value_type,
         const auto new_base = _sequence_view[position + _kmer_size - 1];
 
         /// encode a new base resolving ambiguities
-        auto new_codes = xpas::encode<one_ambiguity_policy>(new_base);
+        auto new_codes = encode<one_ambiguity_policy>(new_base);
 
         /// Calculate if the (k-1) suffix of the previous k-mer is still ambiguous
         bool is_ambiguous = false;
         if (keys.size() > 1)
         {
             auto suffix1 = keys[0];
-            suffix1 <<= xpas::bit_length<xpas::seq_type>();
-            suffix1 &= ((1u << (xpas::bit_length<xpas::seq_type>() * _kmer_size)) - 1);
+            suffix1 <<= bit_length<seq_type>();
+            suffix1 &= ((1u << (bit_length<seq_type>() * _kmer_size)) - 1);
 
             auto suffix2 = keys[1];
-            suffix2 <<= xpas::bit_length<xpas::seq_type>();
-            suffix2 &= ((1u << (xpas::bit_length<xpas::seq_type>() * _kmer_size)) - 1);
+            suffix2 <<= bit_length<seq_type>();
+            suffix2 &= ((1u << (bit_length<seq_type>() * _kmer_size)) - 1);
 
             is_ambiguous = (suffix1 != suffix2);
         }
@@ -172,8 +172,8 @@ std::tuple<one_ambiguity_policy::value_type,
                     for (const auto& new_code : *new_codes)
                     {
                         /// shift bits and remove the first base of the current k-mer
-                        key <<= xpas::bit_length<xpas::seq_type>();
-                        key &= ((1u << (xpas::bit_length<xpas::seq_type>() * _kmer_size)) - 1);
+                        key <<= bit_length<seq_type>();
+                        key &= ((1u << (bit_length<seq_type>() * _kmer_size)) - 1);
 
                         /// add the new base
                         key |= new_code;
@@ -200,8 +200,8 @@ std::tuple<one_ambiguity_policy::value_type,
                 {
                     /// shift bits and remove the first base of the current k-mer
                     auto new_key = key;
-                    new_key <<= xpas::bit_length<xpas::seq_type>();
-                    new_key &= ((1u << (xpas::bit_length<xpas::seq_type>() * _kmer_size)) - 1);
+                    new_key <<= bit_length<seq_type>();
+                    new_key &= ((1u << (bit_length<seq_type>() * _kmer_size)) - 1);
 
                     /// add the new base
                     new_key |= new_code;

@@ -6,10 +6,14 @@
 #include <memory>
 #include "row.h"
 
+namespace xcl
+{
+    class phylo_tree;
+}
+
 namespace xpas
 {
     class proba_matrix;
-    class phylo_tree;
 
 
     namespace cli
@@ -69,12 +73,12 @@ namespace xpas
                                                                 const std::string& alignment_phylip);
 
         /// Run ancestral reconstruction
-        std::tuple<proba_matrix, phylo_tree> ancestral_reconstruction(ar::software software,
+        std::tuple<proba_matrix, xcl::phylo_tree> ancestral_reconstruction(ar::software software,
                                                                       const ar::parameters& parameters);
 
         /// Maps node labels of the extended tree to the node labels of the AR tree
         /// This mapping is needed to query proba_matrix.
-        ar::mapping map_nodes(const phylo_tree& extended_tree, const phylo_tree& ar_tree);
+        ar::mapping map_nodes(const xcl::phylo_tree& extended_tree, const xcl::phylo_tree& ar_tree);
 
     }
 

@@ -11,6 +11,7 @@
 
 using std::vector;
 using std::string;
+using namespace xcl;
 using namespace xpas;
 namespace fs = boost::filesystem;
 
@@ -62,7 +63,7 @@ alignment::const_iterator alignment::end() const
 alignment load_alignment(const string& file_name)
 {
     std::vector<seq_record> sequences;
-    for (const auto& seq : xpas::io::read_fasta(file_name, false))
+    for (const auto& seq : xcl::io::read_fasta(file_name, false))
     {
         sequences.push_back(seq);
     }
@@ -144,7 +145,7 @@ vector<double> calculate_gap_ratio(const alignment& align)
         const auto& sequence = seq_record.sequence();
         for (size_t i = 0; i < sequence.size(); ++i)
         {
-            if (xpas::seq_traits::is_gap(sequence[i]))
+            if (seq_traits::is_gap(sequence[i]))
             {
                 ratios[i]++;
             }
@@ -206,16 +207,16 @@ void check_sequence_states(const seq_record& seq_record)
 {
     for (const auto& state : seq_record.sequence())
     {
-        if (!xpas::seq_traits::is_gap(state) && !xpas::seq_traits::key_to_code(state))
+        if (!seq_traits::is_gap(state) && !seq_traits::key_to_code(state))
         {
             std::ostringstream ss;
             ss << "Error: " << std::string(seq_record.header()) << " contains a non supported state: " <<
                 state;
             throw std::runtime_error(ss.str());
         }
-        else if (xpas::seq_traits::is_ambiguous(state))
+        else if (seq_traits::is_ambiguous(state))
         {
-            if (!xpas::seq_traits::is_gap(state))
+            if (!seq_traits::is_gap(state))
             {
                 // TODO: logging
                 //std::cout << "Ambiguous state (char='" << state << "') will be considered as a gap during AR." << std::endl;

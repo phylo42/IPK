@@ -3,7 +3,7 @@
 #include <cmath>
 #include <vector>
 
-using namespace xpas;
+using namespace xcl;
 
 /// Compares two floats for almost equality.
 /// From: https://en.cppreference.com/w/cpp/types/numeric_limits/epsilon
@@ -18,7 +18,7 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type almost_
 }
 
 template <>
-positioned_pkdb_value xpas::make_pkdb_value<positioned_phylo_kmer>(phylo_kmer::branch_type branch,
+positioned_pkdb_value xcl::make_pkdb_value<positioned_phylo_kmer>(phylo_kmer::branch_type branch,
                                                                    phylo_kmer::score_type score,
                                                                    phylo_kmer::pos_type position)
 {
@@ -26,7 +26,7 @@ positioned_pkdb_value xpas::make_pkdb_value<positioned_phylo_kmer>(phylo_kmer::b
 }
 
 template <>
-unpositioned_pkdb_value xpas::make_pkdb_value<unpositioned_phylo_kmer>(phylo_kmer::branch_type branch,
+unpositioned_pkdb_value xcl::make_pkdb_value<unpositioned_phylo_kmer>(phylo_kmer::branch_type branch,
                                                                        phylo_kmer::score_type score,
                                                                        phylo_kmer::pos_type position)
 {
@@ -35,21 +35,21 @@ unpositioned_pkdb_value xpas::make_pkdb_value<unpositioned_phylo_kmer>(phylo_kme
 }
 
 template <>
-positioned_phylo_kmer xpas::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
+positioned_phylo_kmer xcl::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
                                             phylo_kmer::pos_type position)
 {
     return { key, score, position };
 }
 
 template <>
-unpositioned_phylo_kmer xpas::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
+unpositioned_phylo_kmer xcl::make_phylo_kmer(phylo_kmer::key_type key, phylo_kmer::score_type score,
                                               phylo_kmer::pos_type position)
 {
     (void)position;
     return { key, score };
 }
 
-bool xpas::operator==(const positioned_phylo_kmer& lhs, const positioned_phylo_kmer& rhs) noexcept
+bool xcl::operator==(const positioned_phylo_kmer& lhs, const positioned_phylo_kmer& rhs) noexcept
 {
     if (lhs.is_nan() || rhs.is_nan())
     {
@@ -62,7 +62,7 @@ bool xpas::operator==(const positioned_phylo_kmer& lhs, const positioned_phylo_k
     }
 }
 
-bool xpas::operator==(const unpositioned_phylo_kmer& lhs, const unpositioned_phylo_kmer& rhs) noexcept
+bool xcl::operator==(const unpositioned_phylo_kmer& lhs, const unpositioned_phylo_kmer& rhs) noexcept
 {
     if (lhs.is_nan() || rhs.is_nan())
     {
@@ -74,18 +74,18 @@ bool xpas::operator==(const unpositioned_phylo_kmer& lhs, const unpositioned_phy
     }
 }
 
-phylo_kmer::score_type xpas::score_threshold(phylo_kmer::score_type omega, size_t kmer_size)
+phylo_kmer::score_type xcl::score_threshold(phylo_kmer::score_type omega, size_t kmer_size)
 {
     return std::pow(omega / seq_traits::alphabet_size, phylo_kmer::score_type(kmer_size));
 }
 
 template<>
-optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambiguity_policy>(std::string_view kmer)
+optional<no_ambiguity_policy::value_type> xcl::encode_kmer<no_ambiguity_policy>(std::string_view kmer)
 {
     no_ambiguity_policy::value_type key = 0;
     for (const auto base : kmer)
     {
-        if (const auto& base_code = xpas::encode<no_ambiguity_policy>(base); base_code)
+        if (const auto& base_code = encode<no_ambiguity_policy>(base); base_code)
         {
             key <<= bit_length<seq_type>();
             key |= *base_code;
@@ -99,7 +99,7 @@ optional<no_ambiguity_policy::value_type> xpas::encode_kmer<xpas::no_ambiguity_p
 }
 
 template<>
-optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity_policy>(std::string_view kmer)
+optional<one_ambiguity_policy::value_type> xcl::encode_kmer<one_ambiguity_policy>(std::string_view kmer)
 {
     auto keys = one_ambiguity_policy::value_type();
     keys.push_back(0);
@@ -108,7 +108,7 @@ optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity
 
     for (const auto base : kmer)
     {
-        if (const auto& base_codes = xpas::encode<one_ambiguity_policy>(base); base_codes)
+        if (const auto& base_codes = encode<one_ambiguity_policy>(base); base_codes)
         {
             /// if the character is ambiguous
             if (base_codes->size() > 1)
@@ -151,20 +151,20 @@ optional<one_ambiguity_policy::value_type> xpas::encode_kmer<xpas::one_ambiguity
 }
 
 
-std::string xpas::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
+std::string xcl::decode_kmer(phylo_kmer::key_type key, size_t kmer_size)
 {
     std::vector<uint8_t> result;
     result.reserve(kmer_size);
 
     while (key > 0)
     {
-        result.push_back(xpas::decode(key & ~xpas::rightmost_symbol_mask<seq_type>()));
+        result.push_back(decode(key & ~rightmost_symbol_mask<seq_type>()));
         key >>= bit_length<seq_type>();
     }
 
     for (size_t i = result.size(); i < kmer_size; ++i)
     {
-        result.push_back(xpas::decode(0));
+        result.push_back(decode(0));
     }
 
     return { result.rbegin(), result.rend() };

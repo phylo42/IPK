@@ -7,19 +7,19 @@
 #include <algorithm>
 #include <type_traits>
 
-namespace xpas
+namespace xcl
 {
     class phylo_tree;
     class phylo_node;
 }
 
-namespace xpas
+namespace xcl
 {
     //////////////////////////////////////////////////////////////////////////////////////////////////
     /// \brief A node of a phylogenetic tree.
     class phylo_node
     {
-        friend xpas::phylo_tree;
+        friend xcl::phylo_tree;
     public:
         /// Member types
 

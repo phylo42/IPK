@@ -17,6 +17,7 @@
 #include "pk_compute.h"
 
 namespace fs = boost::filesystem;
+using namespace xcl;
 
 return_code print_help()
 {
@@ -27,7 +28,7 @@ return_code print_help()
     return return_code::help;
 }
 
-std::string generate_db_name(const xpas::phylo_kmer_db& db)
+std::string generate_db_name(const phylo_kmer_db& db)
 {
     const auto kmer_size = db.kmer_size();
     const auto omega = db.omega();
@@ -60,18 +61,18 @@ std::string generate_db_name(const xpas::phylo_kmer_db& db)
 
 void check_parameters(const xpas::cli::parameters& parameters)
 {
-   if (!xpas::keep_positions && parameters.merge_branches)
+   if (!keep_positions && parameters.merge_branches)
    {
        throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
    }
 }
 
-std::string save_extended_tree(const std::string& working_dir, const xpas::phylo_tree& tree)
+std::string save_extended_tree(const std::string& working_dir, const xcl::phylo_tree& tree)
 {
     fs::path directory = fs::path(working_dir) / "extended_trees";
     fs::path full_path = directory / "extended_tree.newick";
     fs::create_directories(directory);
-    xpas::save_tree(tree, full_path.string());
+    xcl::save_tree(tree, full_path.string());
     return full_path.string();
 }
 
@@ -92,14 +93,14 @@ std::pair<std::string, std::string> save_extended_alignment(const std::string& w
     return { fasta_path.string(), phylip_path.string() };
 }
 
-std::string save_rerooted_tree(const std::string& working_dir, const xpas::phylo_tree& tree)
+std::string save_rerooted_tree(const std::string& working_dir, const xcl::phylo_tree& tree)
 {
     fs::path directory = fs::path(working_dir) / "AR";
     fs::create_directories(directory);
 
     fs::path tree_path = directory / "ar_tree_rerooted.newick";
     std::cout << "Saving tree to " << tree_path.string() << "..." << std::endl;
-    xpas::save_tree(tree, tree_path.string());
+    xcl::save_tree(tree, tree_path.string());
     return tree_path.string();
 }
 
@@ -153,9 +154,9 @@ std::string compression_status(const xpas::cli::parameters& parameters)
 
 return_code build_database(const xpas::cli::parameters& parameters)
 {
-    if (parameters.kmer_size > xpas::seq_traits::max_kmer_length)
+    if (parameters.kmer_size > seq_traits::max_kmer_length)
     {
-        std::cerr << "Maximum k-mer size allowed: " << xpas::seq_traits::max_kmer_length << std::endl;
+        std::cerr << "Maximum k-mer size allowed: " << seq_traits::max_kmer_length << std::endl;
         return return_code::argument_error;
     }
 
@@ -214,7 +215,7 @@ return_code build_database(const xpas::cli::parameters& parameters)
     std::cout << "Saving database to: " << db_filename.string() << "..." << std::endl;
     std::cout << compression_status(parameters) << std::endl;
     const auto begin = std::chrono::steady_clock::now();
-    xpas::save(db, db_filename.string(), parameters.uncompressed);
+    xcl::save(db, db_filename.string(), parameters.uncompressed);
     std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::steady_clock::now() - begin).count() << std::endl << std::endl;
 

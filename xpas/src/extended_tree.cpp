@@ -1,6 +1,7 @@
 #include "extended_tree.h"
 #include <xcl/newick.h>
 
+using namespace xcl;
 using namespace xpas;
 
 phylo_node::branch_length_type total_branch_length(const phylo_node* root)
@@ -163,7 +164,7 @@ std::pair<phylo_tree, ghost_mapping> extend_tree(const phylo_tree& tree)
 std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const std::string& filename, bool use_unrooted)
 {
     /// load original tree
-    auto tree = xpas::io::load_newick(filename);
+    auto tree = xcl::io::load_newick(filename);
 
     if (!tree.is_rooted())
     {
@@ -178,7 +179,7 @@ std::tuple<phylo_tree, phylo_tree, ghost_mapping> xpas::preprocess_tree(const st
     /// inject ghost nodes
     auto [extended_tree, mapping] = extend_tree(tree);
 
-    auto original_tree = xpas::io::load_newick(filename);
+    auto original_tree = xcl::io::load_newick(filename);
     return std::make_tuple(std::move(original_tree), std::move(extended_tree), mapping);
 }
 

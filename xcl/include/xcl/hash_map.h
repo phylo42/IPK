@@ -18,7 +18,7 @@
 #include <tsl/hopscotch_map.h>
 #endif
 
-namespace xpas
+namespace xcl
 {
     template<typename... Args>
 #ifdef USE_SKA_FLAT_HASH_MAP

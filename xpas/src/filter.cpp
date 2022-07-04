@@ -9,6 +9,7 @@
 #include <iostream>
 #include <random>
 
+using namespace xcl;
 using namespace xpas;
 namespace fs = boost::filesystem;
 

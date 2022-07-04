@@ -9,9 +9,10 @@
 #include <iomanip>
 
 using std::string, std::string_view;
-using xpas::phylo_node;
+using namespace xcl;
+using namespace xcl::io;
 
-namespace xpas::io
+namespace xcl::io
 {
     /// \brief A class for parsing .newick-formatted files.
     /// \details This class parses phylogenetic trees in the newick format. It designed to support
@@ -29,7 +30,7 @@ namespace xpas::io
         /// \param data A string variable containing the current buffer data to parse.
         void parse(std::string_view data);
 
-        xpas::phylo_node* get_root() const;
+        phylo_node* get_root() const;
 
     private:
         /// \brief Parses next symbol of input data.
@@ -58,11 +59,11 @@ namespace xpas::io
         void _handle_text(char ch);
 
         void _start_node();
-        xpas::phylo_node* _finish_node();
+        phylo_node* _finish_node();
         void _parse_node_text();
 
-        std::stack<xpas::phylo_node*> _node_stack;
-        xpas::phylo_node* _root;
+        std::stack<phylo_node*> _node_stack;
+        phylo_node* _root;
 
         std::string _node_text;
 
@@ -70,8 +71,6 @@ namespace xpas::io
         bool _end_of_file;
     };
 }
-
-using xpas::io::newick_parser;
 
 newick_parser::newick_parser()
     : _root{ nullptr }
@@ -209,13 +208,13 @@ void newick_parser::_parse_node_text()
     _node_text.clear();
 }
 
-xpas::phylo_tree xpas::io::load_newick(const string& file_name)
+phylo_tree xcl::io::load_newick(const string& file_name)
 {
     std::cout << "Loading newick: " + file_name << std::endl;
 
     /// Load a tree from file
     newick_parser parser;
-    xpas::io::buffered_reader reader(file_name);
+    xcl::io::buffered_reader reader(file_name);
     if (reader.good())
     {
         while (!reader.empty())
@@ -230,20 +229,20 @@ xpas::phylo_tree xpas::io::load_newick(const string& file_name)
     }
 
     /// Assign post-order ids to the phylo_node's
-    auto tree = xpas::phylo_tree{ parser.get_root() };
+    auto tree = phylo_tree{ parser.get_root() };
     std::cout << "Loaded a tree of " << tree.get_node_count() << " nodes.\n\n" << std::flush;
     return tree;
 }
 
-xpas::phylo_tree xpas::io::parse_newick(std::string_view newick_string)
+phylo_tree xcl::io::parse_newick(std::string_view newick_string)
 {
     newick_parser parser;
     parser.parse(newick_string);
-    return xpas::phylo_tree{ parser.get_root() };
+    return phylo_tree{ parser.get_root() };
 }
 
 
-void to_newick(std::ostream& out, const xpas::phylo_node& node, bool jplace)
+void to_newick(std::ostream& out, const phylo_node& node, bool jplace)
 {
     const auto num_children = node.get_children().size();
     if (num_children > 0)
@@ -271,7 +270,7 @@ void to_newick(std::ostream& out, const xpas::phylo_node& node, bool jplace)
     }
 }
 
-std::string xpas::io::to_newick(const xpas::phylo_tree& tree, bool jplace)
+std::string xcl::io::to_newick(const phylo_tree& tree, bool jplace)
 {
     std::ostringstream stream;
     ::to_newick(stream, *(tree.get_root()), jplace);

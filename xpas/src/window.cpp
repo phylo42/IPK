@@ -134,7 +134,7 @@ std::pair<size_t, score_t> window::max_at(size_t column) const
 {
     size_t max_index = 0;
     score_t max_score = get(0, column);
-    for (size_t i = 1; i < seq_traits::alphabet_size; ++i)
+    for (size_t i = 1; i < xcl::seq_traits::alphabet_size; ++i)
     {
         if (get(i, column) > max_score)
         {

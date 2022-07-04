@@ -6,7 +6,7 @@
 #include <boost/iostreams/device/mapped_file.hpp>
 #include <boost/iostreams/stream.hpp>
 
-namespace xpas::io
+namespace xcl::io
 {
     /// \brief A buffered reader class for memory mapped files.
     class buffered_reader

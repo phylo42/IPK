@@ -6,7 +6,7 @@
 #include <string>
 #include "optional.h"
 
-namespace xpas
+namespace xcl
 {
     /// \brief A phylo k-mer structure.
     /// \details A key-value pair for a phylo-kmer, where key is a key_type value of a k-mer, and value is

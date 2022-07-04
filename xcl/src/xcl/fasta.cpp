@@ -2,7 +2,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <xcl/fasta.h>
 
-using namespace xpas::io;
+using namespace xcl::io;
 using std::vector;
 using std::string, std::string_view;
 using std::cout, std::endl;
@@ -140,7 +140,7 @@ read_fasta::const_iterator read_fasta::end() const
     return { _filename, 0, false };
 }
 
-string xpas::io::clean_sequence(string sequence)
+string xcl::io::clean_sequence(string sequence)
 {
     sequence.erase(
         std::remove_if(sequence.begin(), sequence.end(),
@@ -149,7 +149,7 @@ string xpas::io::clean_sequence(string sequence)
     return sequence;
 }
 
-std::ostream& operator<<(std::ostream& out, const std::vector<xpas::seq_record>& sequences)
+std::ostream& operator<<(std::ostream& out, const std::vector<xcl::seq_record>& sequences)
 {
     for (const auto& seq : sequences)
     {

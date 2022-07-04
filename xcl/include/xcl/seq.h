@@ -6,7 +6,7 @@
 #include <vector>
 #include "optional.h"
 
-namespace xpas
+namespace xcl
 {
     /// \brief Sequence traits type.
     /// \details Describes all the properties based on the size of an alphabet, the alphabet itself etc.

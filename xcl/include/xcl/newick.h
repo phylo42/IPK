@@ -4,28 +4,28 @@
 #include <string>
 #include <string_view>
 
-namespace xpas
+namespace xcl
 {
     class phylo_tree;
 }
 
-namespace xpas::io
+namespace xcl::io
 {
     /// \brief Loads a phylogenetic tree from a newick formatted file.
-    xpas::phylo_tree load_newick(const std::string& file_name);
+    xcl::phylo_tree load_newick(const std::string& file_name);
 
     /// \brief Parses a phylogenetic tree from a newick formatted string.
-    xpas::phylo_tree parse_newick(std::string_view newick_string);
+    xcl::phylo_tree parse_newick(std::string_view newick_string);
 
     /// \brief Constructs a Newick-formatted string from the input tree.
     /// Depending on the jplace parameter, it builds
     ///     false) Pure newick: (label:branch_length,label:branch_length)...
     ///     true) Jplace: (label:branch_length{node_postorder_id}, ...)...
-    std::string to_newick(const xpas::phylo_tree& tree, bool jplace=false);
+    std::string to_newick(const xcl::phylo_tree& tree, bool jplace=false);
 }
 
 /// \brief Outputs a tree in Jplace-extended Newick format:
 /// (label:branch_length{node_postorder_id}, ...)
-std::ostream& operator<<(std::ostream& out, const xpas::phylo_tree& tree);
+std::ostream& operator<<(std::ostream& out, const xcl::phylo_tree& tree);
 
 #endif //RAPPAS_CORE_NEWICK_H

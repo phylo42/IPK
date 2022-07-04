@@ -13,7 +13,7 @@
 
 namespace fs = boost::filesystem;
 
-namespace xpas
+namespace xcl
 {
     /// A struct with definitions for different version of the serialization protocol
     struct protocol
@@ -38,7 +38,7 @@ namespace xpas
 #endif
     };
 
-    xpas::phylo_kmer_db load_compressed(const std::string& filename)
+    xcl::phylo_kmer_db load_compressed(const std::string& filename)
     {
         std::ifstream ifs(filename);
         boost::iostreams::filtering_istream in;
@@ -48,23 +48,23 @@ namespace xpas
 
         boost::archive::binary_iarchive ia(in);
 
-        xpas::phylo_kmer_db db { 0, 0.0, "", "" };
+        xcl::phylo_kmer_db db { 0, 0.0, "", "" };
         ia & db;
         return db;
     }
 
-    xpas::phylo_kmer_db load_uncompressed(const std::string& filename)
+    xcl::phylo_kmer_db load_uncompressed(const std::string& filename)
     {
         std::ifstream ifs(filename);
         boost::archive::binary_iarchive ia(ifs);
 
-        xpas::phylo_kmer_db db { 0, 0.0, "", "" };
+        xcl::phylo_kmer_db db { 0, 0.0, "", "" };
         ia & db;
         return db;
     }
 
 
-    xpas::phylo_kmer_db load(const std::string& filename)
+    xcl::phylo_kmer_db load(const std::string& filename)
     {
         if (!fs::exists(filename))
         {
@@ -84,7 +84,7 @@ namespace xpas
         }
     }
 
-    void save_compressed(const xpas::phylo_kmer_db& db, const std::string& filename)
+    void save_compressed(const xcl::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream ofs(filename);
 
@@ -97,14 +97,14 @@ namespace xpas
         oa & db;
     }
 
-    void save_uncompressed(const xpas::phylo_kmer_db& db, const std::string& filename)
+    void save_uncompressed(const xcl::phylo_kmer_db& db, const std::string& filename)
     {
         std::ofstream out(filename);
         ::boost::archive::binary_oarchive oa(out);
         oa & db;
     }
 
-    void save(const xpas::phylo_kmer_db& db, const std::string& filename, bool uncompressed=false)
+    void save(const xcl::phylo_kmer_db& db, const std::string& filename, bool uncompressed=false)
     {
         if (uncompressed)
         {
@@ -121,7 +121,7 @@ namespace boost::serialization
 {
     template<class Archive>
     inline void save(Archive& ar,
-                     const xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
+                     const xcl::_phylo_kmer_db<xcl::positioned_phylo_kmer>& db,
                      unsigned int /*version*/)
     {
         ar & std::string(db.sequence_type());
@@ -140,7 +140,7 @@ namespace boost::serialization
         const auto kmer_size = db.kmer_size();
         ar & kmer_size;
 
-        xpas::phylo_kmer::score_type omega = db.omega();
+        xcl::phylo_kmer::score_type omega = db.omega();
         ar & omega;
 
         size_t table_size = db.size();
@@ -160,7 +160,7 @@ namespace boost::serialization
 
     template<class Archive>
     inline void save(Archive& ar,
-                     const xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
+                     const xcl::_phylo_kmer_db<xcl::unpositioned_phylo_kmer>& db,
                      unsigned int /*version*/)
     {
         ar & std::string(db.sequence_type());
@@ -181,7 +181,7 @@ namespace boost::serialization
         size_t kmer_size = db.kmer_size();
         ar & kmer_size;
 
-        xpas::phylo_kmer::score_type omega = db.omega();
+        xcl::phylo_kmer::score_type omega = db.omega();
         ar & omega;
 
         /// The number of different k-mers
@@ -204,12 +204,12 @@ namespace boost::serialization
     /// Loads the tree index: the number of the nodes in the subtree for every node,
     ///     the total branch length in the subtree
     template<class Archive>
-    std::vector<xpas::phylo_node::node_index> load_tree_index(Archive& ar)
+    std::vector<xcl::phylo_node::node_index> load_tree_index(Archive& ar)
     {
         size_t num_nodes;
         ar & num_nodes;
 
-        std::vector<xpas::phylo_node::node_index> index(num_nodes);
+        std::vector<xcl::phylo_node::node_index> index(num_nodes);
         for (size_t i = 0; i < num_nodes; ++i)
         {
             ar & index[i].subtree_num_nodes;
@@ -221,13 +221,13 @@ namespace boost::serialization
 
     template<class Archive>
     inline void load(Archive& ar,
-                     xpas::_phylo_kmer_db<xpas::positioned_phylo_kmer>& db,
+                     xcl::_phylo_kmer_db<xcl::positioned_phylo_kmer>& db,
                      const unsigned int version)
     {
         db.set_version(version);
 
         /// Early versions are not supported
-        if (version < xpas::protocol::v0_2_WITH_POSITIONS)
+        if (version < xcl::protocol::v0_2_WITH_POSITIONS)
         {
             throw std::runtime_error("Failed to load database: the database does not have positional information.");
         }
@@ -236,7 +236,7 @@ namespace boost::serialization
         db.set_positions_loaded(true);
 
         /// Deserialization of the content added in versions v0.2.x
-        if (version > xpas::protocol::v0_1_x)
+        if (version > xcl::protocol::v0_1_x)
         {
             std::string sequence_type;
             ar & sequence_type;
@@ -244,9 +244,9 @@ namespace boost::serialization
         }
 
         /// Deserialization of the tree index, v0.3.2 and later
-        if (version >= xpas::protocol::v0_3_2_WITHOUT_POSITIONS)
+        if (version >= xcl::protocol::v0_3_2_WITHOUT_POSITIONS)
         {
-            std::vector<xpas::phylo_node::node_index> tree_index = load_tree_index(ar);
+            std::vector<xcl::phylo_node::node_index> tree_index = load_tree_index(ar);
             db.set_tree_index(std::move(tree_index));
         }
 
@@ -260,7 +260,7 @@ namespace boost::serialization
             ar & kmer_size;
             db.set_kmer_size(kmer_size);
 
-            xpas::phylo_kmer::score_type omega = 0;
+            xcl::phylo_kmer::score_type omega = 0;
             ar & omega;
             db.set_omega(omega);
 
@@ -268,15 +268,15 @@ namespace boost::serialization
             ar & table_size;
             for (size_t i = 0; i < table_size; ++i)
             {
-                xpas::phylo_kmer::key_type key = xpas::phylo_kmer::na_key;
+                auto key = xcl::phylo_kmer::na_key;
                 size_t entries_size = 0;
                 ar & key;
                 ar & entries_size;
                 for (size_t j = 0; j < entries_size; ++j)
                 {
-                    xpas::phylo_kmer::branch_type branch = xpas::phylo_kmer::na_branch;
-                    xpas::phylo_kmer::score_type score = xpas::phylo_kmer::na_score;
-                    xpas::phylo_kmer::pos_type position = xpas::phylo_kmer::na_pos;
+                    auto branch = xcl::phylo_kmer::na_branch;
+                    auto score = xcl::phylo_kmer::na_score;
+                    auto position = xcl::phylo_kmer::na_pos;
                     ar & branch & score & position;
                     db.unsafe_insert(key, { branch, score, position });
                 }
@@ -286,13 +286,13 @@ namespace boost::serialization
 
     template<class Archive>
     inline void load(Archive& ar,
-                     xpas::_phylo_kmer_db<xpas::unpositioned_phylo_kmer>& db,
+                     xcl::_phylo_kmer_db<xcl::unpositioned_phylo_kmer>& db,
                      const unsigned int version)
     {
         db.set_version(version);
 
         /// Early versions are not supported
-        if (version < xpas::protocol::v0_1_x)
+        if (version < xcl::protocol::v0_1_x)
         {
             throw std::runtime_error("Failed to load database: this database was built with older version of xpas.");
         }
@@ -300,7 +300,7 @@ namespace boost::serialization
         db.set_positions_loaded(false);
 
         /// Deserialization of the content added in versions v0.2.x
-        if (version > xpas::protocol::v0_1_x)
+        if (version > xcl::protocol::v0_1_x)
         {
             std::string sequence_type;
             ar & sequence_type;
@@ -308,7 +308,7 @@ namespace boost::serialization
         }
 
         /// Deserialization of the tree index, v0.3.2 and later
-        if (version >= xpas::protocol::v0_3_2_WITHOUT_POSITIONS)
+        if (version >= xcl::protocol::v0_3_2_WITHOUT_POSITIONS)
         {
             auto tree_index = load_tree_index(ar);
             db.set_tree_index(std::move(tree_index));
@@ -322,7 +322,7 @@ namespace boost::serialization
         ar & kmer_size;
         db.set_kmer_size(kmer_size);
 
-        xpas::phylo_kmer::score_type omega = 0;
+        xcl::phylo_kmer::score_type omega = 0;
         ar & omega;
         db.set_omega(omega);
 
@@ -330,21 +330,21 @@ namespace boost::serialization
         ar & table_size;
         for (size_t i = 0; i < table_size; ++i)
         {
-            xpas::phylo_kmer::key_type key = xpas::phylo_kmer::na_key;
+            auto key = xcl::phylo_kmer::na_key;
             size_t entries_size = 0;
             ar & key;
             ar & entries_size;
             for (size_t j = 0; j < entries_size; ++j)
             {
                 /// classic deserialization of non-positioned phylo k-mers
-                xpas::phylo_kmer::branch_type branch = xpas::phylo_kmer::na_branch;
-                xpas::phylo_kmer::score_type score = xpas::phylo_kmer::na_score;
+                auto branch = xcl::phylo_kmer::na_branch;
+                auto score = xcl::phylo_kmer::na_score;
                 ar & branch & score;
 
                 /// if the database has positions, read and ignore them
-                if (version == xpas::protocol::v0_2_WITH_POSITIONS)
+                if (version == xcl::protocol::v0_2_WITH_POSITIONS)
                 {
-                    xpas::phylo_kmer::pos_type position = xpas::phylo_kmer::na_pos;
+                    auto position = xcl::phylo_kmer::na_pos;
                     ar & position;
                 }
                 db.unsafe_insert(key, { branch, score });
@@ -355,12 +355,12 @@ namespace boost::serialization
     // split non-intrusive serialization function member into separate
     // non intrusive save/load member functions
     template<class Archive>
-    inline void serialize(Archive& ar, xpas::phylo_kmer_db& db, unsigned int file_version)
+    inline void serialize(Archive& ar, xcl::phylo_kmer_db& db, unsigned int file_version)
     {
         boost::serialization::split_free(ar, db, file_version);
     }
 }
 
-BOOST_CLASS_VERSION(xpas::phylo_kmer_db, xpas::protocol::CURRENT)
+BOOST_CLASS_VERSION(xcl::phylo_kmer_db, xcl::protocol::CURRENT)
 
 #endif //RAPPAS_CORE_SERIALIZATION_H

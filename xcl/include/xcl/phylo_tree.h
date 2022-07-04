@@ -5,7 +5,7 @@
 #include <xcl/phylo_kmer.h>
 #include <xcl/phylo_node.h>
 
-namespace xpas {
+namespace xcl {
 
     namespace impl
     {
@@ -290,7 +290,7 @@ namespace xpas {
             /// check if it is a null pointer, or not a
             if (!root)
             {
-                throw std::runtime_error("xpas::visit_subtree: root can not be null");
+                throw std::runtime_error("xcl::visit_subtree: root can not be null");
             }
         }
 
@@ -314,7 +314,7 @@ namespace xpas {
     /// \brief A phylogenetic tree class
     /// \defails phylo_tree is only constructable by the rappas::io::load_newick function.
     /// Non-copyable. Phylo-nodes are not modifiable.
-    /// \sa xpas::phylo_node, xpas::io::load_newick
+    /// \sa xcl::phylo_node, xcl::io::load_newick
     class phylo_tree
     {
         friend class tree_extender;
@@ -363,16 +363,16 @@ namespace xpas {
         /// \brief Returns an optional fora pointer to a phylo_node with a given preorder_id, if exists in the tree.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_preorder_id
-        optional<const xpas::phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
+        optional<const phylo_node*> get_by_preorder_id(phylo_node::id_type preorder_id) const noexcept;
 
         /// \brief Returns an optional fora pointer to a phylo_node with a given postorder_id, if exists in the tree.
         /// \details This operation does not require any traversal and implemented in O(1).
         /// \sa get_by_postorder_id
-        optional<const xpas::phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
+        optional<const phylo_node*> get_by_postorder_id(phylo_node::id_type postorder_id) const noexcept;
 
         /// \brief Returns an optional for a pointer to a phylo_node with a given label, if exists in the tree.
         /// \details This operation does not require any traversal and implemented in O(1).
-        optional<const xpas::phylo_node*> get_by_label(const std::string& label) const noexcept;
+        optional<const phylo_node*> get_by_label(const std::string& label) const noexcept;
 
         /// Creates a copy of the tree. We prefer to have this method and the copy constructor deleted
         /// to make sure we never copy by mistake, and always move trees.
@@ -392,11 +392,11 @@ namespace xpas {
         size_t _node_count;
 
         /// Map "phylo_node_preorder_id -> phylo_node"
-        std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _preorder_id_to_node;
+        std::unordered_map<phylo_node::id_type, const phylo_node*> _preorder_id_to_node;
         /// Map "phylo_node_postorder_id -> phylo_node"
-        std::unordered_map<phylo_node::id_type, const xpas::phylo_node*> _postorder_id_node_mapping;
+        std::unordered_map<phylo_node::id_type, const phylo_node*> _postorder_id_node_mapping;
         /// Map "node label -> phylo_node"
-        std::unordered_map<std::string, const xpas::phylo_node*> _label_to_node;
+        std::unordered_map<std::string, const phylo_node*> _label_to_node;
     };
 
     void save_tree(const phylo_tree& tree, const std::string& filename);
