@@ -4,8 +4,10 @@
 #include <string>
 #include <optional>
 #include <regex>
+#include <array>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/process.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
@@ -610,7 +612,7 @@ namespace xpas::ar
     {
     public:
         explicit raxml_wrapper(ar::parameters parameters)
-            : _params{ std::move(parameters) }
+            : _params{std::move(parameters)}
         {
         }
 
@@ -632,7 +634,7 @@ namespace xpas::ar
                 check_file(matrix_file);
                 check_file(tree_file);
             }
-            /// look in the directory provided by --ar-dir
+                /// look in the directory provided by --ar-dir
             else
             {
                 const auto ar_dir = _params.ar_dir;
@@ -667,14 +669,72 @@ namespace xpas::ar
             std::cout << "Ancestral reconstruction results have been found: " << std::endl
                       << '\t' << matrix_file.string() << std::endl
                       << '\t' << tree_file.string() << std::endl;
-            return { matrix_file.string(), tree_file.string() };
+            return {matrix_file.string(), tree_file.string()};
         }
 
     private:
 
         void _run()
         {
-            throw std::runtime_error("RAXML-NG is not supported yet.");
+            auto process = make_process();
+            process.wait();
+            auto result = process.exit_code();
+
+            if (result != 0)
+            {
+                throw std::runtime_error("Error during ancestral reconstruction: exit code"
+                                         + std::to_string(result));
+            }
+        }
+
+        std::string get_model_type(const ar::model& model)
+        {
+            // return "AA";
+            return "DNA";
+        }
+
+        bp::child make_process()
+        {
+            std::vector<std::string> args = {
+                "--ancestral",
+                "--msa", _params.alignment_file,
+                "--tree", _params.tree_file,
+                "--threads", "1", //_params.threads,
+                "--precision", "9",
+                "--seed", "1",
+                "--force", "msa"
+            };
+
+            if (_params.ar_parameters.empty())
+            {
+                // See: https://github.com/amkozlov/raxml-ng/wiki/Input-data#evolutionary-model
+                args.push_back("--data-type");
+                args.push_back(get_model_type(_params.ar_model));
+
+                args.push_back("--model");
+                const auto ar_model = std::vector<std::string>{
+                    model_to_string(_params.ar_model),
+                    "+G", std::to_string(_params.categories),
+                    "{", std::to_string(_params.alpha), "}",
+                    "+IU{0}",
+                    "+FC"
+                };
+                const auto ar_model_str = boost::algorithm::join(ar_model, "");
+                args.push_back(ar_model_str);
+
+                args.push_back("--blopt");
+                args.push_back("nr_safe");
+                args.push_back("--opt-model");
+                args.push_back("on");
+                args.push_back("--opt-branches");
+                args.push_back("on");
+            }
+            else
+            {
+                args.push_back(_params.ar_parameters);
+            }
+            std::cout << "Running: " << _params.binary_file << " " << boost::algorithm::join(args, " ") << std::endl;
+            return bp::child(_params.binary_file, bp::args(args));
         }
 
         void check_file(const fs::path& file)

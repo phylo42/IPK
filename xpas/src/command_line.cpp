@@ -19,8 +19,8 @@ namespace xpas::cli
     /// Ancestral Reconstruction
     static std::string AR_DIR = "ar-dir";
     static std::string AR_BINARY = "ar-binary";
-    static std::string AR_MODEL = "model";
-    static std::string AR_ALPHA = "alpha";
+    static std::string AR_MODEL = "model", AR_MODEL_SHORT = "m";
+    static std::string AR_ALPHA = "alpha", AR_ALPHA_SHORT = "a";
     static std::string AR_CATEGORIES = "categories";
     static std::string AR_ONLY = "ar-only";
 
@@ -90,11 +90,11 @@ namespace xpas::cli
              "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
             (AR_BINARY.c_str(), po::value<std::string>()->required(),
              "Binary file for ancestral reconstruction software (PhyML, RAxML-NG).")
-            (AR_MODEL.c_str(), po::value<std::string>()->default_value("GTR"),
+            ((AR_MODEL + "," + AR_MODEL_SHORT).c_str(), po::value<std::string>()->default_value("GTR"),
              "Model used in AR, one of the following:"
              "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
              "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
-            (AR_ALPHA.c_str(), po::value<double>()->default_value(1.0),
+            ((AR_ALPHA + "," + AR_ALPHA_SHORT).c_str(), po::value<double>()->default_value(1.0),
              "Gamma shape parameter, used in ancestral reconstruction.")
             (AR_CATEGORIES.c_str(), po::value<int>()->default_value(4),
              "Number of relative substitution rate categories, used in ancestral reconstruction.")
