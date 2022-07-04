@@ -220,12 +220,14 @@ def build_database(arbinary, #database,
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            rappas_bin = f"{current_dir}/bin/build/xpas-build-dna"
+            rappas_bin = f"{current_dir}/bin/xpas/xpas-dna"
     else:
         if keep_positions:
-            rappas_bin = f"{current_dir}/bin/build/xpas-build-aa-pos"
+            raise NotImplementedError()
+            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
         else:
-            rappas_bin = f"{current_dir}/bin/build/xpas-build-aa"
+            raise NotImplementedError()
+            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa"
 
     command = [
         rappas_bin,

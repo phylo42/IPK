@@ -38,6 +38,7 @@ set(SOURCES
 ######################################################################################################
 # Application target and properties
 add_executable(xpas_dna "")
+set_target_properties(xpas_dna PROPERTIES OUTPUT_NAME xpas-dna)
 target_sources(xpas_dna PRIVATE ${SOURCES})
 
 target_include_directories(xpas_dna
@@ -68,6 +69,7 @@ target_compile_features(xpas_dna
 ######################################################################################################
 ## Amino acids
 #add_executable(xpas_aa "")
+#set_target_properties(xpas_aa PROPERTIES OUTPUT_NAME xpas-aa)
 #target_sources(xpas_aa PRIVATE ${SOURCES})
 #
 #target_include_directories(xpas_aa
