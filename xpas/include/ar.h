@@ -62,6 +62,11 @@ namespace xpas
             std::string binary_file;
             std::string tree_file;
             std::string alignment_file;
+
+            /// User-defined arguments for the AR software
+            std::string ar_parameters;
+
+            /// If ar_parameters are empty, those three are used
             model ar_model;
             double alpha;
             int categories;
