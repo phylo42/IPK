@@ -23,6 +23,7 @@ namespace xpas::cli
     static std::string AR_ALPHA = "alpha", AR_ALPHA_SHORT = "a";
     static std::string AR_CATEGORIES = "categories";
     static std::string AR_ONLY = "ar-only";
+    static std::string AR_PARAMETERS = "ar-parameters";
 
     /// Main options
     static std::string REDUCTION_RATIO = "reduction-ratio";
@@ -87,18 +88,20 @@ namespace xpas::cli
                 "Original phylogenetic tree file")
 
             (AR_DIR.c_str(), po::value<std::string>()->default_value(""),
-             "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
+                "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
             (AR_BINARY.c_str(), po::value<std::string>()->required(),
-             "Binary file for ancestral reconstruction software (PhyML, RAxML-NG).")
+                "Binary file for ancestral reconstruction software (PhyML, RAxML-NG).")
             ((AR_MODEL + "," + AR_MODEL_SHORT).c_str(), po::value<std::string>()->default_value("GTR"),
-             "Model used in AR, one of the following:"
-             "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
-             "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
+                "Model used in AR, one of the following:"
+                "nucl  : JC69, HKY85, K80, F81, TN93, GTR"
+                "amino : LG, WAG, JTT, Dayhoff, DCMut, CpREV, mMtREV, MtMam, MtArt")
             ((AR_ALPHA + "," + AR_ALPHA_SHORT).c_str(), po::value<double>()->default_value(1.0),
-             "Gamma shape parameter, used in ancestral reconstruction.")
+                "Gamma shape parameter, used in ancestral reconstruction.")
             (AR_CATEGORIES.c_str(), po::value<int>()->default_value(4),
-             "Number of relative substitution rate categories, used in ancestral reconstruction.")
+                "Number of relative substitution rate categories, used in ancestral reconstruction.")
             ((AR_ONLY).c_str(), po::bool_switch(&ar_only_flag))
+            (AR_PARAMETERS.c_str(), po::value<std::string>()->default_value(""),
+                "Whitespace-separated list of arguments passed to the ancestral reconstruction tool.")
 
             ((K + "," + K_SHORT).c_str(), po::value<size_t>()->default_value(8),
                 "k-mer length used at DB build")
@@ -135,14 +138,94 @@ namespace xpas::cli
         return ss.str();
     }
 
+    char* convert(const std::string &s)
+    {
+        char* pc = new char[s.size() + 1];
+        std::strcpy(pc, s.c_str());
+        return pc;
+    }
+
+    struct cli_args
+    {
+        cli_args(int argc, const char* argv[])
+            : argc(argc)
+        {
+            for (int i = 0; i < argc; ++i)
+            {
+                this->argv.emplace_back(argv[i]);
+            }
+        }
+
+        void escape_quotes()
+        {
+            int start_arg = -1;
+            int end_arg = -1;
+
+            for (int i = 0; i < argc; ++i)
+            {
+                if ((argv[i].find('"') != std::string::npos) ||
+                    (argv[i].find('\'') != std::string::npos))
+                {
+                    // if this is not the first quote
+                    if (start_arg != -1)
+                    {
+                        end_arg = i;
+                    }
+                    else
+                    {
+                        start_arg = i;
+                    }
+                }
+            }
+
+            /// if found a match
+            if (start_arg != end_arg)
+            {
+                argc -= end_arg - start_arg;
+
+                /// combine args inside quotes
+                std::stringstream ss;
+                for (int i = start_arg; i <= end_arg; ++i)
+                {
+                    ss << argv[i] << " ";
+                }
+                argv[start_arg] = ss.str();
+                argv.erase(argv.begin() + start_arg + 1, argv.begin() + end_arg + 1);
+            }
+        }
+
+        [[nodiscard]]
+        std::pair<int, std::vector<const char*>> to_cargs() const
+        {
+            std::vector<const char*>  vc;
+            std::transform(argv.begin(), argv.end(), std::back_inserter(vc), convert);
+            return { argc, vc };
+        }
+
+        int argc;
+        std::vector<std::string> argv;
+    };
+
     parameters process_command_line(int argc, const char* argv[])
     {
         parameters parameters;
         try
         {
+            /// Command line arguments can contain arguments like:
+            ///     --ar-parameters "--param1 value1 --param2 value2"
+            /// In this cases, quotes are ignored and parsed into many
+            /// independent arguments instead of one key-value pair.
+            /// We need to parse them manually
+            auto args = cli_args(argc, argv);
+            args.escape_quotes();
+            const auto& [new_argc, new_argv] = args.to_cargs();
+            /// I am sorry for this syntax
+            const char* const * new_argv_array = new_argv.data();
+
             const po::options_description desc = get_opt_description();
             po::variables_map vm;
-            po::store(po::parse_command_line(argc, argv, desc), vm);
+
+            po::store(po::parse_command_line(new_argc, new_argv_array, desc), vm);
             po::notify(vm);
 
             if (vm.count(HELP))
@@ -166,6 +249,7 @@ namespace xpas::cli
             parameters.ar_alpha = vm[AR_ALPHA].as<double>();
             parameters.ar_categories = vm[AR_CATEGORIES].as<int>();
             parameters.ar_only = ar_only_flag;
+            parameters.ar_parameters = vm[AR_PARAMETERS].as<std::string>();
 
             parameters.reduction_ratio = vm[REDUCTION_RATIO].as<double>();
             parameters.omega = vm[OMEGA].as<xpas::phylo_kmer::score_type>();

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+
 """
-xpas wrapper script.
+XPAS wrapper script.
 """
 
 __author__ = "Nikolai Romashchenko"
@@ -8,11 +9,11 @@ __license__ = "MIT"
 
 
 import os
-from os import path
-from pathlib import Path
 import click
 import subprocess
 from pathlib import Path
+import shutil
+import json
 
 
 @click.group()
@@ -25,13 +26,18 @@ def xpas():
     pass
 
 
-NUCL_MODELS = ['JC69', 'HKY85', 'K80', 'F81', 'TN93', 'GTR']
-AMINO_MODELS = ['LG', 'WAG', 'JTT', 'Dayhoff', 'DCMut', 'CpREV', 'mMtREV', 'MtMam', 'MtArt']
+# See: https://github.com/amkozlov/raxml-ng/wiki/Input-data#evolutionary-model
+NUCL_MODELS = ['JC', 'K80', 'F81', 'HKY', 'TN93ef',
+               'TN93', 'K81', 'K81uf', 'TPM2', 'TPM2uf', 'TPM3', 'TPM3uf',
+               'TIM1', 'TIM1uf', 'TIM2', 'TIM2uf', 'TIM3', 'TIM3uf', 'TVMef',
+               'TVM', 'SYM', 'GTR']
+AMINO_MODELS = ['Blosum62', 'cpREV', 'Dayhoff', 'DCMut', 'DEN', 'FLU', 'HIVb', 'HIVw', 'JTT',
+                'JTT-DCMut', 'LG', 'mtART', 'mtMAM', 'mtREV', 'mtZOA', 'PMB', 'rtREV', 'stmtREV',
+                'VT', 'WAG', 'LG4M', 'LG4X', 'PROTGTR']
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
 KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
-
 
 
 def validate_filter(ctx, param, value):
@@ -42,13 +48,21 @@ def validate_filter(ctx, param, value):
     return value
 
 
+def validate_model(ctx, param, value):
+    if ('ar_config' in ctx.params) or (value and value in ALL_MODELS):
+        return value
+
+    raise click.BadParameter(f'Please define a valid evolutionary model either via --model or in a config file '
+                             f'via --ar-config. Valid values: {ALL_MODELS}')
+
 @xpas.command()
-@click.option('-b', '--arbinary',
+@click.option('-b', '--ar',
               type=click.Path(exists=True),
-              required=True,
-              help="Binary file for marginal AR, currently 'phyml' and "
-                   "'baseml' (from PAML) are supported.")
-@click.option('-r', '--refalign', 
+              required=False,
+              help="Path for the ancestral reconstruction software used. Currently,"
+                   "PhyML and RAxML-ng are supported. If not given, XPAS will try to"
+                   "find RAxML-ng using environmental variables.")
+@click.option('-r', '--refalign',
               type=click.Path(exists=True),
               required=True,
               help="""Reference alignment in fasta format.
@@ -72,11 +86,7 @@ def validate_filter(ctx, param, value):
               help="Working directory for temp files.")
 @click.option('--write-reduction',
               type=click.Path(file_okay=True, dir_okay=False),
-              help=" Write reduced alignment to file.")
-#@click.option('--dbfilename',
-#              type=str,
-#              default="db.rps", show_default=True, 
-#              help="Output database filename.")
+              help="Write reduced alignment to file.")
 @click.option('-a', '--alpha',
               type=float,
               default=1.0, show_default=True,
@@ -85,39 +95,23 @@ def validate_filter(ctx, param, value):
               type=int,
               default=4, show_default=True,
               help="Number of categories used in ancestral reconstruction.")
-#@click.option('-g', '--ghosts',
-#              type=int,
-#              default=1, show_default=True,
-#              help="Number of ghost nodes injected per branch.")
 @click.option('-k', '--k',
              type=int,
              default=8, show_default=True,
              help="k-mer length used at DB build.")
-@click.option('-m', '--model',
-             type=click.Choice(ALL_MODELS),
-             required=True,
+@click.option('-m', '--model', type=click.UNPROCESSED, callback=validate_model, required=False,
              help="Model used in AR, one of the following:\n"
                   f"nucl: {', '.join(x for x in NUCL_MODELS)}\n"
                   f"amino: {', '.join(x for x in AMINO_MODELS)}")
-@click.option('--arparameters',
-             type=str,
-             help="""Parameters passed to the software used for
-                  anc. seq. reconstuct. Overrides -a,-c,-m options.
-                  Value must be quoted by ' or ". Do not set options
-                  -i,-u,--ancestral (managed by RAPPAS).""")
 @click.option('--convert-uo',
               is_flag=True,
               help="U, O amino acids are converted to C, L.")
-#@click.option('--gap-jump-thresh',
-#              type=float,
-#              deafult=0.3, show_default=True,
-#              help="Gap ratio above which gap jumps are activated.")
 @click.option('--no-reduction',
               is_flag=True,
               help="""Do not operate alignment reduction. This will 
                   keep all sites of input reference alignment and 
                   may produce erroneous ancestral k-mers.""")
-@click.option('--ratio-reduction',
+@click.option('--reduction-ratio',
               type=float,
               default=0.99, show_default=True,
               help="""Ratio for alignment reduction, e.g. sites 
@@ -148,14 +142,19 @@ def validate_filter(ctx, param, value):
                   k-mers of different branches. Thus, for every k-mer
                   the only one maximum score among all the branches
                   will be saved.""")
-@click.option('--ardir',
+@click.option('--ar-dir',
              type=click.Path(exists=True, dir_okay=True, file_okay=False),
              help="""Skip ancestral sequence reconstruction, and 
                   uses outputs from the specified directory.""")
-@click.option('--aronly',
+@click.option('--ar-only',
              is_flag=True,
              default=False, show_default=True,
              help="Dev option. Run only ancestral reconstruction and tree extension. No database will be built")
+@click.option('--ar-config',
+              required=False,
+              type=click.Path(exists=True),
+              help="A .json-formatted config file for ancestral reconstruction parameters. "
+                   "See xpas.readthedocs.org for help")
 @click.option('--keep-positions',
               is_flag=True,
               default=False,
@@ -168,87 +167,122 @@ def validate_filter(ctx, param, value):
              type=int,
              default=4, show_default=True,
              help="Number of threads used.")
-def build(arbinary, #database,
-          refalign, reftree, states, verbosity,
+def build(ar,
+          refalign, reftree, states,
+          verbosity,
           workdir, write_reduction, #dbfilename,
           alpha, categories, #ghosts,
-          k, model, arparameters, convert_uo, #gap_jump_thresh,
-          no_reduction, ratio_reduction, omega,
+          k, model, convert_uo, #gap_jump_thresh,
+          no_reduction, reduction_ratio, omega,
           filter, f, mu, use_unrooted, merge_branches,
-          ardir, aronly,
+          ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
           threads):
     """
-    Builds a database of phylo k-mers.
+    Builds a database of phylo-k-mers.
 
     Minimum usage:
 
     \tpython xpas.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
 
     """
-    build_database(arbinary, #database,
-                  refalign, reftree, states, verbosity,
-                  workdir, write_reduction, #dbfilename,
-                  alpha, categories, #ghosts,
-                  k, model, arparameters, convert_uo, #gap_jump_thresh,
-                  no_reduction, ratio_reduction, omega,
-                  filter, f, mu, use_unrooted, merge_branches,
-                  ardir, aronly,
-                  keep_positions, uncompressed,
-                  threads)
-
-
-def build_database(arbinary, #database,
-                   refalign, reftree, states, verbosity,
+    build_database(ar,
+                   refalign, reftree, states,
+                   verbosity,
                    workdir, write_reduction, #dbfilename,
                    alpha, categories, #ghosts,
-                   k, model, arparameters, convert_uo, #gap_jump_thresh,
-                   no_reduction, ratio_reduction, omega,
+                   k, model, convert_uo, #gap_jump_thresh,
+                   no_reduction, reduction_ratio, omega,
                    filter, f, mu, use_unrooted, merge_branches,
-                   ardir, aronly,
+                   ar_dir, ar_only, ar_config,
+                   keep_positions, uncompressed,
+                   threads)
+
+
+def find_raxmlng():
+    """Try to find RAxML-ng"""
+    path = shutil.which("raxml-ng")
+    if not path:
+        raise RuntimeError("RAxML-ng not found. Please check it exists in your PATH or provide a full filename")
+    return path
+
+
+def parse_config(ar_config: str) -> str:
+    """
+    Parse .json-formatted config for ancestral reconstruction parameters
+    """
+    with open(ar_config, 'r') as f:
+        content = json.load(f)
+        if "arguments" not in content:
+            raise RuntimeError(f"Error parsing {ar_config}: 'arguments' not found")
+        arguments = content["arguments"]
+        return " ".join(f"--{param} {value}" for param, value in arguments.items())
+
+
+def build_database(ar,
+                   refalign, reftree, states,
+                   verbosity,
+                   workdir, write_reduction, #dbfilename,
+                   alpha, categories, #ghosts,
+                   k, model, convert_uo, #gap_jump_thresh,
+                   no_reduction, reduction_ratio, omega,
+                   filter, f, mu, use_unrooted, merge_branches,
+                   ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads):
+
+    if not ar:
+        ar = find_raxmlng()
+
     # create working directory
     Path(workdir).mkdir(parents=True, exist_ok=True)
     current_dir = os.path.dirname(os.path.realpath(__file__))
 
-    # auxilary files produced by RAPPAS
-    extended_tree = f"{workdir}/extended_trees/extended_tree_withBL.tree"
+    ar_parameters = parse_config(ar_config) if ar_config else ""
 
     # run rappas2
     if states == 'nucl':
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-dna"
+            bin = f"{current_dir}/bin/xpas/xpas-dna"
     else:
         if keep_positions:
             raise NotImplementedError()
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
+            bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
         else:
             raise NotImplementedError()
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa"
+            bin = f"{current_dir}/bin/xpas/xpas-aa"
+
 
     command = [
-        rappas_bin,
-        "--ar-binary", arbinary,
+        bin,
+        "--ar-binary", str(ar),
         "--refalign", str(refalign),
         "-t", str(reftree),
         "-w", str(workdir),
         "-k", str(k),
-        "--model", model,
-        "--reduction-ratio", str(ratio_reduction),
+        #"--model", model,
+        "--alpha", str(alpha),
+        "--categories", str(categories),
+        "--reduction-ratio", str(reduction_ratio),
         "-o", str(omega),
         "--" + filter.lower(),
         "-u", str(mu),
         "-j", str(threads)
     ]
 
-    if aronly:
+    if model:
+        command.append("--model")
+        command.append(model)
+    if ar_only:
         command.append("--ar-only")
-    if ardir:
+    if ar_dir:
         command.append("--ar-dir")
-        command.append(ardir)
+        command.append(ar_dir)
+    if ar_parameters:
+        command.append("--ar-parameters")
+        command.append(f'"{ar_parameters}"')
     if no_reduction:
         command.append("--no-reduction")
     if merge_branches:
@@ -260,22 +294,17 @@ def build_database(arbinary, #database,
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
-    subprocess.call(["rm", "-rf", hashmaps_dir])
+    #subprocess.call(["rm", "-rf", hashmaps_dir])
 
-    print(" ".join(s for s in command))
-    subprocess.call(command)
+    command_str = " ".join(s for s in command)
+    print(command_str)
+    p = subprocess.run(command_str, shell=True, check=True)
 
     # clean after
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
-
-def db_diff(db1: str, db2: str) -> bool:
-    return False
-
-
-@xpas.command()
-def diff():
-    pass
+    if p.returncode != 0:
+        raise RuntimeError(f"XPAS returned error: {return_code}")
 
 
 if __name__ == "__main__":

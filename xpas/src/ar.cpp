@@ -407,22 +407,29 @@ namespace xpas::ar
     ar::model parse_model(const std::string& model)
     {
         std::map<std::string, ar::model> map = {
-            {"JC69", ar::model::JC69 },
+            {"JC", ar::model::JC },
             {"K80", ar::model::K80 },
             {"F81", ar::model::F81 },
+            {"HKY", ar::model::HKY },
             {"F84", ar::model::F84 },
-            {"HKY85", ar::model::HKY85 },
-            {"TN93",ar::model::TN93 },
+            {"TN93ef", ar::model::TN93ef },
+            {"TN93", ar::model::TN93 },
+            {"K81", ar::model::K81 },
+            {"K81uf", ar::model::K81uf },
+            {"TPM2", ar::model::TPM2 },
+            {"TPM2uf", ar::model::TPM2uf },
+            {"TPM3", ar::model::TPM3 },
+            {"TPM3uf", ar::model::TPM3uf },
+            {"TIM1", ar::model::TIM1 },
+            {"TIM1uf", ar::model::TIM1uf },
+            {"TIM2", ar::model::TIM2 },
+            {"TIM2uf", ar::model::TIM2uf },
+            {"TIM3", ar::model::TIM3 },
+            {"TIM3uf", ar::model::TIM3uf },
+            {"TVMef", ar::model::TVMef },
+            {"TVM", ar::model::TVM },
+            {"SYM", ar::model::SYM },
             {"GTR", ar::model::GTR },
-            {"LG", ar::model::LG },
-            {"WAG", ar::model::WAG },
-            {"JTT", ar::model::JTT },
-            {"DAYHOFF", ar::model::DAYHOFF },
-            {"DCMUT", ar::model::DCMUT },
-            {"CPREV", ar::model::CPREV },
-            {"MTMAM", ar::model::MTMAM },
-            {"MTREV", ar::model::MTREV },
-            {"MTART", ar::model::MTART }
         };
 
         if (const auto it = map.find(model); it != map.end())
@@ -439,38 +446,53 @@ namespace xpas::ar
     {
         switch(model)
         {
-            case ar::model::JC69:
-                return "JC69";
+            case ar::model::JC:
+                return "JC";
             case ar::model::K80:
                 return "K80";
             case ar::model::F81:
                 return "F81";
+            case ar::model::HKY:
+                return "HKY";
             case ar::model::F84:
                 return "F84";
-            case ar::model::HKY85:
-                return "HKY85";
+            case ar::model::TN93ef:
+                return "TN93ef";
             case ar::model::TN93:
                 return "TN93";
+            case ar::model::K81:
+                return "K81";
+            case ar::model::K81uf:
+                return "K81uf";
+            case ar::model::TPM2:
+                return "TPM2";
+            case ar::model::TPM2uf:
+                return "TPM2uf";
+            case ar::model::TPM3:
+                return "TPM3";
+            case ar::model::TPM3uf:
+                return "TPM3uf";
+            case ar::model::TIM1:
+                return "TIM1";
+            case ar::model::TIM1uf:
+                return "TIM1uf";
+            case ar::model::TIM2:
+                return "TIM2";
+            case ar::model::TIM2uf:
+                return "TIM2uf";
+            case ar::model::TIM3:
+                return "TIM3";
+            case ar::model::TIM3uf:
+                return "TIM3uf";
+            case ar::model::TVMef:
+                return "TVMef";
+            case ar::model::TVM:
+                return "TVM";
+            case ar::model::SYM:
+                return "SYM";
             case ar::model::GTR:
                 return "GTR";
-            case ar::model::LG:
-                return "LG";
-            case ar::model::WAG:
-                return "WAG";
-            case ar::model::JTT:
-                return "JTT";
-            case ar::model::DAYHOFF:
-                return "DAYHOFF";
-            case ar::model::DCMUT:
-                return "DCMUT";
-            case ar::model::CPREV:
-                return "CPREV";
-            case ar::model::MTMAM:
-                return "MTMAM";
-            case ar::model::MTREV:
-                return "MTREV";
-            case ar::model::MTART:
-                return "MTART";
+
         }
         throw std::runtime_error("Internal error: wrong model");
     }
@@ -702,7 +724,8 @@ namespace xpas::ar
                 "--threads", "1", //_params.threads,
                 "--precision", "9",
                 "--seed", "1",
-                "--force", "msa"
+                "--force", "msa",
+                "--redo"
             };
 
             if (_params.ar_parameters.empty())
@@ -731,7 +754,12 @@ namespace xpas::ar
             }
             else
             {
-                args.push_back(_params.ar_parameters);
+                std::vector<std::string> config_args;
+                boost::split(config_args, _params.ar_parameters, boost::is_any_of(" "));
+                for (const auto& arg : config_args)
+                {
+                    args.push_back(arg);
+                }
             }
             std::cout << "Running: " << _params.binary_file << " " << boost::algorithm::join(args, " ") << std::endl;
             return bp::child(_params.binary_file, bp::args(args));
@@ -773,6 +801,7 @@ namespace xpas::ar
         ar::parameters ar_params;
         ar_params.ar_dir = parameters.ar_dir;
         ar_params.binary_file = parameters.ar_binary_file;
+        ar_params.ar_parameters = parameters.ar_parameters;
         ar_params.ar_model = parse_model(parameters.ar_model);
         ar_params.alpha = parameters.ar_alpha;
         ar_params.categories = parameters.ar_categories;
