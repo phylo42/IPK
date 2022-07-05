@@ -37,22 +37,30 @@ namespace xpas
         /// Ancestral reconstruction models
         enum class model
         {
-            JC69,
+            JC,
             K80,
             F81,
+            HKY,
             F84,
-            HKY85,
+            TN93ef,
             TN93,
-            GTR,
-            LG,
-            WAG,
-            JTT,
-            DAYHOFF,
-            DCMUT,
-            CPREV,
-            MTMAM,
-            MTREV,
-            MTART
+            K81,
+            K81uf,
+            TPM2,
+            TPM2uf,
+            TPM3,
+            TPM3uf,
+            TIM1,
+            TIM1uf,
+            TIM2,
+            TIM2uf,
+            TIM3,
+            TIM3uf,
+            TVMef,
+            TVM,
+            SYM,
+            GTR
+            // FIXME: removed protein models
         };
 
         /// All parameters for ancestral reconstruction

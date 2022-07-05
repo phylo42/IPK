@@ -9,12 +9,11 @@ __license__ = "MIT"
 
 
 import os
-from os import path
-from pathlib import Path
 import click
 import subprocess
 from pathlib import Path
 import shutil
+import json
 
 
 @click.group()
@@ -27,8 +26,14 @@ def xpas():
     pass
 
 
-NUCL_MODELS = ['JC69', 'HKY85', 'K80', 'F81', 'TN93', 'GTR']
-AMINO_MODELS = ['LG', 'WAG', 'JTT', 'Dayhoff', 'DCMut', 'CpREV', 'mMtREV', 'MtMam', 'MtArt']
+# See: https://github.com/amkozlov/raxml-ng/wiki/Input-data#evolutionary-model
+NUCL_MODELS = ['JC', 'K80', 'F81', 'HKY', 'TN93ef',
+               'TN93', 'K81', 'K81uf', 'TPM2', 'TPM2uf', 'TPM3', 'TPM3uf',
+               'TIM1', 'TIM1uf', 'TIM2', 'TIM2uf', 'TIM3', 'TIM3uf', 'TVMef',
+               'TVM', 'SYM', 'GTR']
+AMINO_MODELS = ['Blosum62', 'cpREV', 'Dayhoff', 'DCMut', 'DEN', 'FLU', 'HIVb', 'HIVw', 'JTT',
+                'JTT-DCMut', 'LG', 'mtART', 'mtMAM', 'mtREV', 'mtZOA', 'PMB', 'rtREV', 'stmtREV',
+                'VT', 'WAG', 'LG4M', 'LG4X', 'PROTGTR']
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
@@ -42,6 +47,13 @@ def validate_filter(ctx, param, value):
         raise click.BadParameter('Filter must be one of: ' + valid_values)
     return value
 
+
+def validate_model(ctx, param, value):
+    if ('ar_config' in ctx.params) or (value and value in ALL_MODELS):
+        return value
+
+    raise click.BadParameter(f'Please define a valid evolutionary model either via --model or in a config file '
+                             f'via --ar-config. Valid values: {ALL_MODELS}')
 
 @xpas.command()
 @click.option('-b', '--ar',
@@ -87,9 +99,7 @@ def validate_filter(ctx, param, value):
              type=int,
              default=8, show_default=True,
              help="k-mer length used at DB build.")
-@click.option('-m', '--model',
-             type=click.Choice(ALL_MODELS),
-             required=True,
+@click.option('-m', '--model', type=click.UNPROCESSED, callback=validate_model, required=False,
              help="Model used in AR, one of the following:\n"
                   f"nucl: {', '.join(x for x in NUCL_MODELS)}\n"
                   f"amino: {', '.join(x for x in AMINO_MODELS)}")
@@ -190,11 +200,23 @@ def build(ar,
 
 
 def find_raxmlng():
-    """A function that tries to find RAxML-ng"""
+    """Try to find RAxML-ng"""
     path = shutil.which("raxml-ng")
     if not path:
         raise RuntimeError("RAxML-ng not found. Please check it exists in your PATH or provide a full filename")
     return path
+
+
+def parse_config(ar_config: str) -> str:
+    """
+    Parse .json-formatted config for ancestral reconstruction parameters
+    """
+    with open(ar_config, 'r') as f:
+        content = json.load(f)
+        if "arguments" not in content:
+            raise RuntimeError(f"Error parsing {ar_config}: 'arguments' not found")
+        arguments = content["arguments"]
+        return " ".join(f"--{param} {value}" for param, value in arguments.items())
 
 
 def build_database(ar,
@@ -216,8 +238,7 @@ def build_database(ar,
     Path(workdir).mkdir(parents=True, exist_ok=True)
     current_dir = os.path.dirname(os.path.realpath(__file__))
 
-    # auxilary files produced by RAPPAS
-    extended_tree = f"{workdir}/extended_trees/extended_tree_withBL.tree"
+    ar_parameters = parse_config(ar_config) if ar_config else ""
 
     # run rappas2
     if states == 'nucl':
@@ -233,6 +254,7 @@ def build_database(ar,
             raise NotImplementedError()
             bin = f"{current_dir}/bin/xpas/xpas-aa"
 
+
     command = [
         bin,
         "--ar-binary", str(ar),
@@ -240,10 +262,9 @@ def build_database(ar,
         "-t", str(reftree),
         "-w", str(workdir),
         "-k", str(k),
-        "--model", model,
+        #"--model", model,
         "--alpha", str(alpha),
         "--categories", str(categories),
-        #"--ar-parameters", f"'{arparameters}'",
         "--reduction-ratio", str(reduction_ratio),
         "-o", str(omega),
         "--" + filter.lower(),
@@ -251,11 +272,17 @@ def build_database(ar,
         "-j", str(threads)
     ]
 
+    if model:
+        command.append("--model")
+        command.append(model)
     if ar_only:
         command.append("--ar-only")
     if ar_dir:
         command.append("--ar-dir")
         command.append(ar_dir)
+    if ar_parameters:
+        command.append("--ar-parameters")
+        command.append(f'"{ar_parameters}"')
     if no_reduction:
         command.append("--no-reduction")
     if merge_branches:
@@ -267,19 +294,17 @@ def build_database(ar,
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
-    subprocess.call(["rm", "-rf", hashmaps_dir])
+    #subprocess.call(["rm", "-rf", hashmaps_dir])
 
-    print(" ".join(s for s in command))
-    subprocess.call(command)
+    command_str = " ".join(s for s in command)
+    print(command_str)
+    p = subprocess.run(command_str, shell=True, check=True)
 
     # clean after
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
-
-
-@xpas.command()
-def diff():
-    pass
+    if p.returncode != 0:
+        raise RuntimeError(f"XPAS returned error: {return_code}")
 
 
 if __name__ == "__main__":
