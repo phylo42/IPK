@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
+
 """
-xpas wrapper script.
+XPAS wrapper script.
 """
 
 __author__ = "Nikolai Romashchenko"
@@ -13,6 +14,7 @@ from pathlib import Path
 import click
 import subprocess
 from pathlib import Path
+import shutil
 
 
 @click.group()
@@ -33,7 +35,6 @@ ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
 
 
-
 def validate_filter(ctx, param, value):
     value = value.lower()
     if value not in KMER_FILTERS:
@@ -43,12 +44,13 @@ def validate_filter(ctx, param, value):
 
 
 @xpas.command()
-@click.option('-b', '--arbinary',
+@click.option('-b', '--ar',
               type=click.Path(exists=True),
-              required=True,
-              help="Binary file for marginal AR, currently 'phyml' and "
-                   "'baseml' (from PAML) are supported.")
-@click.option('-r', '--refalign', 
+              required=False,
+              help="Path for the ancestral reconstruction software used. Currently,"
+                   "PhyML and RAxML-ng are supported. If not given, XPAS will try to"
+                   "find RAxML-ng using environmental variables.")
+@click.option('-r', '--refalign',
               type=click.Path(exists=True),
               required=True,
               help="""Reference alignment in fasta format.
@@ -72,11 +74,7 @@ def validate_filter(ctx, param, value):
               help="Working directory for temp files.")
 @click.option('--write-reduction',
               type=click.Path(file_okay=True, dir_okay=False),
-              help=" Write reduced alignment to file.")
-#@click.option('--dbfilename',
-#              type=str,
-#              default="db.rps", show_default=True, 
-#              help="Output database filename.")
+              help="Write reduced alignment to file.")
 @click.option('-a', '--alpha',
               type=float,
               default=1.0, show_default=True,
@@ -85,10 +83,6 @@ def validate_filter(ctx, param, value):
               type=int,
               default=4, show_default=True,
               help="Number of categories used in ancestral reconstruction.")
-#@click.option('-g', '--ghosts',
-#              type=int,
-#              default=1, show_default=True,
-#              help="Number of ghost nodes injected per branch.")
 @click.option('-k', '--k',
              type=int,
              default=8, show_default=True,
@@ -99,25 +93,15 @@ def validate_filter(ctx, param, value):
              help="Model used in AR, one of the following:\n"
                   f"nucl: {', '.join(x for x in NUCL_MODELS)}\n"
                   f"amino: {', '.join(x for x in AMINO_MODELS)}")
-@click.option('--arparameters',
-             type=str,
-             help="""Parameters passed to the software used for
-                  anc. seq. reconstuct. Overrides -a,-c,-m options.
-                  Value must be quoted by ' or ". Do not set options
-                  -i,-u,--ancestral (managed by RAPPAS).""")
 @click.option('--convert-uo',
               is_flag=True,
               help="U, O amino acids are converted to C, L.")
-#@click.option('--gap-jump-thresh',
-#              type=float,
-#              deafult=0.3, show_default=True,
-#              help="Gap ratio above which gap jumps are activated.")
 @click.option('--no-reduction',
               is_flag=True,
               help="""Do not operate alignment reduction. This will 
                   keep all sites of input reference alignment and 
                   may produce erroneous ancestral k-mers.""")
-@click.option('--ratio-reduction',
+@click.option('--reduction-ratio',
               type=float,
               default=0.99, show_default=True,
               help="""Ratio for alignment reduction, e.g. sites 
@@ -148,14 +132,19 @@ def validate_filter(ctx, param, value):
                   k-mers of different branches. Thus, for every k-mer
                   the only one maximum score among all the branches
                   will be saved.""")
-@click.option('--ardir',
+@click.option('--ar-dir',
              type=click.Path(exists=True, dir_okay=True, file_okay=False),
              help="""Skip ancestral sequence reconstruction, and 
                   uses outputs from the specified directory.""")
-@click.option('--aronly',
+@click.option('--ar-only',
              is_flag=True,
              default=False, show_default=True,
              help="Dev option. Run only ancestral reconstruction and tree extension. No database will be built")
+@click.option('--ar-config',
+              required=False,
+              type=click.Path(exists=True),
+              help="A .json-formatted config file for ancestral reconstruction parameters. "
+                   "See xpas.readthedocs.org for help")
 @click.option('--keep-positions',
               is_flag=True,
               default=False,
@@ -168,46 +157,61 @@ def validate_filter(ctx, param, value):
              type=int,
              default=4, show_default=True,
              help="Number of threads used.")
-def build(arbinary, #database,
-          refalign, reftree, states, verbosity,
+def build(ar,
+          refalign, reftree, states,
+          verbosity,
           workdir, write_reduction, #dbfilename,
           alpha, categories, #ghosts,
-          k, model, arparameters, convert_uo, #gap_jump_thresh,
-          no_reduction, ratio_reduction, omega,
+          k, model, convert_uo, #gap_jump_thresh,
+          no_reduction, reduction_ratio, omega,
           filter, f, mu, use_unrooted, merge_branches,
-          ardir, aronly,
+          ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
           threads):
     """
-    Builds a database of phylo k-mers.
+    Builds a database of phylo-k-mers.
 
     Minimum usage:
 
     \tpython xpas.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
 
     """
-    build_database(arbinary, #database,
-                  refalign, reftree, states, verbosity,
-                  workdir, write_reduction, #dbfilename,
-                  alpha, categories, #ghosts,
-                  k, model, arparameters, convert_uo, #gap_jump_thresh,
-                  no_reduction, ratio_reduction, omega,
-                  filter, f, mu, use_unrooted, merge_branches,
-                  ardir, aronly,
-                  keep_positions, uncompressed,
-                  threads)
-
-
-def build_database(arbinary, #database,
-                   refalign, reftree, states, verbosity,
+    build_database(ar,
+                   refalign, reftree, states,
+                   verbosity,
                    workdir, write_reduction, #dbfilename,
                    alpha, categories, #ghosts,
-                   k, model, arparameters, convert_uo, #gap_jump_thresh,
-                   no_reduction, ratio_reduction, omega,
+                   k, model, convert_uo, #gap_jump_thresh,
+                   no_reduction, reduction_ratio, omega,
                    filter, f, mu, use_unrooted, merge_branches,
-                   ardir, aronly,
+                   ar_dir, ar_only, ar_config,
+                   keep_positions, uncompressed,
+                   threads)
+
+
+def find_raxmlng():
+    """A function that tries to find RAxML-ng"""
+    path = shutil.which("raxml-ng")
+    if not path:
+        raise RuntimeError("RAxML-ng not found. Please check it exists in your PATH or provide a full filename")
+    return path
+
+
+def build_database(ar,
+                   refalign, reftree, states,
+                   verbosity,
+                   workdir, write_reduction, #dbfilename,
+                   alpha, categories, #ghosts,
+                   k, model, convert_uo, #gap_jump_thresh,
+                   no_reduction, reduction_ratio, omega,
+                   filter, f, mu, use_unrooted, merge_branches,
+                   ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads):
+
+    if not ar:
+        ar = find_raxmlng()
+
     # create working directory
     Path(workdir).mkdir(parents=True, exist_ok=True)
     current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -220,35 +224,38 @@ def build_database(arbinary, #database,
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-dna"
+            bin = f"{current_dir}/bin/xpas/xpas-dna"
     else:
         if keep_positions:
             raise NotImplementedError()
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
+            bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
         else:
             raise NotImplementedError()
-            rappas_bin = f"{current_dir}/bin/xpas/xpas-aa"
+            bin = f"{current_dir}/bin/xpas/xpas-aa"
 
     command = [
-        rappas_bin,
-        "--ar-binary", arbinary,
+        bin,
+        "--ar-binary", str(ar),
         "--refalign", str(refalign),
         "-t", str(reftree),
         "-w", str(workdir),
         "-k", str(k),
         "--model", model,
-        "--reduction-ratio", str(ratio_reduction),
+        "--alpha", str(alpha),
+        "--categories", str(categories),
+        #"--ar-parameters", f"'{arparameters}'",
+        "--reduction-ratio", str(reduction_ratio),
         "-o", str(omega),
         "--" + filter.lower(),
         "-u", str(mu),
         "-j", str(threads)
     ]
 
-    if aronly:
+    if ar_only:
         command.append("--ar-only")
-    if ardir:
+    if ar_dir:
         command.append("--ar-dir")
-        command.append(ardir)
+        command.append(ar_dir)
     if no_reduction:
         command.append("--no-reduction")
     if merge_branches:
@@ -268,9 +275,6 @@ def build_database(arbinary, #database,
     # clean after
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
-
-def db_diff(db1: str, db2: str) -> bool:
-    return False
 
 
 @xpas.command()
