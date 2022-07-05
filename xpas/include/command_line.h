@@ -31,6 +31,8 @@ namespace xpas::cli
         double ar_alpha;
         int ar_categories;
         bool ar_only;
+        /// Arbitrary AR parameters passed transparently to the software
+        std::string ar_parameters;
 
         /// Main parameters
         double reduction_ratio;

@@ -702,7 +702,8 @@ namespace xpas::ar
                 "--threads", "1", //_params.threads,
                 "--precision", "9",
                 "--seed", "1",
-                "--force", "msa"
+                "--force", "msa",
+                "--redo"
             };
 
             if (_params.ar_parameters.empty())
