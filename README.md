@@ -1,52 +1,17 @@
-# xpas, the phylo k-mer database construction library
+# XPAS: Phylo-k-mers of Ancestral Sequences
 
-xpas is the shared part of [RAPPAS2](https://github.com/phylo42/rappas2) and [SHERPAS](https://github.com/phylo42/sherpas), which builds phylo k-mer databases and provides efficient access to previously built databases.
+XPAS is a tool for computing phylo-k-mers for a fixed phylogeny.
 
-## Dependencies
-xpas depends on:
-- boost v1.67+, boost-serialization, boost-filesystem, boost-iostreams, boost-program-options
-- zlib
-- third-party libraries included as submodules in the repository
+[Link to documentation](https://xpas.readthedocs.io/en/docs) 
 
-## Install
+For more information about phylo-k-mers, see our papers: [1](https://tel.archives-ouvertes.fr/tel-03629440/ "My thesis on phylo-k-mers for phylogenetic placement")  [2](https://doi.org/10.1093/bioinformatics/btz068 "This paper introduced phylo-k-mers") [3](https://doi.org/10.1093/bioinformatics/btaa1020 "Another paper that uses XPAS and phylo-k-mers").
 
-1. Make sure boost libraries are installed in your system.
-2. Clone this repository with submodules.
-3. Build it with one of hashmaps enabled (see below).
+If you want to experiment with phylo-k-mers, check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) to see how to use XPAS and XCL (XPAS Core Library).
 
-Example:
-```
-# Install dependencies
-sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
+---
 
-# Clone the repo
-git clone --recursive https://github.com/phylo42/xpas.git
+[1] Romashchenko, Nikolai. Computing informative k-mers for phylogenetic placement. Diss. Université Montpellier, 2021.
 
-# Build xpas
-cd xpas; mkdir bin; cd bin
-cmake -DHASH_MAP=USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
-make -j4
-```
+[2] Linard, Benjamin, Krister Swenson, and Fabio Pardi. "Rapid alignment-free phylogenetic identification of metagenomic sequences." Bioinformatics 35.18 (2019): 3303-3312.
 
-HASH_MAP options:
-- USE_SKA_FLAT_HASH_MAP
-- USE_SKA_BYTELL_HASH_MAP
-- USE_ABSL_FLAT_HASH_MAP
-- USE_FOLLY_F14_FAST_MAP
-- USE_PHMAP_FLAT_HASH_MAP
-- USE_TSL_ROBIN_MAP
-- USE_TSL_HOPSCOTCH_MAP
-
-## Usage
-
-To build a database:
-```
-python xpas.py build -s [nucl|amino] -b `which phyml` -w workdir -r alignment.fasta -t tree.newick -k 10
-```
-
-To check out all options:
-```
-python xpas.py build --help
-```
-
-Databases can be used in [RAPPAS2](https://github.com/phylo42/rappas2) and [SHERPAS](https://github.com/phylo42/sherpas). Also check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) to see how to use xpas to retrieve information from databases.
+[3] Scholz, Guillaume E., et al. "Rapid screening and detection of inter-type viral recombinants using phylo-k-mers." Bioinformatics 36.22-23 (2020): 5351-5360.
