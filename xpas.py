@@ -135,7 +135,7 @@ def validate_model(ctx, param, value):
               no-filter, mif0, mif1, random.""")
 @click.option('-u', '--mu',
               type=float,
-              default=0.5, show_default=True,
+              default=1.0, show_default=True,
               help="""K-mer filtering threshold. Determines the fraction of most informative k-mers 
               that will be saved in the resulting database.""")
 @click.option('--use-unrooted',
