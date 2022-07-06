@@ -28,4 +28,5 @@ Contents
 
    install
    usage
+   cli
    api
