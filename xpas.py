@@ -133,49 +133,52 @@ def validate_model(ctx, param, value):
               default="no-filter", show_default=True,
               help="""Filtering function used to filter phylo-k-mers. Currently supported values:
               no-filter, mif0, mif1, random.""")
-@click.option('-f', type=float, default=1.0)
 @click.option('-u', '--mu',
               type=float,
               default=0.5, show_default=True,
-              help="""K-mer filter threshold""")
+              help="""K-mer filtering threshold. Determines the fraction of most informative k-mers 
+              that will be saved in the resulting database.""")
 @click.option('--use-unrooted',
               is_flag=True,
               help="""Confirms you accept to use an unrooted reference
-                  tree (option -t). The trifurcation described by the
-                  newick file will be considered as root. Be aware that
-                  meaningless roots may impact accuracy.""")
+                  tree provided with :option:`-t`. The trifurcation described by the
+                  newick file will be considered as the root. WARNING: meaningless rooting
+                  can influence the accuracy of phylo-k-mer-based applications.""")
 @click.option('--merge-branches',
               is_flag=True,
               default=False,
-              help="""Builds a databases of phylo k-mers, merging phylo
-                  k-mers of different branches. Thus, for every k-mer
-                  the only one maximum score among all the branches
-                  will be saved.""")
+              help="""Creates a database by merging phylo-k-mers of different branches
+              together. Thus, for every k-mer, the only one maximum score 
+              among all the branches will be stored.""")
 @click.option('--ar-dir',
              type=click.Path(exists=True, dir_okay=True, file_okay=False),
-             help="""Skip ancestral sequence reconstruction, and 
-                  uses outputs from the specified directory.""")
+             help="""Skip ancestral sequence reconstruction
+             and use outputs from the specified directory.""")
 @click.option('--ar-only',
              is_flag=True,
              default=False, show_default=True,
-             help="Dev option. Run only ancestral reconstruction and tree extension. No database will be built")
+             help="""If set, XPAS stops after tree extension and ancestral reconstruction. 
+             No database will be created.""")
 @click.option('--ar-config',
               required=False,
               type=click.Path(exists=True),
-              help="A .json-formatted config file for ancestral reconstruction parameters. "
-                   "See xpas.readthedocs.org for help")
+              help="""A .json-formatted config file for ancestral reconstruction parameters.
+                   See xpas.readthedocs.org for help""")
 @click.option('--keep-positions',
               is_flag=True,
               default=False,
-              help="""Keeps phylo k-mers positions in the alignment. Makes databases larger in size.""")
+              help="""Keeps alignment positions where phylo-k-mers obtain
+              reported scores. Makes output databases larger in size.""")
 @click.option('--uncompressed',
               is_flag=True,
               default=False,
-              help="""Stores databases uncompressed.""")
+              help="""Disables database compression. 
+              Saves time during database load and save, but requires more disk space.""")
 @click.option('--threads',
              type=int,
-             default=4, show_default=True,
-             help="Number of threads used.")
+             default=4, 
+             show_default=True,
+             help="Number of threads used to compute phylo-k-mers.")
 def build(ar,
           refalign, reftree, states,
           verbosity,
@@ -183,7 +186,7 @@ def build(ar,
           alpha, categories, #ghosts,
           k, model, convert_uo, #gap_jump_thresh,
           no_reduction, reduction_ratio, omega,
-          filter, f, mu, use_unrooted, merge_branches,
+          filter, mu, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
           threads):
@@ -197,7 +200,7 @@ def build(ar,
                    alpha, categories, #ghosts,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, f, mu, use_unrooted, merge_branches,
+                   filter, mu, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads)
@@ -230,7 +233,7 @@ def build_database(ar,
                    alpha, categories, #ghosts,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, f, mu, use_unrooted, merge_branches,
+                   filter, mu, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads):
