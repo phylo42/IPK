@@ -62,19 +62,19 @@ set(COMPILE_FEATURES cxx_std_17)
 
 ##########################################################################################
 # Proteins
-#add_library(xcl_aa STATIC "")
-#add_library(xcl::aa ALIAS xcl_aa)
-#
-#target_sources(xcl_aa PRIVATE ${SOURCES})
-#target_link_libraries(xcl_aa PUBLIC ${LINK_LIBRARIES})
-#target_include_directories(xcl_aa PUBLIC ${INCLUDE_DIRECTORIES})
-#target_compile_options(xcl_aa PRIVATE ${COMPILE_OPTIONS})
-#target_compile_features(xcl_aa PUBLIC ${COMPILE_FEATURES})
-#target_compile_definitions(xcl_aa
-#        PUBLIC
-#        ${HASH_MAP}
-#        SEQ_TYPE_AA)
-#
+add_library(xcl_aa STATIC "")
+add_library(xcl::aa ALIAS xcl_aa)
+
+target_sources(xcl_aa PRIVATE ${SOURCES})
+target_link_libraries(xcl_aa PUBLIC ${LINK_LIBRARIES})
+target_include_directories(xcl_aa PUBLIC ${INCLUDE_DIRECTORIES})
+target_compile_options(xcl_aa PRIVATE ${COMPILE_OPTIONS})
+target_compile_features(xcl_aa PUBLIC ${COMPILE_FEATURES})
+target_compile_definitions(xcl_aa
+        PUBLIC
+        ${HASH_MAP}
+        SEQ_TYPE_AA)
+
 ###########################################################################################
 ## Proteins, positions included
 #add_library(xcl_aa_pos STATIC "")

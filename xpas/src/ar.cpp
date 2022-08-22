@@ -182,7 +182,7 @@ namespace xpas::ar
 
     proba_matrix raxmlng_reader::read_matrix()
     {
-        proba_matrix matrix;
+        proba_matrix result;
 
 #ifdef SEQ_TYPE_DNA
         ::io::CSVReader<5,
@@ -192,8 +192,6 @@ namespace xpas::ar
             ::io::single_and_empty_line_comment<'.'>> _in(_file_name);
 
         _in.read_header(::io::ignore_extra_column, "Node", "p_A", "p_C", "p_G", "p_T");
-
-        proba_matrix result;
 
         std::string node_label;
         phylo_kmer::score_type a, c, g, t;
@@ -229,29 +227,23 @@ namespace xpas::ar
         xpas::phylo_kmer::score_type a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v;
         while (_in.read_row(node_label, a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v))
         {
-            /// log-transform the probabilities
-            auto new_row = row_type {
-                { { a, *xpas::seq_traits::key_to_code('a') },
-                    { r, *xpas::seq_traits::key_to_code('r') },
-                    { n, *xpas::seq_traits::key_to_code('n')},
-                    { d, *xpas::seq_traits::key_to_code('d') },
-                    { c, *xpas::seq_traits::key_to_code('c') },
-                    { q, *xpas::seq_traits::key_to_code('q') },
-                    { e, *xpas::seq_traits::key_to_code('e') },
-                    { g, *xpas::seq_traits::key_to_code('g') },
-                    { h, *xpas::seq_traits::key_to_code('h') },
-                    { i, *xpas::seq_traits::key_to_code('i') },
-                    { l, *xpas::seq_traits::key_to_code('l') },
-                    { k, *xpas::seq_traits::key_to_code('k') },
-                    { m, *xpas::seq_traits::key_to_code('m') },
-                    { f, *xpas::seq_traits::key_to_code('f') },
-                    { p, *xpas::seq_traits::key_to_code('p') },
-                    { s, *xpas::seq_traits::key_to_code('s') },
-                    { t, *xpas::seq_traits::key_to_code('t') },
-                    { w, *xpas::seq_traits::key_to_code('w') },
-                    { y, *xpas::seq_traits::key_to_code('y') },
-                    { v, *xpas::seq_traits::key_to_code('v') } }
+            auto new_column = std::vector<phylo_kmer::score_type>{
+                a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v
             };
+
+            /// log-transform the probabilities
+            auto log = [](auto value) { return std::log10(value); };
+            std::transform(begin(new_column), end(new_column), begin(new_column), log);
+
+            auto& node_matrix = result[node_label];
+            node_matrix.set_label(node_label);
+            node_matrix.get_data().push_back(new_column);
+        }
+
+        for (auto& [label, node_matrix] : result)
+        {
+            node_matrix.preprocess();
+        }
 #else
             static_assert(false, """Make sure the sequence type is defined. Supported types:\n"""
                              """SEQ_TYPE_DNA"""

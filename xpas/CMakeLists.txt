@@ -67,32 +67,32 @@ target_compile_features(xpas_dna
         cxx_std_17)
 
 ######################################################################################################
-## Amino acids
-#add_executable(xpas_aa "")
-#set_target_properties(xpas_aa PROPERTIES OUTPUT_NAME xpas-aa)
-#target_sources(xpas_aa PRIVATE ${SOURCES})
-#
-#target_include_directories(xpas_aa
-#        PRIVATE
-#        ${CMAKE_CURRENT_SOURCE_DIR}/src/
-#        ${CMAKE_CURRENT_SOURCE_DIR}/include/
-#        )
-#
-#target_link_libraries(xpas_aa
-#        PRIVATE
-#        ${LINK_LIBRARIES}
-#        xcl::aa
-#        )
-#
-## Turn on the warnings and treat them as errors
-#target_compile_options(xpas_aa
-#        PRIVATE
-#        -Wall -Wextra #-Werror #-Wpedantic
-#        )
-#
-#target_compile_features(xpas_aa
-#        PUBLIC
-#        cxx_std_17)
+# Amino acids
+add_executable(xpas_aa "")
+set_target_properties(xpas_aa PROPERTIES OUTPUT_NAME xpas-aa)
+target_sources(xpas_aa PRIVATE ${SOURCES})
+
+target_include_directories(xpas_aa
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        )
+
+target_link_libraries(xpas_aa
+        PRIVATE
+        ${LINK_LIBRARIES}
+        xcl::aa
+        )
+
+# Turn on the warnings and treat them as errors
+target_compile_options(xpas_aa
+        PRIVATE
+        -Wall -Wextra #-Werror #-Wpedantic
+        )
+
+target_compile_features(xpas_aa
+        PUBLIC
+        cxx_std_17)
 
 ######################################################################################################
 # Amino acids, positions included
