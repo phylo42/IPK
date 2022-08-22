@@ -251,7 +251,6 @@ def build_database(ar,
             raise NotImplementedError()
             bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
         else:
-            raise NotImplementedError()
             bin = f"{current_dir}/bin/xpas/xpas-aa"
 
 

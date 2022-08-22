@@ -422,6 +422,11 @@ namespace xpas::ar
             {"TVM", ar::model::TVM },
             {"SYM", ar::model::SYM },
             {"GTR", ar::model::GTR },
+
+            // protein models
+            {"JTT", ar::model::JTT },
+            {"LG", ar::model::LG },
+            {"WAG", ar::model::WAG },
         };
 
         if (const auto it = map.find(model); it != map.end())
@@ -484,6 +489,13 @@ namespace xpas::ar
                 return "SYM";
             case ar::model::GTR:
                 return "GTR";
+
+            case ar::model::JTT:
+                return "JTT";
+            case ar::model::LG:
+                return "LG";
+            case ar::model::WAG:
+                return "WAG";
 
         }
         throw std::runtime_error("Internal error: wrong model");

@@ -59,8 +59,11 @@ namespace xpas
             TVMef,
             TVM,
             SYM,
-            GTR
-            // FIXME: removed protein models
+            GTR,
+            // FIXME: add other protein models
+            JTT,
+            LG,
+            WAG
         };
 
         /// All parameters for ancestral reconstruction
