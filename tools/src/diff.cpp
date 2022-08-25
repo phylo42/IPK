@@ -1,15 +1,15 @@
 #include <iostream>
-#include <xpas/phylo_kmer_db.h>
-#include <xpas/serialization.h>
+#include <xcl/phylo_kmer_db.h>
+#include <xcl/serialization.h>
 
-using db = xpas::phylo_kmer_db;
+using db = xcl::phylo_kmer_db;
 
 class diff
 {
 public:
     diff(const std::string& filename1, const std::string& filename2)
         : a_filename(filename1), b_filename(filename2),
-        a(xpas::load(filename1)), b(xpas::load(filename2))
+        a(xcl::load(filename1)), b(xcl::load(filename2))
     {
     }
 
@@ -52,7 +52,7 @@ public:
             std::cout << "Omega:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
 
-            auto eps = [](float omega, size_t k) { return std::log10(xpas::score_threshold(omega, k)); };
+            auto eps = [](float omega, size_t k) { return std::log10(xcl::score_threshold(omega, k)); };
             std::cout << "Threshold:\t" << bool_to_OK(match) << "\t"
                       << eps(va, a_k) << "\t" << eps(vb, b_k) << std::endl;
         }
@@ -91,7 +91,7 @@ public:
                 std::cout << "\t\tcode\tk-mer\tbranch\tA score\tB score\n";
                 for (const auto& [kmer, branch, a_score, b_score] : diffs)
                 {
-                    std::cout << "\t\t" << kmer << "\t" << xpas::decode_kmer(kmer, a.kmer_size()) << "\t" << branch << "\t"
+                    std::cout << "\t\t" << kmer << "\t" << xcl::decode_kmer(kmer, a.kmer_size()) << "\t" << branch << "\t"
                               << val_or_nan_to_string(a_score) << "\t"
                               << val_or_nan_to_string(b_score) << "\t" << std::endl;
                 }
@@ -169,7 +169,7 @@ public:
         return { a_size == b_size, a_size, b_size };
     }
 
-    using pk_map = std::unordered_map<xpas::phylo_kmer::branch_type, xpas::phylo_kmer::score_type>;
+    using pk_map = std::unordered_map<xcl::phylo_kmer::branch_type, xcl::phylo_kmer::score_type>;
 
     template<class T>
     pk_map to_map(const T& x)
@@ -184,10 +184,10 @@ public:
 
     struct pk_diff
     {
-        xpas::phylo_kmer::key_type kmer;
-        xpas::phylo_kmer::branch_type branch;
-        xpas::phylo_kmer::score_type a_value;
-        xpas::phylo_kmer::score_type b_value;
+        xcl::phylo_kmer::key_type kmer;
+        xcl::phylo_kmer::branch_type branch;
+        xcl::phylo_kmer::score_type a_value;
+        xcl::phylo_kmer::score_type b_value;
     };
 
     std::tuple<bool, std::vector<pk_diff>> check_phylo_kmers()
@@ -227,7 +227,7 @@ public:
                     /// that is not scored in B
                     else
                     {
-                        diffs.push_back({kmer, a_branch, a_score, xpas::phylo_kmer::na_score});
+                        diffs.push_back({kmer, a_branch, a_score, xcl::phylo_kmer::na_score});
                         match = false;
                     }
                 }
@@ -239,7 +239,7 @@ public:
                     /// that is not scored in A
                     if (const auto& it = va.find(b_branch); it == va.end())
                     {
-                        diffs.push_back({ kmer, b_branch, xpas::phylo_kmer::na_score, b_score });
+                        diffs.push_back({ kmer, b_branch, xcl::phylo_kmer::na_score, b_score });
                         match = false;
                     }
                 }
@@ -252,7 +252,7 @@ public:
 
                 for (const auto& [a_branch, a_score] : a_entries)
                 {
-                    diffs.push_back({ kmer, a_branch, a_score, xpas::phylo_kmer::na_score });
+                    diffs.push_back({ kmer, a_branch, a_score, xcl::phylo_kmer::na_score });
                 }
             }
         }
@@ -269,7 +269,7 @@ public:
 
                 for (const auto& [b_branch, b_score] : b_entries)
                 {
-                    diffs.push_back({ kmer, b_branch, xpas::phylo_kmer::na_score, b_score });
+                    diffs.push_back({ kmer, b_branch, xcl::phylo_kmer::na_score, b_score });
                 }
 
             }
