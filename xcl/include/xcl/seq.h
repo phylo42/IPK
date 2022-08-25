@@ -351,7 +351,8 @@ namespace xcl
                 case 'x':
                     [[fallthrough]];
                 default:
-                    return nullopt;
+                    throw std::runtime_error("Internal error: could not parse state " + std::to_string(base));
+                    //return nullopt;
             }
         };
 

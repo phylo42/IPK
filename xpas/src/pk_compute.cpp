@@ -101,11 +101,11 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
                     phylo_kmer::key_type kmer;
                     if (prefix_sort)
                     {
-                        kmer = (b << ((h - h / 2) * 2)) | a;
+                        kmer = (b << ((h - h / 2) * bit_length<seq_type>())) | a;
                     }
                     else
                     {
-                        kmer = (a << ((h - h / 2) * 2)) | b;
+                        kmer = (a << ((h - h / 2) * bit_length<seq_type>())) | b;
                     }
                     result.push_back({ kmer, score });
 
