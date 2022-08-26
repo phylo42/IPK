@@ -227,8 +227,10 @@ namespace xpas::ar
         xpas::phylo_kmer::score_type a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v;
         while (_in.read_row(node_label, a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v))
         {
-            auto new_column = std::vector<phylo_kmer::score_type>{
-                a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v
+            /// the order of acids in the RAxML-ng format is not the same as
+            /// in the encoding of RAPPAS1 and XPAS
+            auto new_column = std::vector<phylo_kmer::score_type> {
+                r, h, k, d, e, s, t, n, q, c, g, p, a, i, l, m, f, w, y, v
             };
 
             /// log-transform the probabilities

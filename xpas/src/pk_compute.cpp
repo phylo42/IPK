@@ -37,6 +37,7 @@ void DCLA::run(phylo_kmer::score_type eps)
     _result_list = DC(0, _k, eps);
 }
 
+#include <iostream>
 
 // j is the starat position of the window
 // h is the length of the window
@@ -54,9 +55,6 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
 
         phylo_kmer::score_type eps_l = eps - _window.range_max_product(j + h / 2, h - h / 2);
         phylo_kmer::score_type eps_r = eps - _window.range_max_product(j, h / 2);
-
-        //phylo_kmer::score_type eps_l = eps / best_score(j + h / 2, h - h / 2);
-        //phylo_kmer::score_type eps_r = eps / best_score(j, h / 2);
 
         auto l = DC(j, h / 2, eps_l);
         auto r = DC(j + h / 2, h - h / 2, eps_r);
@@ -92,7 +90,6 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
                     }
 
                     const auto score = a_score + b_score;
-                    //const auto score = a_score * b_score;
                     if (score <= eps)
                     {
                         break;
@@ -239,11 +236,11 @@ void DCCW::run(phylo_kmer::score_type eps)
                 phylo_kmer::key_type kmer;
                 if (prefix_sort)
                 {
-                    kmer = (b << ((_k - _k / 2) * 2)) | a;
+                    kmer = (b << ((_k / 2) * bit_length<seq_type>())) | a;
                 }
                 else
                 {
-                    kmer = (a << ((_k - _k / 2) * 2)) | b;
+                    kmer = (a << ((_k / 2) * bit_length<seq_type>())) | b;
                 }
                 _result_list.push_back({ kmer, score });
 

@@ -485,7 +485,6 @@ namespace xpas
         for (auto node_matrix_ref : group)
         {
             const auto& node_matrix = node_matrix_ref.get();
-
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
                 auto alg = xpas::DCLA(window, _kmer_size);
@@ -493,8 +492,6 @@ namespace xpas
 
                 for (const auto& kmer : alg.get_result())
                 {
-                    //std::cout << "\t" << xcl::decode_kmer(kmer.key, _kmer_size) << "\t" << kmer.score << std::endl;
-
                     xpas::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
