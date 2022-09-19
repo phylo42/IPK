@@ -107,7 +107,23 @@ set_property(TARGET xcl_dna PROPERTY CXX_STANDARD 17)
 target_compile_definitions(xcl_dna
         PUBLIC
             ${HASH_MAP}
-            SEQ_TYPE_DNA)
+            SEQ_TYPE_DNA
+            KEEP_POSITIONS)
+
+
+add_library(xcl_dna_pos STATIC "")
+add_library(xcl::dna_pos ALIAS xcl_dna)
+
+target_sources(xcl_dna_pos PRIVATE ${SOURCES})
+target_link_libraries(xcl_dna_pos PUBLIC ${LINK_LIBRARIES})
+target_include_directories(xcl_dna_pos PUBLIC ${INCLUDE_DIRECTORIES})
+target_compile_options(xcl_dna_pos PRIVATE ${COMPILE_OPTIONS})
+target_compile_features(xcl_dna_pos PUBLIC ${COMPILE_FEATURES})
+set_property(TARGET xcl_dna_pos PROPERTY CXX_STANDARD 17)
+target_compile_definitions(xcl_dna_pos
+        PUBLIC
+        ${HASH_MAP}
+        SEQ_TYPE_DNA)
 
 ######################################################################################################
 # Library installation

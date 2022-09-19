@@ -5,15 +5,15 @@ using namespace xpas;
 using namespace xcl;
 using xpas::impl::vector_type;
 
-bool kmer_score_comparator(const phylo_kmer& k1, const phylo_kmer& k2)
+bool kmer_score_comparator(const xcl::unpositioned_phylo_kmer& k1, const xcl::unpositioned_phylo_kmer& k2)
 {
     return k1.score > k2.score;
 }
 
 /// Creates a vector of 1-mers from a column of PP matrix
-std::vector<phylo_kmer> as_column(const window& window, size_t j, phylo_kmer::score_type eps)
+std::vector<unpositioned_phylo_kmer> as_column(const window& window, size_t j, phylo_kmer::score_type eps)
 {
-    std::vector<phylo_kmer> column;
+    std::vector<unpositioned_phylo_kmer> column;
     for (size_t i = 0; i < seq_traits::alphabet_size; ++i)
     {
         const auto& element = window.get(i, j);
@@ -41,7 +41,7 @@ void DCLA::run(phylo_kmer::score_type eps)
 
 // j is the starat position of the window
 // h is the length of the window
-std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
+std::vector<unpositioned_phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
 {
     // trivial case
     if (h == 1)
@@ -50,8 +50,8 @@ std::vector<phylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps)
     }
     else
     {
-        std::vector<phylo_kmer> result_vector;
-        std::vector<phylo_kmer>& result = (h == _k) ? _result_list : result_vector;
+        std::vector<xcl::unpositioned_phylo_kmer> result_vector;
+        std::vector<xcl::unpositioned_phylo_kmer>& result = (h == _k) ? _result_list : result_vector;
 
         phylo_kmer::score_type eps_l = eps - _window.range_max_product(j + h / 2, h - h / 2);
         phylo_kmer::score_type eps_r = eps - _window.range_max_product(j, h / 2);
@@ -137,12 +137,12 @@ phylo_kmer::score_type DCLA::best_score(size_t start_pos, size_t h)
 }*/
 
 
-const std::vector<phylo_kmer>& DCLA::get_result() const
+const std::vector<xcl::unpositioned_phylo_kmer>& DCLA::get_result() const
 {
     return _result_list;
 }
 
-DCCW::DCCW(const window& window, std::vector<phylo_kmer>& prefixes,
+DCCW::DCCW(const window& window, std::vector<xcl::unpositioned_phylo_kmer>& prefixes,
            size_t k, phylo_kmer::score_type lookbehind, phylo_kmer::score_type lookahead)
     : _window(window)
     , _k(k)
@@ -253,12 +253,12 @@ void DCCW::run(phylo_kmer::score_type eps)
 }
 
 
-const std::vector<phylo_kmer>& DCCW::get_result() const
+const std::vector<xcl::unpositioned_phylo_kmer>& DCCW::get_result() const
 {
     return _result_list;
 }
 
-std::vector<phylo_kmer>&& DCCW::get_suffixes()
+std::vector<xcl::unpositioned_phylo_kmer>&& DCCW::get_suffixes()
 {
     return std::move(_suffixes);
 }
@@ -330,7 +330,7 @@ void BB::bb(size_t i, size_t j, phylo_kmer::key_type prefix, phylo_kmer::score_t
     }
 }
 
-const std::vector<phylo_kmer>& BB::get_result() const
+const std::vector<xcl::unpositioned_phylo_kmer>& BB::get_result() const
 {
     return _result_list;
 }

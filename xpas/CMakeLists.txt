@@ -67,6 +67,33 @@ target_compile_features(xpas_dna
         cxx_std_17)
 
 ######################################################################################################
+add_executable(xpas_dna_pos "")
+set_target_properties(xpas_dna_pos PROPERTIES OUTPUT_NAME xpas-dna-pos)
+target_sources(xpas_dna_pos PRIVATE ${SOURCES})
+
+target_include_directories(xpas_dna_pos
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        )
+
+target_link_libraries(xpas_dna_pos
+        PRIVATE
+        ${LINK_LIBRARIES}
+        xcl::dna_pos
+        )
+
+# Turn on the warnings and treat them as errors
+target_compile_options(xpas_dna_pos
+        PRIVATE
+        -Wall -Wextra #-Werror #-Wpedantic
+        )
+
+target_compile_features(xpas_dna_pos
+        PUBLIC
+        cxx_std_17)
+
+######################################################################################################
 # Amino acids
 add_executable(xpas_aa "")
 set_target_properties(xpas_aa PROPERTIES OUTPUT_NAME xpas-aa)

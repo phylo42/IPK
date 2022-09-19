@@ -243,7 +243,7 @@ def build_database(ar,
     # run rappas2
     if states == 'nucl':
         if keep_positions:
-            raise RuntimeError("--keep-positions is not supported for DNA.")
+            bin = f"{current_dir}/bin/xpas/xpas-dna-pos"
         else:
             bin = f"{current_dir}/bin/xpas/xpas-dna"
     else:
@@ -303,7 +303,7 @@ def build_database(ar,
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
     if p.returncode != 0:
-        raise RuntimeError(f"XPAS returned error: {return_code}")
+        raise RuntimeError(f"XPAS returned error: {p.returncode}")
 
 
 if __name__ == "__main__":

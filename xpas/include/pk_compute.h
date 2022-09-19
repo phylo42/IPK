@@ -30,37 +30,37 @@ namespace xpas
 
         void run(phylo_kmer::score_type threshold);
 
-        const std::vector<phylo_kmer>& get_result() const;
+        const std::vector<xcl::unpositioned_phylo_kmer>& get_result() const;
 
     private:
 
-        std::vector<phylo_kmer> DC(size_t j, size_t h, phylo_kmer::score_type eps);
+        std::vector<xcl::unpositioned_phylo_kmer> DC(size_t j, size_t h, phylo_kmer::score_type eps);
 
         const window& _window;
         size_t _k;
 
-        std::vector<phylo_kmer> _prefixes;
-        std::vector<phylo_kmer> _suffixes;
+        std::vector<xcl::unpositioned_phylo_kmer> _prefixes;
+        std::vector<xcl::unpositioned_phylo_kmer> _suffixes;
 
-        std::vector<phylo_kmer> _result_list;
+        std::vector<xcl::unpositioned_phylo_kmer> _result_list;
     };
 
     class DCCW
     {
     public:
-        DCCW(const window& window, std::vector<phylo_kmer>& prefixes,
+        DCCW(const window& window, std::vector<xcl::unpositioned_phylo_kmer>& prefixes,
              size_t k, phylo_kmer::score_type lookbehind, phylo_kmer::score_type lookahead);
 
 
-        const std::vector<phylo_kmer>& get_result() const;
+        const std::vector<xcl::unpositioned_phylo_kmer>& get_result() const;
 
-        std::vector<phylo_kmer>&& get_suffixes();
+        std::vector<xcl::unpositioned_phylo_kmer>&& get_suffixes();
 
 
     private:
         void run(phylo_kmer::score_type omega);
 
-        std::vector<phylo_kmer> DC(phylo_kmer::score_type omega, size_t j, size_t h, phylo_kmer::score_type eps);
+        std::vector<xcl::unpositioned_phylo_kmer> DC(phylo_kmer::score_type omega, size_t j, size_t h, phylo_kmer::score_type eps);
 
         phylo_kmer::score_type get_best_suffix_score() const;
 
@@ -73,10 +73,10 @@ namespace xpas
         // The second score bound for prefixes: the best prefix score of the previous window
         phylo_kmer::score_type _lookbehind;
 
-        std::vector<phylo_kmer>& _prefixes;
-        std::vector<phylo_kmer> _suffixes;
+        std::vector<xcl::unpositioned_phylo_kmer>& _prefixes;
+        std::vector<xcl::unpositioned_phylo_kmer> _suffixes;
 
-        std::vector<phylo_kmer> _result_list;
+        std::vector<xcl::unpositioned_phylo_kmer> _result_list;
     };
 
 
@@ -85,7 +85,7 @@ namespace xpas
     public:
         BB(const window& window, size_t k, phylo_kmer::score_type eps);
 
-        const std::vector<phylo_kmer>& get_result() const;
+        const std::vector<xcl::unpositioned_phylo_kmer>& get_result() const;
     private:
         void run(phylo_kmer::score_type eps);
 
@@ -97,7 +97,7 @@ namespace xpas
         size_t _k;
         std::vector<phylo_kmer::score_type> _best_suffix_score;
 
-        std::vector<phylo_kmer> _result_list;
+        std::vector<xcl::unpositioned_phylo_kmer> _result_list;
 
         struct _mmer
         {
