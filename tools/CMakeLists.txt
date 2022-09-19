@@ -17,3 +17,13 @@ target_link_libraries(diff-aa PRIVATE xcl::aa)
 target_compile_options(diff-aa PRIVATE -Wall -Wextra -Werror -Wpedantic)
 set_property(TARGET diff-aa PROPERTY CXX_STANDARD 17)
 target_compile_features(diff-aa PUBLIC cxx_std_17)
+
+
+
+add_executable(pos-dump EXCLUDE_FROM_ALL "")
+set_target_properties(pos-dump PROPERTIES OUTPUT_NAME xpas-pos-dump)
+target_sources(pos-dump PRIVATE src/basedump.cpp)
+target_link_libraries(pos-dump PRIVATE xcl::dna_pos)
+target_compile_options(pos-dump PRIVATE -Wall -Wextra -Werror -Wpedantic)
+set_property(TARGET pos-dump PROPERTY CXX_STANDARD 17)
+target_compile_features(pos-dump PUBLIC cxx_std_17)
