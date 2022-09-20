@@ -118,7 +118,7 @@ namespace xpas
         double _mu;
 
         /// The number of batches in which the space of k-mers is split
-        const size_t _num_batches = 16;
+        const size_t _num_batches = 1;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
