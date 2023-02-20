@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-XPAS wrapper script.
+IPK wrapper script.
 """
 
 __author__ = "Nikolai Romashchenko"
@@ -17,9 +17,9 @@ import json
 
 
 @click.group()
-def xpas():
+def ipk():
     """
-    xpas
+    IPK
 
     N. Romashchenko, B. Linard, F. Pardi, E. Rivals
     """
@@ -55,12 +55,12 @@ def validate_model(ctx, param, value):
     raise click.BadParameter(f'Please define a valid evolutionary model either via --model or in a config file '
                              f'via --ar-config. Valid values: {ALL_MODELS}')
 
-@xpas.command()
+@ipk.command()
 @click.option('-b', '--ar',
               type=click.Path(exists=True),
               required=False,
               help="Path for the ancestral reconstruction software used. Currently,"
-                   "PhyML and RAxML-ng are supported. If not given, XPAS will try to"
+                   "PhyML and RAxML-ng are supported. If not given, IPK will try to"
                    "find RAxML-ng using environmental variables.")
 @click.option('-r', '--refalign',
               type=click.Path(exists=True),
@@ -154,7 +154,7 @@ def validate_model(ctx, param, value):
               required=False,
               type=click.Path(exists=True),
               help="A .json-formatted config file for ancestral reconstruction parameters. "
-                   "See xpas.readthedocs.org for help")
+                   "See the documentation for help.")
 @click.option('--keep-positions',
               is_flag=True,
               default=False,
@@ -183,7 +183,7 @@ def build(ar,
 
     Minimum usage:
 
-    \tpython xpas.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
+    \tpython ipk.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
 
     """
     build_database(ar,
@@ -245,13 +245,12 @@ def build_database(ar,
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            bin = f"{current_dir}/bin/xpas/xpas-dna"
+            bin = f"{current_dir}/bin/ipk/ipk-dna"
     else:
         if keep_positions:
-            raise NotImplementedError()
-            bin = f"{current_dir}/bin/xpas/xpas-aa-pos"
+            bin = f"{current_dir}/bin/ipk/ipk-aa-pos"
         else:
-            bin = f"{current_dir}/bin/xpas/xpas-aa"
+            bin = f"{current_dir}/bin/ipk/ipk-aa"
 
 
     command = [
@@ -303,8 +302,8 @@ def build_database(ar,
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
     if p.returncode != 0:
-        raise RuntimeError(f"XPAS returned error: {return_code}")
+        raise RuntimeError(f"IPK returned error: {return_code}")
 
 
 if __name__ == "__main__":
-    xpas()
+    ipk()
