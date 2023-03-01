@@ -1,3 +1,7 @@
+v0.3.2
+- Added reference tree indexing to speed up phylogenetic placement
+- Changes in the serialization protocol
+
 v0.3.1
 - Fixed a bug that sometimes lead to scores of phylo-k-mers to be lower than expected
 - Added --uncompressed flag (disables ZLIB compression of databases)

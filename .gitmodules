@@ -1,27 +1,12 @@
-[submodule "skarupke"]
-	path = skarupke
-	url = https://github.com/nromashchenko/skarupke.git
 [submodule "catch2"]
 	path = catch2
 	url = https://github.com/catchorg/Catch2.git
-[submodule "robin-hood-hashing"]
-	path = robin-hood-hashing
-	url = https://github.com/martinus/robin-hood-hashing.git
-[submodule "parallel-hashmap"]
-	path = parallel-hashmap
-	url = https://github.com/greg7mdp/parallel-hashmap.git
-[submodule "robin-map"]
-	path = robin-map
-	url = https://github.com/Tessil/robin-map.git
-[submodule "hopscotch-map"]
-	path = hopscotch-map
-	url = https://github.com/Tessil/hopscotch-map.git
-[submodule "abseil-cpp"]
-	path = abseil-cpp
-	url = https://github.com/abseil/abseil-cpp.git
-[submodule "folly"]
-	path = folly
-	url = https://github.com/facebook/folly.git
 [submodule "strasser"]
 	path = strasser
 	url = https://github.com/nromashchenko/strasser.git
+[submodule "indicators"]
+	path = indicators
+	url = https://github.com/p-ranav/indicators.git
+[submodule "i2l"]
+	path = i2l
+	url = https://github.com/phylo42/i2l
