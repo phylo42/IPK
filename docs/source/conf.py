@@ -2,8 +2,8 @@
 
 # -- Project information
 
-project = 'XPAS'
-copyright = '2022, Nikolai Romashchenko'
+project = 'IPK'
+copyright = '2023, Nikolai Romashchenko'
 author = 'Nikolai Romashchenko'
 
 release = '0.3'

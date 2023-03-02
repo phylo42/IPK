@@ -25,17 +25,17 @@ I want a quick example
 
       .. code-block:: console
 
-         $ python xpas.py build -w workdir \
-                                -r alignment.fasta \
-                                -t tree.newick \
-                                -m GTR \
-                                -a 0.42 \
-                                -k 10
+         $ python ipk.py build -w workdir \
+                               -r alignment.fasta \
+                               -t tree.newick \
+                               -m GTR \
+                               -a 0.42 \
+                               -k 10
 
 
    .. tab:: Proteins
 
-         Temporarily disabled in this version of XPAS.
+         Temporarily disabled in this version of IPK.
 
 
 .. _readthedocs:
@@ -44,7 +44,7 @@ I want to *read the docs*
 =========================
 
 
-First, you must ensure that your data satisfies the assumptions that :program:`XPAS` makes. 
+First, you must ensure that your data satisfies the assumptions that :program:`IPK` makes. 
 Then, you need to ensure that specific default parameters fit your case. 
 
 Here is a checklist for any phylo-k-mer-based analysis. This section will talk about all
@@ -67,7 +67,7 @@ Reference multiple alignment
 
 Phylo-k-mers are applied for phylogenies inferred from either short genetic markers 
 common in metabarcoding (such as 16S and others) or short viral genomes. 
-Therefore, we do not know how phylo-k-mers in general and :program:`XPAS` in particular 
+Therefore, we do not know how phylo-k-mers in general and :program:`IPK` in particular 
 will work with data representing much longer sequences, e.g., hundreds of kilobases.
 
 :option:`-r` or :option:`--refalign` define the path to the reference sequences. Your reference sequences should be aligned 
@@ -113,7 +113,7 @@ Ancestral reconstruction
 ------------------------
 
 Ancestral reconstruction is a required step of phylo-k-mer computation. 
-To complete it, :program:`XPAS` runs either :program:`PhyML` or :program:`RAxML-ng`. 
+To complete it, :program:`IPK` runs either :program:`PhyML` or :program:`RAxML-ng`. 
 By default, it searches for ``raxml-ng`` in your PATH. Should it be absent 
 (or you want to use a specific version of the software), 
 you must provide its path via :option:`-b` or :option:`--ar`.
@@ -177,7 +177,7 @@ resulting in the best model of
    ``GTR{1.229596/5.824854/2.865999/2.632363/9.525945/1.000000}+FC+G4m{0.492429}, noname = 1-10262``
 
 Then, the following config file should be created and passed via :option:`--ar-config` to
-:program:`XPAS`:
+:program:`IPK`:
 
 
 .. code-block:: json
@@ -195,7 +195,7 @@ Then, the following config file should be created and passed via :option:`--ar-c
 
 
 .. note::
-   The evolutionary model should be reoptimized after the extention of the tree done by :program:`XPAS`. This
+   The evolutionary model should be reoptimized after the extention of the tree done by :program:`IPK`. This
    is why we set ``opt-model: on`` in this example.
 
 
@@ -204,7 +204,7 @@ K-mer size and score threshold
 ------------------------------
 
 K-mer size and score threshold parameter (:option:`-k` and :option:`--omega`)
-have **tremendous** performance impact on :program:`XPAS` and tools using 
+have **tremendous** performance impact on :program:`IPK` and tools using 
 resulting phylo-k-mers, both in running time and memory. It is important to 
 understand what those parameter mean.
 
@@ -212,7 +212,7 @@ K-mer size
 ~~~~~~~~~~
 K-mer size determines how long considered k-mers are, or, in other words, 
 **how many hypothetical strings we consider**. The number of considered k-mers, as well as
-running time of :program:`XPAS`, **grows exponentially** with ``k``. For these reasons, 
+running time of :program:`IPK`, **grows exponentially** with ``k``. For these reasons, 
 working values of ``k`` should be small (see :ref:`discussion<recommendations>` below).
 
 Score threshold
@@ -266,4 +266,4 @@ The instruction below may be helpful.
 
    .. tab:: Proteins
 
-         Temporarily disabled in this version of XPAS.
+         Temporarily disabled in this version of IPK.

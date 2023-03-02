@@ -6,8 +6,8 @@ Installation
 Install dependencies and build source code
 ------------------------------------------
 
-The source code of XPAS depends on libraries you need to install from your distro's repository: boost_ (v1.67+) and zlib_. 
-Other depencies are provided as submodules and should be compiled within XPAS.
+The source code of IPK depends on libraries you need to install from your distro's repository: boost_ (v1.67+) and zlib_. 
+Other depencies are provided as submodules and should be compiled within IPK.
 
 .. _boost: https://www.boost.org/
 
@@ -27,21 +27,21 @@ Clone the repository including the submodules:
 
 .. code-block:: console
 
-    $ git clone --recursive https://github.com/phylo42/xpas.git
+    $ git clone --recursive https://github.com/phylo42/IPK.git ipk
 
 
-Compile the library:
+Compile the code:
 
 .. code-block:: console
 
-    $ cd xpas && mkdir bin && cd bin
+    $ cd ipk && mkdir bin && cd bin
     $ cmake -DHASH_MAP=USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
     $ make -j4
 
 Other dependencies
 ------------------
 
-To run XPAS, you will also need to install either ``raxml-ng`` or ``phyml``. 
+To run IPK, you will also need to install either ``raxml-ng`` or ``phyml``. 
 Both of them are available in Bioconda_:
 
 .. _Bioconda: https://bioconda.github.io/
@@ -66,6 +66,6 @@ To check that installation is complete, run the following command to see the hel
 
 .. code-block:: console
 
-    $ python xpas.py --help
+    $ python ipk.py --help
 
 
