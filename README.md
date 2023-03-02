@@ -1,12 +1,12 @@
-# XPAS: Phylo-k-mers of Ancestral Sequences
+# IPK: Inference of Phylo-K-mers
 
-XPAS is a tool for computing phylo-k-mers for a fixed phylogeny.
+IPK is a tool for computing phylo-k-mers for a fixed phylogeny.
 
-[Link to documentation](https://xpas.readthedocs.io/en/docs) 
+[Link to documentation](https://phylo-k-mers.readthedocs.io/en/docs) 
 
-For more information about phylo-k-mers, see our papers: [1](https://tel.archives-ouvertes.fr/tel-03629440/ "My thesis on phylo-k-mers for phylogenetic placement")  [2](https://doi.org/10.1093/bioinformatics/btz068 "This paper introduced phylo-k-mers") [3](https://doi.org/10.1093/bioinformatics/btaa1020 "Another paper that uses XPAS and phylo-k-mers").
+For more information about phylo-k-mers, see our papers: [1](https://tel.archives-ouvertes.fr/tel-03629440/ "My thesis on phylo-k-mers for phylogenetic placement")  [2](https://doi.org/10.1093/bioinformatics/btz068 "This paper introduced phylo-k-mers") [3](https://doi.org/10.1093/bioinformatics/btaa1020 "Another paper that uses IPK and phylo-k-mers").
 
-If you want to experiment with phylo-k-mers, check out our [examples](https://github.com/phylo42/xpas/tree/master/examples) to see how to use XPAS and XCL (XPAS Core Library).
+If you want to experiment with phylo-k-mers and write some code, check out our [examples](https://github.com/phylo42/IPK/tree/master/examples) to see how to use the code of IPK.
 
 ---
 
