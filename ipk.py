@@ -16,16 +16,6 @@ import shutil
 import json
 
 
-@click.group()
-def ipk():
-    """
-    IPK
-
-    N. Romashchenko, B. Linard, F. Pardi, E. Rivals
-    """
-    pass
-
-
 # See: https://github.com/amkozlov/raxml-ng/wiki/Input-data#evolutionary-model
 NUCL_MODELS = ['JC', 'K80', 'F81', 'HKY', 'TN93ef',
                'TN93', 'K81', 'K81uf', 'TPM2', 'TPM2uf', 'TPM3', 'TPM3uf',
@@ -38,6 +28,16 @@ ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
 KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
+
+
+@click.group()
+def ipk():
+    """
+    IPK
+
+    N. Romashchenko, B. Linard, F. Pardi, E. Rivals
+    """
+    pass
 
 
 def validate_filter(ctx, param, value):
@@ -55,27 +55,31 @@ def validate_model(ctx, param, value):
     raise click.BadParameter(f'Please define a valid evolutionary model either via --model or in a config file '
                              f'via --ar-config. Valid values: {ALL_MODELS}')
 
-@ipk.command()
+
+@xpas.command()
 @click.option('-b', '--ar',
               type=click.Path(exists=True),
               required=False,
-              help="Path for the ancestral reconstruction software used. Currently,"
-                   "PhyML and RAxML-ng are supported. If not given, IPK will try to"
-                   "find RAxML-ng using environmental variables.")
+              help="""Path for the ancestral reconstruction software to use to infer ancestral states. 
+                      Currently, :program:`PhyML` and :program:`RAxML-ng` are supported.
+                      If no value is provided, IPK searches for ``raxml-ng`` in your PATH.""")
 @click.option('-r', '--refalign',
               type=click.Path(exists=True),
               required=True,
-              help="""Reference alignment in fasta format.
-                  It must be the multiple alignment used to build the reference tree.""")
+              help="""Reference multiple sequence alignment in FASTA format. 
+              Reference sequences should be in 1-to-1 correspondance with the tips 
+              of the tree given by :option:`--reftree`.""")
 @click.option('-t', '--reftree',
               type=click.Path(exists=True),
               required=True,
-              help=" Reference tree in the newick format")
+              help="""Reference phylogenetic tree in Newick format. 
+              The tips should be in 1-to-1 correspondance with the sequences given by :option:`--refalign`. 
+              If the tree is unrooted, the flag :option:`--use-unrooted` should be used.""")
 @click.option('-s', '--states',
               type=click.Choice(['nucl', 'amino']),
               default='nucl', show_default=True,
               required=True,
-              help="States used in analysis.")
+              help="States used in the analysis, either `nucl` for DNA or `amino` for proteins.")
 @click.option('-v', '--verbosity',
               type=int,
               default=0, show_default=True,
@@ -83,10 +87,10 @@ def validate_model(ctx, param, value):
 @click.option('-w', '--workdir',
               required=True,
               type=click.Path(dir_okay=True, file_okay=False),
-              help="Working directory for temp files.")
+              help="Working directory for temporary files.")
 @click.option('--write-reduction',
               type=click.Path(file_okay=True, dir_okay=False),
-              help="Write reduced alignment to file.")
+              help="Flag indicating to write reduced alignment to file.")
 @click.option('-a', '--alpha',
               type=float,
               default=1.0, show_default=True,
@@ -98,75 +102,82 @@ def validate_model(ctx, param, value):
 @click.option('-k', '--k',
              type=int,
              default=8, show_default=True,
-             help="k-mer length used at DB build.")
+             help="k-mer length used. Must be a value in [2, 31].")
 @click.option('-m', '--model', type=click.UNPROCESSED, callback=validate_model, required=False,
-             help="Model used in AR, one of the following:\n"
-                  f"nucl: {', '.join(x for x in NUCL_MODELS)}\n"
+             help="Phylogenetic model used for ancestral state reconstruction.\n\n"
+                  "Must be one of the following:\n\n"
+                  f"nucl: {', '.join(x for x in NUCL_MODELS)}\n\n"
                   f"amino: {', '.join(x for x in AMINO_MODELS)}")
 @click.option('--convert-uo',
               is_flag=True,
-              help="U, O amino acids are converted to C, L.")
+              help="Convert U, O amino acids to C, L.")
 @click.option('--no-reduction',
               is_flag=True,
-              help="""Do not operate alignment reduction. This will 
-                  keep all sites of input reference alignment and 
+              help="""Disables alignment reduction. This will 
+                  keep all sites of the input reference alignment and 
                   may produce erroneous ancestral k-mers.""")
 @click.option('--reduction-ratio',
               type=float,
               default=0.99, show_default=True,
-              help="""Ratio for alignment reduction, e.g. sites 
-                holding >99% gaps are ignored.""")
+              help="""Ratio for alignment reduction. 
+              Sites holding a higher percentage of gaps than this value will be removed.""")
 @click.option('--omega',
               type=float,
               default=1.5, show_default=True,
-              help="""Modifier levelling the threshold used during
-                  phylo-kmer filtering, T=(omega/#states)^k""")
+              help="""Score threshold modifier. Determines the 
+              minimal phylo-k-mer score considered according to the following formula:
+              (omega / #states)^k""")
 @click.option('--filter',
               callback=validate_filter,
-              default="no-filter", show_default=True)
-@click.option('-f', type=float, default=1.0)
+              default="no-filter", show_default=True,
+              help="""Filtering function used to filter phylo-k-mers. Currently supported values:
+              no-filter, mif0, mif1, random.""")
 @click.option('-u', '--mu',
               type=float,
-              default=0.5, show_default=True,
-              help="""K-mer filter threshold""")
+              default=1.0, show_default=True,
+              help="""K-mer filtering threshold. Determines the fraction of most informative k-mers 
+              that will be saved in the resulting database.""")
 @click.option('--use-unrooted',
               is_flag=True,
               help="""Confirms you accept to use an unrooted reference
-                  tree (option -t). The trifurcation described by the
-                  newick file will be considered as root. Be aware that
-                  meaningless roots may impact accuracy.""")
+                  tree provided with :option:`-t`. The trifurcation described by the
+                  newick file will be considered as the root. WARNING: meaningless rooting
+                  can influence the accuracy of phylo-k-mer-based applications.""")
 @click.option('--merge-branches',
               is_flag=True,
               default=False,
-              help="""Builds a databases of phylo k-mers, merging phylo
-                  k-mers of different branches. Thus, for every k-mer
-                  the only one maximum score among all the branches
-                  will be saved.""")
+              help="""Creates a database by merging phylo-k-mers of different branches
+              together. Thus, for every k-mer, the only one maximum score 
+              among all the branches will be stored.""")
 @click.option('--ar-dir',
              type=click.Path(exists=True, dir_okay=True, file_okay=False),
-             help="""Skip ancestral sequence reconstruction, and 
-                  uses outputs from the specified directory.""")
+             help="""Skip ancestral sequence reconstruction
+             and use outputs from the specified directory.""")
 @click.option('--ar-only',
              is_flag=True,
              default=False, show_default=True,
-             help="Dev option. Run only ancestral reconstruction and tree extension. No database will be built")
+             help="""If set, XPAS stops after tree extension and ancestral reconstruction. 
+             No database will be created.""")
 @click.option('--ar-config',
               required=False,
               type=click.Path(exists=True),
-              help="A .json-formatted config file for ancestral reconstruction parameters. "
-                   "See the documentation for help.")
+              help="""A .json-formatted config file for ancestral reconstruction parameters.
+                   See phylo-k-mers.readthedocs.org for help""")
 @click.option('--keep-positions',
               is_flag=True,
               default=False,
-              help="""Keeps phylo k-mers positions in the alignment. Makes databases larger in size.""")
+              help="""Keeps alignment positions where phylo-k-mers obtain
+              reported scores. Makes output databases larger in size.""")
 @click.option('--uncompressed',
               is_flag=True,
               default=False,
-              help="""Stores databases uncompressed.""")
+              help="""Disables database compression. 
+              Saves time during database load and save, but requires more disk space.""")
 @click.option('--threads',
              type=int,
-             default=4, show_default=True,
-             help="Number of threads used.")
+             default=4, 
+             show_default=True,
+             help="Number of threads used to compute phylo-k-mers.")
 def build(ar,
           refalign, reftree, states,
           verbosity,
@@ -174,17 +185,12 @@ def build(ar,
           alpha, categories, #ghosts,
           k, model, convert_uo, #gap_jump_thresh,
           no_reduction, reduction_ratio, omega,
-          filter, f, mu, use_unrooted, merge_branches,
+          filter, mu, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
           threads):
     """
-    Builds a database of phylo-k-mers.
-
-    Minimum usage:
-
-    \tpython ipk.py build -s [nucl|amino] -b ARbinary -w workdir -r alignment.fasta -t tree.newick
-
+    Computes a database of phylo-k-mers.
     """
     build_database(ar,
                    refalign, reftree, states,
@@ -193,7 +199,7 @@ def build(ar,
                    alpha, categories, #ghosts,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, f, mu, use_unrooted, merge_branches,
+                   filter, mu, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads)
@@ -226,7 +232,7 @@ def build_database(ar,
                    alpha, categories, #ghosts,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, f, mu, use_unrooted, merge_branches,
+                   filter, mu, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads):
@@ -302,7 +308,7 @@ def build_database(ar,
     subprocess.call(["rm", "-rf", hashmaps_dir])
 
     if p.returncode != 0:
-        raise RuntimeError(f"IPK returned error: {return_code}")
+        raise RuntimeError(f"IPK returned error: {p.returncode}")
 
 
 if __name__ == "__main__":
