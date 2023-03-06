@@ -56,7 +56,7 @@ def validate_model(ctx, param, value):
                              f'via --ar-config. Valid values: {ALL_MODELS}')
 
 
-@xpas.command()
+@ipk.command()
 @click.option('-b', '--ar',
               type=click.Path(exists=True),
               required=False,
@@ -156,7 +156,7 @@ def validate_model(ctx, param, value):
 @click.option('--ar-only',
              is_flag=True,
              default=False, show_default=True,
-             help="""If set, XPAS stops after tree extension and ancestral reconstruction. 
+             help="""If set, IPK stops after tree extension and ancestral reconstruction. 
              No database will be created.""")
 @click.option('--ar-config',
               required=False,
