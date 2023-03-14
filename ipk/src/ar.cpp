@@ -715,12 +715,6 @@ namespace ipk::ar
             }
         }
 
-        std::string get_model_type(const ar::model& model)
-        {
-            // return "AA";
-            return "DNA";
-        }
-
         bp::child make_process()
         {
             std::vector<std::string> args = {
@@ -736,10 +730,6 @@ namespace ipk::ar
 
             if (_params.ar_parameters.empty())
             {
-                // See: https://github.com/amkozlov/raxml-ng/wiki/Input-data#evolutionary-model
-                args.push_back("--data-type");
-                args.push_back(get_model_type(_params.ar_model));
-
                 args.push_back("--model");
                 const auto ar_model = std::vector<std::string>{
                     model_to_string(_params.ar_model),
