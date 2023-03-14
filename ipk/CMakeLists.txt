@@ -93,3 +93,31 @@ target_compile_options(ipk_aa
 target_compile_features(ipk_aa
         PUBLIC
         cxx_std_17)
+
+######################################################################################################
+# Amino acids
+add_executable(ipk_aa_pos "")
+set_target_properties(ipk_aa_pos PROPERTIES OUTPUT_NAME ipk-aa-pos)
+target_sources(ipk_aa_pos PRIVATE ${SOURCES})
+
+target_include_directories(ipk_aa_pos
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        )
+
+target_link_libraries(ipk_aa_pos
+        PRIVATE
+        ${LINK_LIBRARIES}
+        i2l::aa_pos
+        )
+
+# Turn on the warnings and treat them as errors
+target_compile_options(ipk_aa_pos
+        PRIVATE
+        -Wall -Wextra #-Werror #-Wpedantic
+        )
+
+target_compile_features(ipk_aa_pos
+        PUBLIC
+        cxx_std_17)

@@ -246,7 +246,7 @@ def build_database(ar,
 
     ar_parameters = parse_config(ar_config) if ar_config else ""
 
-    # run rappas2
+    # run IPK
     if states == 'nucl':
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")

@@ -448,21 +448,25 @@ namespace ipk
     }
 
     #ifdef KEEP_POSITIONS
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
     {
+        (void)postorder_id;
+
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
 
         const auto log_threshold = std::log10(i2l::score_threshold(_omega, _kmer_size));
-        for (auto node_entry_ref : group)
+        for (auto node_matrix_ref : group)
         {
-            const auto& node_entry = node_entry_ref.get();
-            for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
+            const auto& node_matrix = node_matrix_ref.get();
+            for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
-                const auto position = window.get_start_pos();
-                for (const auto& kmer : window)
+                auto alg = ipk::DCLA(window, _kmer_size);
+                alg.run(log_threshold);
+                for (const auto& kmer : alg.get_result())
                 {
-                    phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
+                    phylo_kmer positioned_kmer = { kmer.key, kmer.score,
+                                                   static_cast<phylo_kmer::pos_type>(window.get_position()) };
                     put(hash_maps[kmer_batch(kmer.key, _num_batches)], positioned_kmer);
                     ++count;
                 }

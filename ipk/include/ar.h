@@ -1,5 +1,5 @@
-#ifndef RAPPAS_CPP_PHYML_H
-#define RAPPAS_CPP_PHYML_H
+#ifndef AR_H
+#define AR_H
 
 #include <string>
 #include <unordered_map>

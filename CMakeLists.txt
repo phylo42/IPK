@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(IPK LANGUAGES CXX VERSION 0.3.1)
+project(IPK LANGUAGES CXX VERSION 0.4.0)
 
 # default build type Release
 if(NOT CMAKE_BUILD_TYPE)
