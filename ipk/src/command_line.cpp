@@ -53,6 +53,12 @@ namespace ipk::cli
     static std::string DCLA = "DCLA";
     static std::string DCCW = "DCCW";
 
+    /// Ghost nodes strategy
+    static std::string GHOSTS_INNER = "inner-only";
+    static std::string GHOSTS_OUTER = "outer-only";
+    static std::string GHOSTS_BOTH = "both";
+
+
     /// Algorithm flags
     bool bb_flag = false;
     bool dc_flag = true;
@@ -72,6 +78,10 @@ namespace ipk::cli
     bool ar_only_flag = false;
     bool uncompressed_flag = false;
 
+    /// Flags for ghost node strategy
+    bool inner_only_flag = false;
+    bool outer_only_flag = false;
+    bool both_flag = true;
 
     po::options_description get_opt_description()
     {
@@ -117,7 +127,6 @@ namespace ipk::cli
             ((MERGE_BRANCHES).c_str(), po::bool_switch(&merge_branches_flag))
             ((USE_UNROOTED).c_str(), po::bool_switch(&use_unrooted_flag))
 
-
             ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
             ((MIF0).c_str(), po::bool_switch(&mif0_flag))
             ((MIF1).c_str(), po::bool_switch(&mif1_flag))
@@ -127,7 +136,12 @@ namespace ipk::cli
             ((BB).c_str(), po::bool_switch(&bb_flag))
             ((DC).c_str(), po::bool_switch(&dc_flag))
             ((DCLA).c_str(), po::bool_switch(&dcla_flag))
-            ((DCCW).c_str(), po::bool_switch(&dccw_flag));
+            ((DCCW).c_str(), po::bool_switch(&dccw_flag))
+
+            ((GHOSTS_INNER).c_str(), po::bool_switch(&inner_only_flag))
+            ((GHOSTS_OUTER).c_str(), po::bool_switch(&outer_only_flag))
+            ((GHOSTS_BOTH).c_str(), po::bool_switch(&both_flag))
+            ;
         return desc;
     }
 
@@ -273,6 +287,11 @@ namespace ipk::cli
             parameters.dccw = dccw_flag;
 
             parameters.uncompressed = uncompressed_flag;
+
+            /// ghost node strategy
+            parameters.inner_only = inner_only_flag;
+            parameters.outer_only = outer_only_flag;
+            parameters.both = both_flag;
         }
         catch (const po::error& e)
         {

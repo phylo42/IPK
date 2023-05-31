@@ -51,11 +51,17 @@ namespace ipk::cli
         bool mif0_filter;
         bool random_filter;
 
-        /// Phylo-k-mer computation algorithms, mutually exclusize
+        /// Phylo-k-mer computation algorithms, mutually exclusive
         bool bb;
         bool dc;
         bool dcla;
         bool dccw;
+
+        /// Ghost node strategy flags, mutually exclusive
+
+        bool inner_only;
+        bool outer_only;
+        bool both;
 
         // k-mer filtering threshold
         double mu;
@@ -63,9 +69,11 @@ namespace ipk::cli
         // store databases uncompressed
         bool uncompressed;
 
-
         // k-mer computation algorithm
         ipk::algorithm algorithm;
+
+        // a strategy to pick ghost nodes into consideration
+        ipk::ghost_strategy ghost_strategy;
     };
 
     std::string get_option_list();

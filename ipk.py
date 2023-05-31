@@ -29,6 +29,8 @@ ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
 
+GHOST_STRATEGIES = ["inner-only", "outer-only", "both"]
+
 
 @click.group()
 def ipk():
@@ -45,6 +47,13 @@ def validate_filter(ctx, param, value):
     if value not in KMER_FILTERS:
         valid_values = ', '.join(v for v in KMER_FILTERS)
         raise click.BadParameter('Filter must be one of: ' + valid_values)
+    return value
+
+def validate_ghosts(ctx, param, value):
+    value = value.lower()
+    if value not in GHOST_STRATEGIES:
+        valid_values = ', '.join(v for v in GHOST_STRATEGIES)
+        raise click.BadParameter('Strategy must be one of: ' + valid_values)
     return value
 
 
@@ -137,6 +146,11 @@ def validate_model(ctx, param, value):
               default=1.0, show_default=True,
               help="""K-mer filtering threshold. Determines the fraction of most informative k-mers 
               that will be saved in the resulting database.""")
+@click.option('--ghosts',
+              callback=validate_ghosts,
+              default="both", show_default=True,
+              help="""The strategy to process ghost nodes. Supported values:
+              inner-only, outer-only, both""")
 @click.option('--use-unrooted',
               is_flag=True,
               help="""Confirms you accept to use an unrooted reference
@@ -182,10 +196,10 @@ def build(ar,
           refalign, reftree, states,
           verbosity,
           workdir, write_reduction, #dbfilename,
-          alpha, categories, #ghosts,
+          alpha, categories,
           k, model, convert_uo, #gap_jump_thresh,
           no_reduction, reduction_ratio, omega,
-          filter, mu, use_unrooted, merge_branches,
+          filter, mu, ghosts, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
           threads):
@@ -196,10 +210,10 @@ def build(ar,
                    refalign, reftree, states,
                    verbosity,
                    workdir, write_reduction, #dbfilename,
-                   alpha, categories, #ghosts,
+                   alpha, categories,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, mu, use_unrooted, merge_branches,
+                   filter, mu, ghosts, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads)
@@ -229,10 +243,11 @@ def build_database(ar,
                    refalign, reftree, states,
                    verbosity,
                    workdir, write_reduction, #dbfilename,
-                   alpha, categories, #ghosts,
+                   alpha, categories,
                    k, model, convert_uo, #gap_jump_thresh,
                    no_reduction, reduction_ratio, omega,
-                   filter, mu, use_unrooted, merge_branches,
+                   filter, mu, ghosts, 
+                   use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
                    threads):
@@ -272,6 +287,7 @@ def build_database(ar,
         "--reduction-ratio", str(reduction_ratio),
         "-o", str(omega),
         "--" + filter.lower(),
+        "--" + ghosts.lower(),
         "-u", str(mu),
         "-j", str(threads)
     ]
