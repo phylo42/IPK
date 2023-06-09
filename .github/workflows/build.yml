@@ -6,7 +6,7 @@ env:
   BUILD_TYPE: Release
 
 jobs:
-  build-epik:
+  build-ipk:
     name: ${{matrix.buildname}}
 
     runs-on: ${{matrix.os}}
@@ -24,14 +24,14 @@ jobs:
             buildname: 'ubuntu-20.04'
             triplet: x64-linux
             compiler: gcc_64
-          #- os: macos-13
-          #  buildname: 'macos-13'
-          #  triplet: x64-osx
-          #  compiler: clang_64
-          #- os: macos-12
-          #  buildname: 'macos-12'
-          #  triplet: x64-osx
-          #  compiler: clang_64
+          - os: macos-13
+            buildname: 'macos-13'
+            triplet: x64-osx
+            compiler: clang_64
+          - os: macos-12
+            buildname: 'macos-12'
+            triplet: x64-osx
+            compiler: clang_64
 
     steps:
       - name: Checkout
