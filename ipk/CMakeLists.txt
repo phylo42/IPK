@@ -5,14 +5,14 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 # WARNING: some dependencies are not listed here. See the top-level CMake file
 # for more details
 find_package(Boost REQUIRED COMPONENTS program_options filesystem iostreams)
-find_package(OpenMP REQUIRED)
+#find_package(OpenMP REQUIRED)
 
 # The code and the libraries are the same for all targets.
 # The only difference is the version of xpas we link against (xpas::dna, xpas::aa)
 set(LINK_LIBRARIES Boost::program_options
         Boost::filesystem
         Boost::iostreams
-        OpenMP::OpenMP_CXX
+        #OpenMP::OpenMP_CXX
         strasser::csv_parser
         indicators::indicators)
 
