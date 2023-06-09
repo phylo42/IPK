@@ -59,6 +59,7 @@ public:
 
         {
             const auto& [match, va, vb] = check_tree();
+            (void)va; (void)vb;
             std::cout << "Reference tree:\t" << bool_to_OK(match) << "\t"
                       << " " << "\t" << " " << std::endl;
         }
@@ -157,6 +158,7 @@ public:
         size_t i = 0;
         for (const auto& [kmer, entries] : x)
         {
+            (void)kmer;
             i += entries.size();
         }
         return i;
