@@ -47,7 +47,7 @@ jobs:
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
 
-        - name: (MacOS) Download RAxML-ng
+      - name: (MacOS) Download RAxML-ng
         if: runner.os == 'macOS'
         run: wget https://github.com/amkozlov/raxml-ng/releases/download/1.2.0/raxml-ng_v1.2.0_macos_x86_64.zip && unzip raxml-ng_v1.2.0_macos_x86_64.zip
 
@@ -67,6 +67,3 @@ jobs:
 
       - name: Test python script
         run: python3 ipk.py build --help
-
-      #- name: Test database build
-      #  run: python3 ipk.py build 
