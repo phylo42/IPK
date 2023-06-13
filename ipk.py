@@ -302,13 +302,18 @@ def build_database(ar,
 
     command_str = " ".join(s for s in command)
     print(command_str)
-    p = subprocess.run(command_str, shell=True, check=True)
+    try:
+        p = subprocess.run(command_str, shell=True, check=True)
 
-    # clean after
-    subprocess.call(["rm", "-rf", hashmaps_dir])
+        # clean after
+        subprocess.call(["rm", "-rf", hashmaps_dir])
 
-    if p.returncode != 0:
-        raise RuntimeError(f"IPK returned error: {p.returncode}")
+        if p.returncode != 0:
+            raise RuntimeError(f"IPK returned error: {p.returncode}")
+
+    except subprocess.CalledProcessError:
+        pass
+
 
 
 if __name__ == "__main__":
