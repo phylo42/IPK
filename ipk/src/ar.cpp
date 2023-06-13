@@ -618,7 +618,7 @@ namespace ipk::ar
 
             if (result != 0)
             {
-                throw std::runtime_error("Error during ancestral reconstruction: exit code"
+                throw std::runtime_error("Error during ancestral reconstruction: exit code "
                                          + std::to_string(result));
             }
         }
@@ -710,7 +710,7 @@ namespace ipk::ar
 
             if (result != 0)
             {
-                throw std::runtime_error("Error during ancestral reconstruction: exit code"
+                throw std::runtime_error("Error during ancestral reconstruction: exit code "
                                          + std::to_string(result));
             }
         }
@@ -727,7 +727,7 @@ namespace ipk::ar
                 "--ancestral",
                 "--msa", _params.alignment_file,
                 "--tree", _params.tree_file,
-                "--threads", "1", //_params.threads,
+                "--threads", _params.num_threads,
                 "--precision", "9",
                 "--seed", "1",
                 "--force", "msa",
@@ -811,6 +811,7 @@ namespace ipk::ar
         ar_params.ar_model = parse_model(parameters.ar_model);
         ar_params.alpha = parameters.ar_alpha;
         ar_params.categories = parameters.ar_categories;
+        ar_params.num_threads = std::to_string(parameters.num_threads);
         ar_params.tree_file = ext_tree_file;
         ar_params.alignment_file = ext_alignment_phylip;
 
