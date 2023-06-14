@@ -3,10 +3,12 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 #
-if [ $# -eq 1 ]; then
+if [ $# -eq 2 ]; then
     ROOT_DIR=`realpath $1`
+    RAXML_NG=`realpath $2`
 else
     ROOT_DIR=`realpath "${SCRIPT_DIR}"/..`
+    RAXML_NG=`which raxml-ng`
 fi
 
 BIN_DIR="${ROOT_DIR}"/bin
@@ -35,17 +37,21 @@ then
     exit 2
 fi
 
-if [ ! `which raxml-ng` ]
+if [ ! "${RAXML_NG}" ]
 then
     echo "Error: could not find raxml-ng."
     exit 3
 fi
 
-echo "Binary files: OK. Running IPK..."
 
 mkdir -p "${WORKING_DIR}"
 rm -f "${DATABASE_BUILD}"
-python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -u 1.0 -b `which raxml-ng` -w "${WORKING_DIR}"
+
+
+command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -u 1.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
+
+echo "Binary files: OK. Running IPK as: ${command}"
+eval "${command}"
 
 if [ ! -f "${DATABASE_BUILD}" ]
 then
