@@ -18,6 +18,17 @@ namespace ipk
         DCCW = 3
     };
 
+    enum class ghost_strategy
+    {
+        // "Both":
+        // two ghost nodes are considered per branch:
+        // the one in the middle of the branch (inner) and
+        // the "sister" ghost node (outer)
+        BOTH = 0,
+        INNER_ONLY = 1,
+        OUTER_ONLY = 2
+    };
+
     using uphylo_kmer = i2l::unpositioned_phylo_kmer;
 
     /// Divide-and-conquer with the lookahead trick
