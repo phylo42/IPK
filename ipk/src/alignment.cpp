@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
+#include <fstream>
 #include <boost/filesystem.hpp>
 
 #include <i2l/phylo_tree.h>
@@ -75,7 +76,6 @@ alignment load_alignment(const string& file_name)
 template <class InputIt>
 void save_fasta(InputIt first, InputIt last, const std::string& file_name)
 {
-
     std::ofstream out(file_name);
     for (auto it = first; it != last; ++it)
     {
