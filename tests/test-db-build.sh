@@ -12,7 +12,9 @@ TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
 DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.rps
 DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.rps
 
-pushd "${SCRIPT_DIR}"/../
+echo "Script directory: $SCRIPT_DIR"
+pushd "${SCRIPT_DIR}"
+cd ..
 
 if [ ! -f "${IPK_BIN}" ]
 then
@@ -32,6 +34,7 @@ then
     exit 3
 fi
 
+echo "Binary files: OK. Running IPK..."
 
 mkdir -p "${WORKING_DIR}"
 rm -f "${DATABASE_BUILD}"
