@@ -188,6 +188,7 @@ return_code build_database(const ipk::cli::parameters& parameters)
     auto extended_alignment = ipk::extend_alignment(alignment, extended_tree);
     const auto& [ext_alignment_fasta, ext_alignment_phylip] =
         save_extended_alignment(parameters.working_directory, extended_alignment);
+    (void)ext_alignment_fasta;
 
     /// Prepare and run ancestral reconstruction
     auto [ar_software, ar_parameters] = ipk::ar::make_parameters(parameters,

@@ -144,6 +144,7 @@ namespace ipk::ar
 
         for (auto& [label, node_matrix] : result)
         {
+            (void)label;
             node_matrix.preprocess();
         }
         return result;
@@ -211,6 +212,7 @@ namespace ipk::ar
 
         for (auto& [label, node_matrix] : result)
         {
+            (void)label;
             node_matrix.preprocess();
         }
 
@@ -245,6 +247,7 @@ namespace ipk::ar
 
         for (auto& [label, node_matrix] : result)
         {
+            (void)label;
             node_matrix.preprocess();
         }
 #else

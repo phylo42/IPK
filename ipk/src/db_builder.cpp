@@ -259,6 +259,7 @@ namespace ipk
                                 /// So this loop will have only one iteration
                                 for (const auto& [old_node, old_score, old_position] : *entries)
                                 {
+                                    (void)old_node; (void)old_position;
                                     if (old_score < score)
                                     {
                                         _phylo_kmer_db.replace(key, { branch, score, position });
