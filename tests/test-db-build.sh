@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-BIN_DIR="${SCRIPT_DIR}"/../bin
+
+#
+if [ $# -eq 1 ]; then
+    ROOT_DIR=`realpath $1`
+else
+    ROOT_DIR=`realpath "${SCRIPT_DIR}"/..`
+fi
+
+BIN_DIR="${ROOT_DIR}"/bin
 IPK_BIN="${BIN_DIR}"/ipk/ipk-dna
-IPK_SCRIPT="${SCRIPT_DIR}"/../ipk.py
+IPK_SCRIPT="${ROOT_DIR}"/ipk.py
 IPK_DIFF_BIN="${BIN_DIR}"/tools/ipkdiff-dna
-WORKING_DIR="${SCRIPT_DIR}"/../output
+WORKING_DIR="${ROOT_DIR}"/output
 
 REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
 TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
 DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.rps
 DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.rps
 
-echo "Script directory: $SCRIPT_DIR"
-pushd "${SCRIPT_DIR}"
-cd ..
+
+pushd "${ROOT_DIR}"
 
 if [ ! -f "${IPK_BIN}" ]
 then

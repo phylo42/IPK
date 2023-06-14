@@ -72,5 +72,5 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna
 
       - name: Test database build
-        run: bash tests/test-db-build.sh
+        run: bash tests/test-db-build.sh ${{runner.workspace}}
 
