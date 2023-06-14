@@ -69,7 +69,7 @@ jobs:
         run: python3 ipk.py build --help
 
       - name: Build tools
-        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna
+        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna
 
       - name: Test database build
         run: bash tests/test-db-build.sh
