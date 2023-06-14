@@ -22,7 +22,7 @@ fi
 
 if [ ! -f "${IPK_DIFF_BIN}" ]
 then
-    echo "Error: could not find tools: ${IPK_DIFF_BIN}. Please make sure to compile it separately, i.e. do 'make ipkdiff-dna'"
+    echo "Error: could not find tools: ${IPK_DIFF_BIN}. Please make sure to compile it separately, i.e. do 'make diff-dna' or 'cmake --build DIR --target diff-dna"
     exit 2
 fi
 
