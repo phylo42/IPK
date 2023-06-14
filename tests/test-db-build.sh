@@ -34,39 +34,34 @@ if [ ! -f "${IPK_BIN}" ]
 then
     echo "Error: could not find binary files of IPK: ${IPK_BIN}. Please make sure to compile the project"
     exit 1
-fi
-
-if [ ! -f "${IPK_DIFF_BIN}" ]
+elif [ ! -f "${IPK_DIFF_BIN}" ]
 then
     echo "Error: could not find tools: ${IPK_DIFF_BIN}. Please make sure to compile it separately, i.e. do 'make diff-dna' or 'cmake --build DIR --target diff-dna"
     exit 2
-fi
-
-if [ ! "${RAXML_NG}" ]
+elif [ ! "${RAXML_NG}" ]
 then
     echo "Error: could not find raxml-ng."
     exit 3
-fi
+else
+    mkdir -p "${WORKING_DIR}"
+    rm -f "${DATABASE_BUILD}"
 
 
-mkdir -p "${WORKING_DIR}"
-rm -f "${DATABASE_BUILD}"
+    command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -u 1.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
 
+    echo "Binary files: OK. Running IPK as: ${command}"
+    eval "${command}"
 
-command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -u 1.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
+    if [ ! -f "${DATABASE_BUILD}" ]
+    then
+        echo "Error: could not find ${DATABASE_BUILD}. Something went wrong"
+        exit 4
+    fi
 
-echo "Binary files: OK. Running IPK as: ${command}"
-eval "${command}"
+    $IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
 
-if [ ! -f "${DATABASE_BUILD}" ]
-then
-    echo "Error: could not find ${DATABASE_BUILD}. Something went wrong"
-    exit 4
-fi
-
-$IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
-
-if [ $? -ne 0 ]; then
-  echo "Error: databases are different. See the ipkdiff log"
-  exit 5
+    if [ $? -ne 0 ]; then
+        echo "Error: databases are different. See the ipkdiff log"
+        exit 5
+    fi
 fi
