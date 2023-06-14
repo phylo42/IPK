@@ -2,8 +2,9 @@
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
-#
+
 if [ $# -eq 2 ]; then
+    echo "Parameters: $@"
     ROOT_DIR=`realpath $1`
     RAXML_NG=`realpath $2`
 else
@@ -11,19 +12,23 @@ else
     RAXML_NG=`which raxml-ng`
 fi
 
+
+
 BIN_DIR="${ROOT_DIR}"/bin
 IPK_BIN="${BIN_DIR}"/ipk/ipk-dna
 IPK_SCRIPT="${ROOT_DIR}"/ipk.py
 IPK_DIFF_BIN="${BIN_DIR}"/tools/ipkdiff-dna
 WORKING_DIR="${ROOT_DIR}"/output
 
+echo "Root dir: ${ROOT_DIR}"
+echo "Bin dir: ${BIN_DIR}"
+echo
+
 REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
 TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
 DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.rps
 DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.rps
 
-
-pushd "${ROOT_DIR}"
 
 if [ ! -f "${IPK_BIN}" ]
 then
@@ -65,5 +70,3 @@ if [ $? -ne 0 ]; then
   echo "Error: databases are different. See the ipkdiff log"
   exit 5
 fi
-
-popd
