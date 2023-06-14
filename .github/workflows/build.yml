@@ -62,7 +62,6 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE
 
       - name: Test build successful
-        working-directory: ${{runner.workspace}}/bin
         run: test -f ${{runner.workspace}}/bin/ipk/ipk-dna && test -f ${{runner.workspace}}/bin/ipk/ipk-aa
 
       - name: Test python script
@@ -72,5 +71,5 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna
 
       - name: Test database build
-        run: bash ${{github.workspace}}/tests/test-db-build.sh ${{github.workspace}} `which raxml-ng`
+        run: bash ${{runner.workspace}}/tests/test-db-build.sh ${{runner.workspace}} `which raxml-ng`
 
