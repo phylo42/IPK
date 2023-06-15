@@ -37,7 +37,8 @@ namespace ipk
                                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                                    const proba_matrix& matrix,
                                    const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                                   ipk::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                                   ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+                                   size_t kmer_size, phylo_kmer::score_type omega,
                                    filter_type filter, double mu,
                                    size_t num_threads);
     public:
@@ -57,7 +58,8 @@ namespace ipk
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                    const proba_matrix& matrix,
                    const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                   ipk::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                   ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+                   size_t kmer_size, phylo_kmer::score_type omega,
                    filter_type filter, double mu,
                    size_t num_threads);
         db_builder(const db_builder&) = delete;
@@ -115,6 +117,8 @@ namespace ipk
         bool _merge_branches;
 
         ipk::algorithm _algorithm;
+        ipk::ghost_strategy _ghost_strategy;
+
         size_t _kmer_size;
         i2l::phylo_kmer::score_type _omega;
 
@@ -133,7 +137,8 @@ namespace ipk
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
                            const proba_matrix& matrix,
                            const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                           ipk::algorithm algorithm, size_t kmer_size, phylo_kmer::score_type omega,
+                           ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+                           size_t kmer_size, phylo_kmer::score_type omega,
                            filter_type filter, double mu,
                            size_t num_threads)
         : _working_directory{ std::move(working_directory) }
@@ -144,6 +149,7 @@ namespace ipk
         , _ar_mapping{ ar_mapping }
         , _merge_branches{ merge_branches }
         , _algorithm{ algorithm }
+        , _ghost_strategy{ strategy }
         , _kmer_size{ kmer_size }
         , _omega{ omega }
         , _filter{ filter }
@@ -253,6 +259,7 @@ namespace ipk
                                 /// So this loop will have only one iteration
                                 for (const auto& [old_node, old_score, old_position] : *entries)
                                 {
+                                    (void)old_node; (void)old_position;
                                     if (old_score < score)
                                     {
                                         _phylo_kmer_db.replace(key, { branch, score, position });
@@ -302,20 +309,28 @@ namespace ipk
         return time;
     }
 
-    bool is_ghost(const phylo_node& node)
+    bool is_ghost(const phylo_node& node, ipk::ghost_strategy strategy)
     {
         const string& label = node.get_label();
-        return boost::ends_with(label, "_X0") || boost::ends_with(label, "_X1");
+        switch (strategy)
+        {
+            case ipk::ghost_strategy::INNER_ONLY:
+                return boost::ends_with(label, "_X0");
+            case ipk::ghost_strategy::OUTER_ONLY:
+                return boost::ends_with(label, "_X1");
+            default:
+                return boost::ends_with(label, "_X0") || boost::ends_with(label, "_X1");
+        }
     }
 
     /// \brief Returns a list of ghost node ids
-    std::vector<std::string> get_ghost_ids(const phylo_tree& tree)
+    std::vector<std::string> get_ghost_ids(const phylo_tree& tree, ipk::ghost_strategy strategy)
     {
         std::vector<std::string> branch_ids;
 
         for (const auto& branch_node: tree)
         {
-            if (is_ghost(branch_node))
+            if (is_ghost(branch_node, strategy))
             {
                 branch_ids.push_back(branch_node.get_label());
             }
@@ -380,11 +395,8 @@ namespace ipk
     {
         size_t count = 0;
 
-        /// Here we assume that every original node corresponds to two ghost nodes.
-        const size_t ghosts_per_node = 2;
-
         /// Filter and group ghost nodes
-        const auto node_groups = group_ghost_ids(get_ghost_ids(_extended_tree));
+        const auto node_groups = group_ghost_ids(get_ghost_ids(_extended_tree, _ghost_strategy));
 
         /// Process branches in parallel. Results of the branch-and-bound algorithm are stored
         /// in a hash map for every group separately on disk.
@@ -412,9 +424,6 @@ namespace ipk
         for (size_t i = 0; i < node_groups.size(); ++i)
         {
             const auto& node_group = node_groups[i];
-            assert(node_group.size() == ghosts_per_node);
-            (void) ghosts_per_node;
-
 
             /// Having a label of a node in the extended tree, we need to find the corresponding node
             /// in the original tree. We take the first ghost node, because all of them correspond to
@@ -448,21 +457,25 @@ namespace ipk
     }
 
     #ifdef KEEP_POSITIONS
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
     {
+        (void)postorder_id;
+
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
 
         const auto log_threshold = std::log10(i2l::score_threshold(_omega, _kmer_size));
-        for (auto node_entry_ref : group)
+        for (auto node_matrix_ref : group)
         {
-            const auto& node_entry = node_entry_ref.get();
-            for (auto& window : chain_windows(node_entry, _kmer_size, log_threshold))
+            const auto& node_matrix = node_matrix_ref.get();
+            for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
-                const auto position = window.get_start_pos();
-                for (const auto& kmer : window)
+                auto alg = ipk::DCLA(window, _kmer_size);
+                alg.run(log_threshold);
+                for (const auto& kmer : alg.get_result())
                 {
-                    phylo_kmer positioned_kmer = { kmer.key, kmer.score, position };
+                    phylo_kmer positioned_kmer = { kmer.key, kmer.score,
+                                                   static_cast<phylo_kmer::pos_type>(window.get_position()) };
                     put(hash_maps[kmer_batch(kmer.key, _num_batches)], positioned_kmer);
                     ++count;
                 }
@@ -512,14 +525,16 @@ namespace ipk
                         const phylo_tree& original_tree, const phylo_tree& extended_tree,
                         const proba_matrix& matrix,
                         const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                        ipk::algorithm algorithm, size_t kmer_size, i2l::phylo_kmer::score_type omega,
+                        ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+                        size_t kmer_size, i2l::phylo_kmer::score_type omega,
                         filter_type filter, double mu, size_t num_threads)
     {
         db_builder builder(working_directory,
                            original_tree, extended_tree,
                            matrix,
                            mapping, ar_mapping, merge_branches,
-                           algorithm, kmer_size, omega,
+                           algorithm, strategy,
+                           kmer_size, omega,
                            filter, mu, num_threads);
         builder.run();
         return std::move(builder._phylo_kmer_db);

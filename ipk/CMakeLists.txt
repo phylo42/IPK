@@ -5,14 +5,14 @@ cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 # WARNING: some dependencies are not listed here. See the top-level CMake file
 # for more details
 find_package(Boost REQUIRED COMPONENTS program_options filesystem iostreams)
-find_package(OpenMP REQUIRED)
+#find_package(OpenMP REQUIRED)
 
 # The code and the libraries are the same for all targets.
 # The only difference is the version of xpas we link against (xpas::dna, xpas::aa)
 set(LINK_LIBRARIES Boost::program_options
         Boost::filesystem
         Boost::iostreams
-        OpenMP::OpenMP_CXX
+        #OpenMP::OpenMP_CXX
         strasser::csv_parser
         indicators::indicators)
 
@@ -37,17 +37,16 @@ set(SOURCES
 
 ######################################################################################################
 # Application target and properties
-add_executable(ipk_dna "")
-set_target_properties(ipk_dna PROPERTIES OUTPUT_NAME ipk-dna)
-target_sources(ipk_dna PRIVATE ${SOURCES})
+add_executable(ipk-dna "")
+target_sources(ipk-dna PRIVATE ${SOURCES})
 
-target_include_directories(ipk_dna
+target_include_directories(ipk-dna
         PRIVATE
             ${CMAKE_CURRENT_SOURCE_DIR}/src/
             ${CMAKE_CURRENT_SOURCE_DIR}/include/
 )
 
-target_link_libraries(ipk_dna
+target_link_libraries(ipk-dna
         PUBLIC
             ${LINK_LIBRARIES}
             i2l::dna
@@ -55,41 +54,67 @@ target_link_libraries(ipk_dna
         )
 
 # Turn on the warnings and treat them as errors
-target_compile_options(ipk_dna
+target_compile_options(ipk-dna
     PRIVATE
         -Wall -Wextra #-Werror #-Wpedantic
     )
 
 
-set_property(TARGET ipk_dna PROPERTY CXX_STANDARD 17)
-target_compile_features(ipk_dna
+set_property(TARGET ipk-dna PROPERTY CXX_STANDARD 17)
+target_compile_features(ipk-dna
     PUBLIC
         cxx_std_17)
 
 ######################################################################################################
 # Amino acids
-add_executable(ipk_aa "")
-set_target_properties(ipk_aa PROPERTIES OUTPUT_NAME ipk-aa)
-target_sources(ipk_aa PRIVATE ${SOURCES})
+add_executable(ipk-aa "")
+target_sources(ipk-aa PRIVATE ${SOURCES})
 
-target_include_directories(ipk_aa
+target_include_directories(ipk-aa
         PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src/
         ${CMAKE_CURRENT_SOURCE_DIR}/include/
         )
 
-target_link_libraries(ipk_aa
+target_link_libraries(ipk-aa
         PRIVATE
         ${LINK_LIBRARIES}
         i2l::aa
         )
 
 # Turn on the warnings and treat them as errors
-target_compile_options(ipk_aa
+target_compile_options(ipk-aa
         PRIVATE
         -Wall -Wextra #-Werror #-Wpedantic
         )
 
-target_compile_features(ipk_aa
+target_compile_features(ipk-aa
+        PUBLIC
+        cxx_std_17)
+
+######################################################################################################
+# Amino acids
+add_executable(ipk-aa-pos "")
+target_sources(ipk-aa-pos PRIVATE ${SOURCES})
+
+target_include_directories(ipk-aa-pos
+        PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/
+        )
+
+target_link_libraries(ipk-aa-pos
+        PRIVATE
+        ${LINK_LIBRARIES}
+        i2l::aa_pos
+        )
+
+# Turn on the warnings and treat them as errors
+target_compile_options(ipk-aa-pos
+        PRIVATE
+        -Wall -Wextra #-Werror #-Wpedantic
+        )
+
+target_compile_features(ipk-aa-pos
         PUBLIC
         cxx_std_17)

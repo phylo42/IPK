@@ -127,6 +127,7 @@ protected:
         size_t num_entries = 0;
         for (const auto& [kmer, entries] : db)
         {
+            (void)kmer;
             num_entries += entries.size();
         }
         return num_entries;
@@ -198,19 +199,20 @@ private:
             auto HcBw1 = static_cast<double>(_total_num_groups) * target_threshold;
 #ifdef KEEP_POSITIONS
             for (const auto& [branch, log_score, position] : entries)
+            {
+                (void)position;
 #else
             for (const auto&[branch, log_score] : entries)
-#endif
             {
+#endif
+                (void)branch;
+
                 /// s_wc / S_w
                 const auto weighted_score = logscore_to_score(log_score) / score_sum;
                 const auto target_value = shannon(weighted_score);
 
                 HcBw1 = HcBw1 - target_threshold + target_value;
-                //std::cout << "FV: " << key << " " << ipk::decode_kmer(key, 5) << " " <<
-                //                                                                      filter_stats[key] << std::endl;
             }
-            //std::cout << "\tEntropy: " << HcBw1 << std::endl;
             fv.filter_score = HcBw1;
             filter_values.push_back(fv);
         }
@@ -282,10 +284,13 @@ private:
             auto HcBw1 = static_cast<double>(_total_num_groups) * target_threshold;
 #ifdef KEEP_POSITIONS
             for (const auto& [branch, log_score, position] : entries)
+            {
+                (void)position;
 #else
             for (const auto& [branch, log_score] : entries)
-#endif
             {
+#endif
+                (void)branch;
                 /// s_wc / S_w
                 const auto weighted_score = logscore_to_score(log_score) / score_sum;
                 const auto target_value = shannon(weighted_score);
@@ -384,10 +389,14 @@ private:
             auto fv = filter_value{key, 0.0, entries.size()};
 #ifdef KEEP_POSITIONS
             for (const auto& [branch, log_score, position] : entries)
+            {
+                (void)position;
 #else
             for (const auto& [branch, log_score] : entries)
-#endif
             {
+#endif
+
+                (void)branch;
                 const auto swc = logscore_to_score(log_score);
 
                 /// P(c|Bw == 1) = s_wc / Sw

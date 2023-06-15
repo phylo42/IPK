@@ -143,6 +143,19 @@ ipk::algorithm get_algorithm_type(const ipk::cli::parameters& parameters)
     return ipk::algorithm::DCCW;
 }
 
+ipk::ghost_strategy get_ghost_strategy(const ipk::cli::parameters& parameters)
+{
+    if (parameters.inner_only)
+    {
+        return ipk::ghost_strategy::INNER_ONLY;
+    }
+    else if (parameters.outer_only)
+    {
+        return ipk::ghost_strategy::OUTER_ONLY;
+    }
+    return ipk::ghost_strategy::BOTH;
+}
+
 std::string compression_status(const ipk::cli::parameters& parameters)
 {
     if (parameters.uncompressed)
@@ -175,6 +188,7 @@ return_code build_database(const ipk::cli::parameters& parameters)
     auto extended_alignment = ipk::extend_alignment(alignment, extended_tree);
     const auto& [ext_alignment_fasta, ext_alignment_phylip] =
         save_extended_alignment(parameters.working_directory, extended_alignment);
+    (void)ext_alignment_fasta;
 
     /// Prepare and run ancestral reconstruction
     auto [ar_software, ar_parameters] = ipk::ar::make_parameters(parameters,
@@ -206,6 +220,7 @@ return_code build_database(const ipk::cli::parameters& parameters)
                                ghost_mapping, ar_mapping,
                                parameters.merge_branches,
                                get_algorithm_type(parameters),
+                               get_ghost_strategy(parameters),
                                parameters.kmer_size, parameters.omega,
                                get_filter_type(parameters), parameters.mu,
                                parameters.num_threads);
