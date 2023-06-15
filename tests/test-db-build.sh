@@ -8,7 +8,7 @@ if [ $# -eq 2 ]; then
     ROOT_DIR=`realpath $1`
     RAXML_NG=`realpath $2`
 else
-    ROOT_DIR=`realpath "${SCRIPT_DIR}"/..`
+    ROOT_DIR=`realpath "${SCRIPT_DIR}"/../..`
     RAXML_NG=`which raxml-ng`
 fi
 
@@ -24,6 +24,7 @@ echo "Pwd: `pwd`"
 echo "Root dir: ${ROOT_DIR}"
 echo "Bin dir: ${BIN_DIR}"
 echo
+
 
 REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
 TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
