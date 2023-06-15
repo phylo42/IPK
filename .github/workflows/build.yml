@@ -39,6 +39,10 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Get number of CPU cores
+        uses: SimenB/github-actions-cpu-cores@v1
+        id: cpu-cores
+
       - name: (MacOS) Install dependencies
         if: runner.os == 'macOS'
         run: brew update && brew install cmake boost zlib && pip3 install click
@@ -59,20 +63,20 @@ jobs:
         run: cmake -B ${{runner.workspace}}/bin -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
       - name: Build
-        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE
+        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Test build successful
-        working-directory: ${{runner.workspace}}/bin
+        #working-directory: ${{runner.workspace}}/bin
         run: test -f ${{runner.workspace}}/bin/ipk/ipk-dna && test -f ${{runner.workspace}}/bin/ipk/ipk-aa
 
       - name: Test python script
         run: python3 ipk.py build --help
 
       - name: Build tools
-        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna
+        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Test
-        run: pwd && ls && echo "OK" && ls ../
+        run: pwd && ls && echo "OK" && ls ../ && echo "OK ${{runner.workspace}}" && ls ${{runner.workspace}}
 
       - name: Test database build
         run: bash tests/test-db-build.sh ${{runner.workspace}} `which raxml-ng`
