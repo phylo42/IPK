@@ -66,7 +66,6 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Test build successful
-        #working-directory: ${{runner.workspace}}/bin
         run: test -f ${{runner.workspace}}/bin/ipk/ipk-dna && test -f ${{runner.workspace}}/bin/ipk/ipk-aa
 
       - name: Test python script
@@ -75,9 +74,6 @@ jobs:
       - name: Build tools
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna -j ${{ steps.cpu-cores.outputs.count }}
 
-      - name: Test
-        run: pwd && ls && echo "OK" && ls ../ && echo "OK ${{runner.workspace}}" && ls ${{runner.workspace}}
-
       - name: Test database build
-        run: bash tests/test-db-build.sh ${{runner.workspace}} `which raxml-ng`
+        run: bash tests/test-db-build.sh ${{runner.workspace}}/IPK `which raxml-ng`
 
