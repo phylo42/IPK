@@ -71,6 +71,9 @@ jobs:
       - name: Build tools
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna
 
+      - name: Test
+        run: pwd && ls
+
       - name: Test database build
         run: bash ${{runner.workspace}}/tests/test-db-build.sh ${{runner.workspace}} `which raxml-ng`
 
