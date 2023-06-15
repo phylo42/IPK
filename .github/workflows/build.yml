@@ -62,6 +62,7 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE
 
       - name: Test build successful
+        working-directory: ${{runner.workspace}}/bin
         run: test -f ${{runner.workspace}}/bin/ipk/ipk-dna && test -f ${{runner.workspace}}/bin/ipk/ipk-aa
 
       - name: Test python script

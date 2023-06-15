@@ -20,6 +20,7 @@ IPK_SCRIPT="${ROOT_DIR}"/ipk.py
 IPK_DIFF_BIN="${BIN_DIR}"/tools/ipkdiff-dna
 WORKING_DIR="${ROOT_DIR}"/output
 
+echo "Pwd: `pwd`"
 echo "Root dir: ${ROOT_DIR}"
 echo "Bin dir: ${BIN_DIR}"
 echo
