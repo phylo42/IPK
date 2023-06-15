@@ -26,7 +26,7 @@ echo "Root dir: ${ROOT_DIR}"
 echo "Bin dir: ${BIN_DIR}"
 echo
 
-
+exit
 REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
 TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
 DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.rps
