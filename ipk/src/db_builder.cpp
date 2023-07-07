@@ -298,6 +298,8 @@ namespace ipk
             }
         }
 
+        _phylo_kmer_db.sort();
+
         const auto end = std::chrono::steady_clock::now();
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
