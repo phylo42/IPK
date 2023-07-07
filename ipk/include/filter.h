@@ -11,10 +11,8 @@ namespace ipk
     enum class filter_type
     {
         no_filter,
-        entropy,
         random,
         mif0,
-        mif1
     };
 
     /// Get the .fvs file of the k-mer batch (filter value stats)

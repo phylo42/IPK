@@ -106,17 +106,9 @@ std::string save_rerooted_tree(const std::string& working_dir, const i2l::phylo_
 
 ipk::filter_type get_filter_type(const ipk::cli::parameters& parameters)
 {
-    if (parameters.entropy_filter)
-    {
-        return ipk::filter_type::entropy;
-    }
-    else if (parameters.mif0_filter)
+    if (parameters.mif0_filter)
     {
         return ipk::filter_type::mif0;
-    }
-    else if (parameters.mif1_filter)
-    {
-        return ipk::filter_type::mif1;
     }
     else if (parameters.random_filter)
     {
