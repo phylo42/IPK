@@ -80,8 +80,12 @@ namespace ipk
         std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> construct_group_hashmaps();
 
         /// \brief The second stage of the construction algorithm. Combines group hashmaps
+        /// and runs batched filtering
         /// \return Elapsed time
         unsigned long merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids);
+
+        /// \brief The second stage of the construction algorithm. Merges group hashmaps
+        unsigned long merge(const std::vector<phylo_kmer::branch_type>& group_ids);
 
         /// \brief Groups ghost nodes by corresponding original node id
         [[nodiscard]]
@@ -130,7 +134,6 @@ namespace ipk
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
-
     };
 
     db_builder::db_builder(std::string working_directory,
@@ -182,7 +185,8 @@ namespace ipk
 
         /// The second stage of the algorithm: combine merge and filter
         std::cout << "Building database: [stage 2 / 2]:" << std::endl;
-        const auto merge_time = merge_filtered(group_ids);
+        const auto merge_time = merge(group_ids);
+        //const auto merge_time = merge_filtered(group_ids);
         fs::remove_all(get_groups_dir(_working_directory));
 
         /// Calculate the number of phylo-kmers stored in the database
@@ -220,7 +224,79 @@ namespace ipk
             throw error;
         }
     }
+    void normalize(std::vector<filter_value>& vec)
+    {
+        const auto min = std::min_element(vec.begin(), vec.end())->filter_score;
+        const auto max = std::max_element(vec.begin(), vec.end())->filter_score;
+        double sum = 0.0f;
+        for (auto& elem : vec)
+        {
+            elem.filter_score = (elem.filter_score - min) / (max - min);
+            sum += elem.filter_score;
+        }
 
+        for (auto& elem : vec)
+        {
+            elem.filter_score /= sum;
+        }
+    }
+
+    unsigned long db_builder::merge(const std::vector<phylo_kmer::branch_type>& group_ids)
+    {
+        const auto begin = std::chrono::steady_clock::now();
+        const auto threshold = score_threshold(_omega, _kmer_size);
+
+        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
+        {
+            const auto temp_db = ipk::merge_batch(_working_directory, group_ids, batch_idx);
+            for (const auto& [key, entries] : temp_db)
+            {
+
+#if defined(KEEP_POSITIONS)
+                throw std::runtime_error("Positions are not supported in this version");
+#else
+                if (_merge_branches)
+                {
+                    throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
+                }
+                else
+                {
+                    //std::cout << key << " " << i2l::decode_kmer(key, _kmer_size) << ": " << std::endl;
+                    for (const auto& [branch, score] : entries)
+                    {
+                        //std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
+                        _phylo_kmer_db.unsafe_insert(key, {branch, score});
+                    }
+                }
+#endif
+            }
+        }
+
+        auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
+                                       _working_directory, _num_batches, _mu, threshold);
+        auto filter_values = filter->calc_filter_values(_phylo_kmer_db);
+        normalize(filter_values);
+
+        /// Sort filter values
+        std::sort(filter_values.begin(), filter_values.end(),
+                  [](const auto& a, const auto& b) { return a.filter_score > b.filter_score; });
+
+        std::cout << "Filter values: " << filter_values.front().filter_score <<
+            " - " << filter_values.back().filter_score << std::endl;
+        /// Save the order in which k-mer should be saved
+        for (const auto& fv : filter_values)
+        {
+            _phylo_kmer_db.kmer_order.emplace_back(fv.key, (float)fv.filter_score);
+        }
+
+        //_phylo_kmer_db.sort();
+
+        const auto end = std::chrono::steady_clock::now();
+        const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+        std::cout << "Filtering time: " << time << "\n\n" << std::flush;
+        return time;
+    }
 
     unsigned long db_builder::merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
@@ -247,7 +323,7 @@ namespace ipk
                 {
                     filtered_kmers++;
                     filtered_entries += entries.size();
-#ifdef KEEP_POSITIONS
+#if defined(KEEP_POSITIONS)
                     if (_merge_branches)
                     {
                         for (const auto& [branch, score, position] : entries)
@@ -297,6 +373,8 @@ namespace ipk
                 }
             }
         }
+
+        //_phylo_kmer_db.sort();
 
         const auto end = std::chrono::steady_clock::now();
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();

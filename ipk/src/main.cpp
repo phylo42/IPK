@@ -55,7 +55,7 @@ std::string generate_db_name(const phylo_kmer_db& db)
     }
 
     std::ostringstream out;
-    out << "DB_k" << kmer_size << "_o" << omega_str << ".rps";
+    out << "DB_k" << kmer_size << "_o" << omega_str << ".ipk";
     return out.str();
 }
 
@@ -106,24 +106,16 @@ std::string save_rerooted_tree(const std::string& working_dir, const i2l::phylo_
 
 ipk::filter_type get_filter_type(const ipk::cli::parameters& parameters)
 {
-    if (parameters.entropy_filter)
-    {
-        return ipk::filter_type::entropy;
-    }
-    else if (parameters.mif0_filter)
+    if (parameters.mif0_filter)
     {
         return ipk::filter_type::mif0;
-    }
-    else if (parameters.mif1_filter)
-    {
-        return ipk::filter_type::mif1;
     }
     else if (parameters.random_filter)
     {
         return ipk::filter_type::random;
     }
 
-    return ipk::filter_type::no_filter;
+    return ipk::filter_type::random;
 }
 
 ipk::algorithm get_algorithm_type(const ipk::cli::parameters& parameters)
@@ -213,17 +205,22 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     const auto ar_mapping = ipk::ar::map_nodes(extended_tree, ar_tree);
 
-    /// Generate phylo k-mers
-    const auto db = ipk::build(parameters.working_directory,
-                               original_tree, extended_tree,
-                               proba_matrix,
-                               ghost_mapping, ar_mapping,
-                               parameters.merge_branches,
-                               get_algorithm_type(parameters),
-                               get_ghost_strategy(parameters),
-                               parameters.kmer_size, parameters.omega,
-                               get_filter_type(parameters), parameters.mu,
-                               parameters.num_threads);
+    /// Create the database of phylo-k-mers and their filter values
+    const auto db = ipk::build(
+        parameters.working_directory,
+        original_tree,
+        extended_tree,
+        proba_matrix,
+        ghost_mapping,
+        ar_mapping,
+        parameters.merge_branches,
+        get_algorithm_type(parameters),
+        get_ghost_strategy(parameters),
+        parameters.kmer_size,
+        parameters.omega,
+        get_filter_type(parameters),
+        parameters.mu,
+        parameters.num_threads);
 
     /// Deserialize database
     const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
