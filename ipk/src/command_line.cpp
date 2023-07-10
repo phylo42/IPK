@@ -34,16 +34,7 @@ namespace ipk::cli
 
     /// Filtering options
     static std::string MU = "mu", MU_SHORT = "u";
-    static std::string NO_FILTER = "no-filter";
-    static std::string ENTROPY = "entropy";
     static std::string MIF0 = "mif0";
-    static std::string MIF1 = "mif1";
-    static std::string MAX_DEVIATION = "max-deviation";
-    static std::string LOG_MAX_DEVIATION = "log-max-deviation";
-    static std::string MAX_DIFF = "max-difference";
-    static std::string LOG_MAX_DIFF = "log-max-difference";
-    static std::string STD_DEVIATION = "sd";
-    static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
     static std::string MERGE_BRANCHES = "merge-branches";
     static std::string USE_UNROOTED = "use-unrooted";
@@ -66,9 +57,7 @@ namespace ipk::cli
     bool dccw_flag = false;
 
     /// Filters flags
-    bool no_filter_flag = true;
-    bool mif0_flag = false;
-    bool mif1_flag = false;
+    bool mif0_flag = true;
     bool random_filter_flag = false;
 
     /// Flags for other options
@@ -127,9 +116,7 @@ namespace ipk::cli
             ((MERGE_BRANCHES).c_str(), po::bool_switch(&merge_branches_flag))
             ((USE_UNROOTED).c_str(), po::bool_switch(&use_unrooted_flag))
 
-            ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
             ((MIF0).c_str(), po::bool_switch(&mif0_flag))
-            ((MIF1).c_str(), po::bool_switch(&mif1_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
             ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
             ((UNCOMPRESSED).c_str(), po::bool_switch(&uncompressed_flag))
@@ -275,8 +262,6 @@ namespace ipk::cli
             parameters.no_reduction = no_reduction_flag;
 
             /// filters
-            parameters.no_filter = no_filter_flag;
-            parameters.mif1_filter = mif1_flag;
             parameters.mif0_filter = mif0_flag;
             parameters.random_filter = random_filter_flag;
 

@@ -14,29 +14,14 @@ using namespace ipk;
 namespace fs = boost::filesystem;
 
 
-/// A pair storing the information needed to evaluate a phylo k-mer by
-/// the filtering function. "Value" is the value calculated by the filter
-/// which is used to compare the informativeness of the k-mer against the others
-struct filter_value
+bool ipk::filter_value::operator<(const ipk::filter_value& rhs) const
 {
-    phylo_kmer::key_type key;
-    double filter_score;
-    size_t num_entries;
+    return filter_score < rhs.filter_score;
+}
 
-    bool operator<(const filter_value& rhs) const
-    {
-        return filter_score < rhs.filter_score;
-    }
-
-    bool operator>(const filter_value& rhs) const
-    {
-        return filter_score > rhs.filter_score;
-    }
-};
-
-std::string ipk::get_fvs_file(const std::string& working_dir, size_t batch_idx)
+bool ipk::filter_value::operator>(const ipk::filter_value& rhs) const
 {
-    return (fs::path{ipk::get_groups_dir(working_dir)} / fs::path(std::to_string(batch_idx) + ".fvs")).string();
+    return filter_score > rhs.filter_score;
 }
 
 kmer_filter::kmer_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
@@ -121,6 +106,8 @@ public:
         return _filtered.find(key) != _filtered.end();
     }
 
+    virtual std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const = 0;
+
 protected:
     size_t get_num_entries(const phylo_kmer_db& db) const
     {
@@ -132,7 +119,6 @@ protected:
         }
         return num_entries;
     }
-    virtual std::vector<filter_value> calc_filter_values(const phylo_kmer_db& db) const = 0;
 
     /// The total number of groups for which k-mers values are calculated
     size_t _total_num_groups;
@@ -170,7 +156,7 @@ private:
         std::vector<filter_value> filter_values;
         for (const auto& [key, entries] : db)
         {
-            /// calculate the score sum to normalize scores7
+            /// calculate the score sum to normalize scores
             /// i.e. S_w by the notation
             double score_sum = 0;
 #ifdef KEEP_POSITIONS
@@ -186,8 +172,7 @@ private:
             {
                 (void)branch;
                 score_sum += logscore_to_score(log_score);
-
-                //std::cout << "\t" << logscore_to_score(log_score) << "," << std::endl;
+                //std::cout << "\t" << logscore_to_score(log_score) << ",";
             }
 #endif
 
@@ -218,8 +203,6 @@ private:
                 const auto target_value = shannon(weighted_score);
 
                 HcBw1 = HcBw1 - target_threshold + target_value;
-                //std::cout << "FV: " << key << " " << ipk::decode_kmer(key, 5) << " " <<
-                //                                                                      filter_stats[key] << std::endl;
             }
 
             //std::cout << "\tEntropy: " << filter_stats[key] << std::endl;
@@ -229,7 +212,7 @@ private:
             ///   or equivalently
             ///      Sw [ H(c | B_w = 1) - H(c) ] -> min
             fv.filter_score = score_sum * (HcBw1 - Hc);
-            //std::cout << "\t - MIF0: " << fv.filter_score << std::endl;
+            //std::cout << fv.filter_score << ",";
 
             filter_values.push_back(fv);
         }
@@ -270,39 +253,12 @@ private:
     }
 };
 
-class no_filter : public kmer_filter
-{
-public:
-    no_filter(std::string working_dir, size_t num_batches, double mu, phylo_kmer::score_type threshold)
-        : kmer_filter{ std::move(working_dir), num_batches, mu, threshold }
-    {}
-
-    ~no_filter() noexcept override = default;
-
-    void filter(const std::vector<phylo_kmer::branch_type>& group_ids) override
-    {
-        (void)group_ids;
-    }
-
-    [[nodiscard]]
-    bool is_good(phylo_kmer::key_type key) const noexcept override
-    {
-        (void)key;
-        return true;
-    }
-};
-
-
 std::unique_ptr<kmer_filter> ipk::make_filter(ipk::filter_type filter,
                                               size_t total_num_nodes,
                                               std::string working_dir, size_t num_batches,
                                               double mu, phylo_kmer::score_type threshold)
 {
-    if (filter == filter_type::no_filter || mu == 1.0)
-    {
-        return std::make_unique<no_filter>(std::move(working_dir), num_batches, mu, threshold);
-    }
-    else if (filter == filter_type::mif0)
+    if (filter == filter_type::mif0)
     {
         return std::make_unique<mif0_filter>(total_num_nodes, std::move(working_dir), num_batches, mu, threshold);
     }

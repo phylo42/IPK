@@ -2,6 +2,7 @@
 #define XPAS_FILTER_H
 
 #include <i2l/phylo_kmer.h>
+#include <i2l/phylo_kmer_db.h>
 #include <memory>
 
 namespace ipk
@@ -10,15 +11,24 @@ namespace ipk
 
     enum class filter_type
     {
-        no_filter,
         random,
         mif0,
     };
 
-    /// Get the .fvs file of the k-mer batch (filter value stats)
-    std::string get_fvs_file(const std::string& working_dir, size_t batch_idx);
+    /// A pair storing the information needed to evaluate a phylo k-mer by
+    /// the filtering function. "Value" is the value calculated by the filter
+    /// which is used to compare the informativeness of the k-mer against the others
+    struct filter_value
+    {
+        phylo_kmer::key_type key;
+        double filter_score;
+        size_t num_entries;
 
-    /// Determines if the given k-mer has to be filtered out or not.
+        bool operator<(const filter_value& rhs) const;
+        bool operator>(const filter_value& rhs) const;
+    };
+
+        /// Determines if the given k-mer has to be filtered out or not.
     class kmer_filter
     {
     public:
@@ -27,6 +37,9 @@ namespace ipk
         virtual ~kmer_filter() noexcept = default;
 
         virtual void filter(const std::vector<phylo_kmer::branch_type>& group_ids) = 0;
+
+        [[nodiscard]]
+        virtual std::vector<filter_value> calc_filter_values(const i2l::phylo_kmer_db& db) const = 0;
 
         [[nodiscard]]
         virtual bool is_good(phylo_kmer::key_type key) const noexcept = 0;

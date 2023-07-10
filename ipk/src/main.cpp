@@ -115,7 +115,7 @@ ipk::filter_type get_filter_type(const ipk::cli::parameters& parameters)
         return ipk::filter_type::random;
     }
 
-    return ipk::filter_type::no_filter;
+    return ipk::filter_type::random;
 }
 
 ipk::algorithm get_algorithm_type(const ipk::cli::parameters& parameters)
@@ -205,17 +205,22 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     const auto ar_mapping = ipk::ar::map_nodes(extended_tree, ar_tree);
 
-    /// Generate phylo k-mers
-    const auto db = ipk::build(parameters.working_directory,
-                               original_tree, extended_tree,
-                               proba_matrix,
-                               ghost_mapping, ar_mapping,
-                               parameters.merge_branches,
-                               get_algorithm_type(parameters),
-                               get_ghost_strategy(parameters),
-                               parameters.kmer_size, parameters.omega,
-                               get_filter_type(parameters), parameters.mu,
-                               parameters.num_threads);
+    /// Create the database of phylo-k-mers and their filter values
+    const auto db = ipk::build(
+        parameters.working_directory,
+        original_tree,
+        extended_tree,
+        proba_matrix,
+        ghost_mapping,
+        ar_mapping,
+        parameters.merge_branches,
+        get_algorithm_type(parameters),
+        get_ghost_strategy(parameters),
+        parameters.kmer_size,
+        parameters.omega,
+        get_filter_type(parameters),
+        parameters.mu,
+        parameters.num_threads);
 
     /// Deserialize database
     const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
