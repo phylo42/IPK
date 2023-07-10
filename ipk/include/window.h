@@ -2,13 +2,15 @@
 #define XPAS_WINDOW_H
 
 #include "row.h"
+#include <i2l/seq.h>
 #include <stack>
+#include <array>
 #include <memory>
 
 namespace ipk::impl
 {
     template<class T>
-    using vector_type = std::vector<T>;
+    using vector_type = std::array<T, i2l::seq_traits::alphabet_size>;
 
     using score_t = i2l::phylo_kmer::score_type;
 }

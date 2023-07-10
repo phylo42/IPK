@@ -130,7 +130,7 @@ namespace ipk::ar
                     throw std::runtime_error("Parsing error: could not parse the line " + line);
                 }
 
-                auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
+                auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
 
                 /// log-transform the probabilities
                 auto log = [](auto value) { return std::log10(value); };
@@ -199,7 +199,7 @@ namespace ipk::ar
         phylo_kmer::score_type a, c, g, t;
         while (_in.read_row(node_label, a, c, g, t))
         {
-            auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
+            auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
 
             /// log-transform the probabilities
             auto log = [](auto value) { return std::log10(value); };
