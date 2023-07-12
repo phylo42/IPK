@@ -9,6 +9,7 @@
 #include <indicators/cursor_control.hpp>
 #include <indicators/progress_bar.hpp>
 #include <i2l/phylo_kmer_db.h>
+#include <i2l/serialization.h>
 #include <i2l/version.h>
 #include <i2l/phylo_tree.h>
 #include <i2l/newick.h>
@@ -19,6 +20,7 @@
 #include "filter.h"
 #include "branch_group.h"
 #include "pk_compute.h"
+
 
 using std::string;
 using std::cout, std::endl;
@@ -130,7 +132,7 @@ namespace ipk
         double _mu;
 
         /// The number of batches in which the space of k-mers is split
-        const size_t _num_batches = 16;
+        const size_t _num_batches = 4;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
@@ -241,149 +243,94 @@ namespace ipk
         }
     }
 
-    unsigned long db_builder::merge(const std::vector<phylo_kmer::branch_type>& group_ids)
+    void throw_if_positions()
     {
-        const auto begin = std::chrono::steady_clock::now();
-        const auto threshold = score_threshold(_omega, _kmer_size);
-
-        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
-        {
-            const auto temp_db = ipk::merge_batch(_working_directory, group_ids, batch_idx);
-            for (const auto& [key, entries] : temp_db)
-            {
-
-#if defined(KEEP_POSITIONS)
-                throw std::runtime_error("Positions are not supported in this version");
-#else
-                if (_merge_branches)
-                {
-                    throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
-                }
-                else
-                {
-                    //std::cout << key << " " << i2l::decode_kmer(key, _kmer_size) << ": " << std::endl;
-                    for (const auto& [branch, score] : entries)
-                    {
-                        //std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
-                        _phylo_kmer_db.unsafe_insert(key, {branch, score});
-                    }
-                }
-#endif
-            }
-        }
-
-        auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
-                                       _working_directory, _num_batches, _mu, threshold);
-        auto filter_values = filter->calc_filter_values(_phylo_kmer_db);
-        normalize(filter_values);
-
-        /// Sort filter values
-        std::sort(filter_values.begin(), filter_values.end(),
-                  [](const auto& a, const auto& b) { return a.filter_score > b.filter_score; });
-
-        std::cout << "Filter values: " << filter_values.front().filter_score <<
-            " - " << filter_values.back().filter_score << std::endl;
-        /// Save the order in which k-mer should be saved
-        for (const auto& fv : filter_values)
-        {
-            _phylo_kmer_db.kmer_order.emplace_back(fv.key, (float)fv.filter_score);
-        }
-
-        //_phylo_kmer_db.sort();
-
-        const auto end = std::chrono::steady_clock::now();
-        const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-
-        std::cout << "Filtering time: " << time << "\n\n" << std::flush;
-        return time;
+        #if defined(KEEP_POSITIONS)
+            throw std::runtime_error("Positions are not supported in this version");
+        #endif
     }
 
-    unsigned long db_builder::merge_filtered(const std::vector<phylo_kmer::branch_type>& group_ids)
+    unsigned long db_builder::merge(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
+        throw_if_positions();
+
         const auto begin = std::chrono::steady_clock::now();
+        auto get_batch_db_name = [this](size_t batch_id) {
+            return (fs::path(_working_directory) / fs::path{"hashmaps"} /
+                    fs::path(std::to_string(batch_id) + ".ipk")).string();
+        };
 
-        /// Filter phylo k-mers
-        const auto threshold = score_threshold(_omega, _kmer_size);
-        auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
-                                       _working_directory, _num_batches, _mu, threshold);
-        filter->filter(group_ids);
-
-        size_t filtered_kmers = 0;
-        size_t total_kmers = 0;
-        size_t total_entries = 0;
-        size_t filtered_entries = 0;
-        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
+        std::cout << "Merge stage 1... ";
+        /// Go over k-mer batches (ranges of k-mers)
+        for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
-            const auto temp_db = ipk::merge_batch(_working_directory, group_ids, batch_idx);
-            for (const auto& [key, entries] : temp_db)
+            /// Merge all branch subdatabases for the current range of k-mers
+            auto batch_db = ipk::merge_batch(_working_directory, group_ids, batch_id);
+
+            const auto threshold = score_threshold(_omega, _kmer_size);
+            auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
+                                           _working_directory, _num_batches, _mu, threshold);
+            auto filter_values = filter->calc_filter_values(batch_db);
+            normalize(filter_values);
+
+            /// Sort filter values
+            std::sort(filter_values.begin(), filter_values.end(),
+                      [](const auto& a, const auto& b) { return a.filter_score > b.filter_score; });
+
+            /// Save the order in which k-mer should be saved
+            for (const auto& fv : filter_values)
             {
-                total_entries += entries.size();
-                total_kmers++;
-                if (filter->is_good(key))
-                {
-                    filtered_kmers++;
-                    filtered_entries += entries.size();
-#if defined(KEEP_POSITIONS)
-                    if (_merge_branches)
-                    {
-                        for (const auto& [branch, score, position] : entries)
-                        {
-                            if (auto entries = _phylo_kmer_db.search(key); entries)
-                            {
-                                /// If there are entries, there must be only one because
-                                /// we always take maximum score among different branches.
-                                /// So this loop will have only one iteration
-                                for (const auto& [old_node, old_score, old_position] : *entries)
-                                {
-                                    (void)old_node; (void)old_position;
-                                    if (old_score < score)
-                                    {
-                                        _phylo_kmer_db.replace(key, { branch, score, position });
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                _phylo_kmer_db.unsafe_insert(key, { branch, score, position });
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (const auto& [branch, score, position] : entries)
-                        {
-                            _phylo_kmer_db.unsafe_insert(key, { branch, score, position });
-                        }
-                    }
-#else
-                    if (_merge_branches)
-                    {
-                        throw std::runtime_error("--merge-branches is only supported for xpas compiled with the KEEP_POSITIONS flag.");
-                    }
-                    else
-                    {
-                        //std::cout << key << " " << i2l::decode_kmer(key, _kmer_size) << ": " << std::endl;
-                        for (const auto& [branch, score] : entries)
-                        {
-                            //std::cout << "\t\t" << branch << " -> " << score << " " << std::pow(10, score) << std::endl;
-                            _phylo_kmer_db.unsafe_insert(key, {branch, score});
-                        }
-                    }
-#endif
-                }
+                batch_db.kmer_order.emplace_back(fv.key, (float)fv.filter_score);
+            }
+
+            /// Serialize the batch database
+            i2l::save_uncompressed(batch_db, get_batch_db_name(batch_id));
+        }
+        std::cout << "OK" << std::endl;
+        std::cout << "Merge stage 2...";
+
+        /// Lazy loaders for every batch
+        std::vector<batch_loader> batches;
+        batches.reserve(_num_batches);
+        // Priority queue for batch loaders
+        std::priority_queue<batch_loader*, std::vector<batch_loader*>, batch_loader_compare> pq;
+        for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
+        {
+            batches.emplace_back(get_batch_db_name(batch_id));
+            auto& loader = batches[batch_id];
+
+            /// pre-load the first k-mer and push the loader to the queue
+            if (loader.has_next())
+            {
+                loader.next();
+                pq.push(&batches[batch_id]);
             }
         }
 
+        // Lazy N-way merge of phylo-k-mers of all batches
+        while (!pq.empty()) {
+            batch_loader* loader = pq.top();
+            pq.pop();
+
+            if (auto& top = loader->current(); top.is_valid())
+            {
+                _phylo_kmer_db.insert_vector(top.key, std::move(top.entries));
+            }
+
+            // If the loader has more items, insert it back into the queue
+            if (loader->has_next())
+            {
+                loader->next();
+                pq.push(loader);
+            }
+        }
+        std::cout << "OK" << std::endl;
         //_phylo_kmer_db.sort();
 
         const auto end = std::chrono::steady_clock::now();
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
-        std::cout << "Kept " << filtered_kmers << " / " << total_kmers
-                  << " k-mers (" << std::setprecision(3) << ((float) filtered_kmers) / total_kmers * 100 << "%) | "
-                  << filtered_entries << " / " << total_entries
-                  << " entries (" << std::setprecision(3) << ((float) filtered_entries) / total_entries * 100 << "%)."
-                  << "\nFiltering time: " << time << "\n\n" << std::flush;
+        std::cout << "Filtering and merge time: " << time << "\n\n" << std::flush;
         return time;
     }
 

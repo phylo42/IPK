@@ -12,7 +12,6 @@ namespace ipk
 
     /// \brief A hash map to store all the phylo-kmers, placed to one original node
 #ifdef KEEP_POSITIONS
-
     struct score_pos_pair
         {
             phylo_kmer::score_type score;
