@@ -288,9 +288,11 @@ namespace ipk
             auto filter_values = filter->calc_filter_values(batch_db);
             normalize(filter_values);
 
-            /// Sort filter values
+            /// Sort filter values. We want minimal values of filter score because
+            /// they are inverted, Sw [ H(c | B_w = 1) - H(c) ] -> min.
+            /// see calc_filter_values() for detail
             std::sort(filter_values.begin(), filter_values.end(),
-                      [](const auto& a, const auto& b) { return a.filter_score > b.filter_score; });
+                      [](const auto& a, const auto& b) { return a.filter_score < b.filter_score; });
 
             /// Save the order in which k-mer should be saved
             for (const auto& fv : filter_values)
