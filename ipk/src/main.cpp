@@ -28,37 +28,6 @@ return_code print_help()
     return return_code::help;
 }
 
-std::string generate_db_name(const phylo_kmer_db& db)
-{
-    const auto kmer_size = db.kmer_size();
-    const auto omega = db.omega();
-
-    /// RAPPAS has to support the following output name convention for omega:
-    /// o0.5,
-    /// o0.75
-    /// o1.25
-    /// o1.12345
-    /// o1.5
-    ///
-    /// BUT 2.0 not 2
-    ///     1.0 not 1
-    ///
-    /// Do not ask me why...
-
-    /// std::setprecision can not handle this case.
-    /// So we have to a trailing zero value for round values of omega
-    std::string omega_str = std::to_string(omega);
-    const auto last_zero = omega_str.find_last_not_of('0') + 1;
-    omega_str.erase(last_zero, omega_str.size() - last_zero);
-    if (static_cast<int>(omega) == omega) {
-        omega_str += "0";
-    }
-
-    std::ostringstream out;
-    out << "DB_k" << kmer_size << "_o" << omega_str << ".ipk";
-    return out.str();
-}
-
 void check_parameters(const ipk::cli::parameters& parameters)
 {
    if (!keep_positions && parameters.merge_branches)
@@ -184,7 +153,7 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     /// Prepare and run ancestral reconstruction
     auto [ar_software, ar_parameters] = ipk::ar::make_parameters(parameters,
-                                                                  extended_tree_file, ext_alignment_phylip);
+                                                                 extended_tree_file, ext_alignment_phylip);
     auto [proba_matrix, ar_tree] = ipk::ar::ancestral_reconstruction(ar_software, ar_parameters);
 
     if (parameters.ar_only)
@@ -205,9 +174,9 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     const auto ar_mapping = ipk::ar::map_nodes(extended_tree, ar_tree);
 
-    /// Create the database of phylo-k-mers and their filter values
-    const auto db = ipk::build(
+    ipk::build(
         parameters.working_directory,
+        parameters.output_filename,
         original_tree,
         extended_tree,
         proba_matrix,
@@ -221,16 +190,6 @@ return_code build_database(const ipk::cli::parameters& parameters)
         get_filter_type(parameters),
         parameters.mu,
         parameters.num_threads);
-
-    /// Deserialize database
-    const auto db_filename = fs::path(parameters.working_directory) / generate_db_name(db);
-    std::cout << "Saving database to: " << db_filename.string() << "..." << std::endl;
-    std::cout << compression_status(parameters) << std::endl;
-    const auto begin = std::chrono::steady_clock::now();
-    i2l::save(db, db_filename.string(), parameters.uncompressed);
-    std::cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - begin).count() << std::endl << std::endl;
-
     return return_code::success;
 }
 

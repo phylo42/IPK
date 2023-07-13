@@ -21,6 +21,7 @@ namespace ipk::cli
 
         /// Input parameters
         std::string working_directory;
+        std::string output_filename;
         std::string alignment_file;
         std::string original_tree_file;
 

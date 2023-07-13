@@ -19,14 +19,14 @@ namespace ipk
     enum class algorithm;
     enum class ghost_strategy;
 
-    i2l::phylo_kmer_db build(const std::string& working_directory,
-                             const i2l::phylo_tree& original_tree, const i2l::phylo_tree& extended_tree,
-                             const proba_matrix& matrix,
-                             const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                             ipk::algorithm algorithm, ipk::ghost_strategy strategy,
-                             size_t kmer_size, i2l::phylo_kmer::score_type omega,
-                             filter_type filter, double mu,
-                             size_t num_threads);
+    void build(const std::string& working_directory, const std::string& output_filename,
+               const i2l::phylo_tree& original_tree, const i2l::phylo_tree& extended_tree,
+               const proba_matrix& matrix,
+               const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+               ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+               size_t kmer_size, i2l::phylo_kmer::score_type omega,
+               filter_type filter, double mu,
+               size_t num_threads);
 }
 
 #endif

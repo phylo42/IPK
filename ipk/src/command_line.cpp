@@ -13,6 +13,7 @@ namespace ipk::cli
 
     /// Input files
     static std::string WORKING_DIR = "workdir", WORKING_DIR_SHORT = "w";
+    static std::string OUTPUT_FILENAME = "output", OUTPUT_FILENAME_SHORT = "o";
     static std::string REFALIGN = "refalign";
     static std::string REFTREE = "reftree", REFTREE_SHORT = "t";
 
@@ -29,7 +30,7 @@ namespace ipk::cli
     static std::string REDUCTION_RATIO = "reduction-ratio";
     static std::string NO_REDUCTION = "no-reduction";
     static std::string K = "k", K_SHORT = "k";
-    static std::string OMEGA="omega", OMEGA_SHORT="o";
+    static std::string OMEGA="omega";
     static std::string NUM_THREADS = "num-threads", NUM_THREADS_SHORT = "j";
 
     /// Filtering options
@@ -80,12 +81,13 @@ namespace ipk::cli
                 "Show help")
             ((WORKING_DIR + "," + WORKING_DIR_SHORT).c_str(), po::value<fs::path>()->default_value(fs::current_path()),
                 "Path to the working directory")
+            ((OUTPUT_FILENAME + "," + OUTPUT_FILENAME_SHORT).c_str(), po::value<fs::path>()->default_value(""),
+             "Output filename")
             (REFALIGN .c_str(), po::value<fs::path>()->required(),
                 "Reference alignment in fasta format."
                 "It must be the multiple alignment from which the reference tree was built.")
             ((REFTREE + "," + REFTREE_SHORT).c_str(), po::value<fs::path>()->required(),
                 "Original phylogenetic tree file")
-
             (AR_DIR.c_str(), po::value<std::string>()->default_value(""),
                 "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
             (AR_BINARY.c_str(), po::value<std::string>()->required(),
@@ -109,7 +111,7 @@ namespace ipk::cli
             (NO_REDUCTION.c_str(), po::bool_switch(&no_reduction_flag),
                 "Disable alignment reduction. This will keep all sites of the reference alignment and "
                 "may produce erroneous ancestral k-mers.")
-            ((OMEGA + "," + OMEGA_SHORT).c_str(), po::value<i2l::phylo_kmer::score_type>()->default_value(1.5),
+            ((OMEGA).c_str(), po::value<i2l::phylo_kmer::score_type>()->default_value(1.5f),
                 "Score threshold parameter")
             ((NUM_THREADS + "," + NUM_THREADS_SHORT).c_str(), po::value<size_t>()->default_value(1),
                 "Number of threads")
@@ -240,6 +242,14 @@ namespace ipk::cli
             }
 
             parameters.working_directory = vm[WORKING_DIR].as<fs::path>().string();
+            parameters.output_filename = vm[OUTPUT_FILENAME].as<fs::path>().string();
+
+            /// Default output name if not given
+            if (parameters.output_filename.empty())
+            {
+                parameters.output_filename = (parameters.working_directory / fs::path("DB.ipk")).string();
+            }
+
             parameters.alignment_file = vm[REFALIGN].as<fs::path>().string();
             parameters.original_tree_file = vm[REFTREE].as<fs::path>().string();
             parameters.kmer_size = vm[K].as<size_t>();

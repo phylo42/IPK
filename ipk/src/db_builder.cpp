@@ -35,14 +35,14 @@ namespace ipk
     /// \brief Constructs a database of phylo-kmers.
     class db_builder
     {
-        friend phylo_kmer_db build(const string& working_directory,
-                                   const phylo_tree& original_tree, const phylo_tree& extended_tree,
-                                   const proba_matrix& matrix,
-                                   const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                                   ipk::algorithm algorithm, ipk::ghost_strategy strategy,
-                                   size_t kmer_size, phylo_kmer::score_type omega,
-                                   filter_type filter, double mu,
-                                   size_t num_threads);
+        friend void build(const string& working_directory,const string& output_filename,
+                          const phylo_tree& original_tree, const phylo_tree& extended_tree,
+                          const proba_matrix& matrix,
+                          const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+                          ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+                          size_t kmer_size, phylo_kmer::score_type omega,
+                          filter_type filter, double mu,
+                          size_t num_threads);
     public:
         /// Member types
 
@@ -56,7 +56,7 @@ namespace ipk
 
 
         /// Ctors, dtor and operator=
-        db_builder(std::string working_directory,
+        db_builder(std::string working_directory, const std::string& output_filename,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
                    const proba_matrix& matrix,
                    const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
@@ -88,6 +88,14 @@ namespace ipk
 
         /// \brief The second stage of the construction algorithm. Merges group hashmaps
         unsigned long merge(const std::vector<phylo_kmer::branch_type>& group_ids);
+
+        /// Merge branch DBs of every batch, compute filter values, serialize
+        std::pair<size_t, size_t> merge_stage1(const std::vector<phylo_kmer::branch_type>& group_ids);
+
+        /// Disk-based merge of batch DBs
+        void merge_stage2();
+
+        std::string get_batch_db_name(size_t batch_id);
 
         /// \brief Groups ghost nodes by corresponding original node id
         [[nodiscard]]
@@ -136,9 +144,16 @@ namespace ipk
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
+
+        std::string _output_filename;
+
+        /// Streams for deserialization
+        std::ofstream _ofs;
+        ::boost::archive::binary_oarchive _ar;
+
     };
 
-    db_builder::db_builder(std::string working_directory,
+    db_builder::db_builder(std::string working_directory, const std::string& output_filename,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
                            const proba_matrix& matrix,
                            const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
@@ -161,6 +176,9 @@ namespace ipk
         , _mu{ mu }
         , _num_threads{ num_threads }
         , _phylo_kmer_db{ kmer_size, omega, seq_type::name, i2l::io::to_newick(_original_tree)}
+        , _output_filename(output_filename)
+        , _ofs(output_filename)
+        , _ar(_ofs)
     {}
 
     void db_builder::run()
@@ -198,7 +216,8 @@ namespace ipk
             total_entries += kmer_entry.second.size();
         }
 
-        std::cout << "Building database: Done.\n";
+        std::cout << "Building database: Done." << std::endl;
+        std::cout << "Output: " << _output_filename << std::endl;
         std::cout << "Built " << total_entries << " phylo-k-mers for "
                   << _phylo_kmer_db.size() << " different k-mers.\nTotal time (ms): "
                   << construction_time + merge_time << "\n\n" << std::flush;
@@ -250,17 +269,13 @@ namespace ipk
         #endif
     }
 
-    unsigned long db_builder::merge(const std::vector<phylo_kmer::branch_type>& group_ids)
+
+    std::pair<size_t, size_t> db_builder::merge_stage1(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
-        throw_if_positions();
+        size_t total_num_kmers = 0;
+        size_t total_num_entries = 0;
 
-        const auto begin = std::chrono::steady_clock::now();
-        auto get_batch_db_name = [this](size_t batch_id) {
-            return (fs::path(_working_directory) / fs::path{"hashmaps"} /
-                    fs::path(std::to_string(batch_id) + ".ipk")).string();
-        };
-
-        std::cout << "Merge stage 1... ";
+        std::cout << "Merge stage 1... " << std::flush;
         /// Go over k-mer batches (ranges of k-mers)
         for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
@@ -283,11 +298,22 @@ namespace ipk
                 batch_db.kmer_order.emplace_back(fv.key, (float)fv.filter_score);
             }
 
+            /// Since batches cover independent ranges of k-mers, we can simply
+            /// sum up k-mer and entry counters
+            total_num_kmers += batch_db.size();
+            total_num_entries += get_num_entries(batch_db);
+
             /// Serialize the batch database
             i2l::save_uncompressed(batch_db, get_batch_db_name(batch_id));
         }
         std::cout << "OK" << std::endl;
-        std::cout << "Merge stage 2...";
+
+        return { total_num_kmers, total_num_entries };
+    }
+
+    void db_builder::merge_stage2()
+    {
+        std::cout << "Merge stage 2... " << std::flush;
 
         /// Lazy loaders for every batch
         std::vector<batch_loader> batches;
@@ -308,13 +334,14 @@ namespace ipk
         }
 
         // Lazy N-way merge of phylo-k-mers of all batches
-        while (!pq.empty()) {
+        while (!pq.empty())
+        {
             batch_loader* loader = pq.top();
             pq.pop();
 
             if (auto& top = loader->current(); top.is_valid())
             {
-                _phylo_kmer_db.insert_vector(top.key, std::move(top.entries));
+                i2l::save_phylo_kmer(_ar, top.key, top.filter_value, top.entries);
             }
 
             // If the loader has more items, insert it back into the queue
@@ -325,8 +352,37 @@ namespace ipk
             }
         }
         std::cout << "OK" << std::endl;
-        //_phylo_kmer_db.sort();
+    }
 
+    std::string db_builder::get_batch_db_name(size_t batch_id)
+    {
+        return (fs::path(_working_directory) / fs::path{"hashmaps"} /
+                fs::path(std::to_string(batch_id) + ".ipk")).string();
+    }
+
+
+    unsigned long db_builder::merge(const std::vector<phylo_kmer::branch_type>& group_ids)
+    {
+        throw_if_positions();
+
+        const auto begin = std::chrono::steady_clock::now();
+        const auto& [total_num_kmers, total_num_entries] = merge_stage1(group_ids);
+
+        /// Serialize the protocol header
+        const auto header = i2l::ipk_header {
+            _phylo_kmer_db.sequence_type(),
+            _phylo_kmer_db.tree_index(),
+            _phylo_kmer_db.tree(),
+            _phylo_kmer_db.kmer_size(),
+            _phylo_kmer_db.omega(),
+            total_num_kmers,
+            total_num_entries
+        };
+        i2l::save_header(_ar, header);
+
+
+        merge_stage2();
+        //_phylo_kmer_db.sort();
         const auto end = std::chrono::steady_clock::now();
         const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
@@ -546,15 +602,16 @@ namespace ipk
 
 namespace ipk
 {
-    phylo_kmer_db build(const string& working_directory,
-                        const phylo_tree& original_tree, const phylo_tree& extended_tree,
-                        const proba_matrix& matrix,
-                        const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
-                        ipk::algorithm algorithm, ipk::ghost_strategy strategy,
-                        size_t kmer_size, i2l::phylo_kmer::score_type omega,
-                        filter_type filter, double mu, size_t num_threads)
+    void build(const string& working_directory,
+               const string& output_filename,
+               const phylo_tree& original_tree, const phylo_tree& extended_tree,
+               const proba_matrix& matrix,
+               const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
+               ipk::algorithm algorithm, ipk::ghost_strategy strategy,
+               size_t kmer_size, i2l::phylo_kmer::score_type omega,
+               filter_type filter, double mu, size_t num_threads)
     {
-        db_builder builder(working_directory,
+        db_builder builder(working_directory, output_filename,
                            original_tree, extended_tree,
                            matrix,
                            mapping, ar_mapping, merge_branches,
@@ -562,6 +619,5 @@ namespace ipk
                            kmer_size, omega,
                            filter, mu, num_threads);
         builder.run();
-        return std::move(builder._phylo_kmer_db);
     }
 }
