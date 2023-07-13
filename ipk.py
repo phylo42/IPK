@@ -27,7 +27,7 @@ AMINO_MODELS = ['Blosum62', 'cpREV', 'Dayhoff', 'DCMut', 'DEN', 'FLU', 'HIVb', '
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
-KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
+KMER_FILTERS = ["no-filter", "mif0", "random"]
 
 GHOST_STRATEGIES = ["inner-only", "outer-only", "both"]
 
@@ -285,7 +285,7 @@ def build_database(ar,
         "--alpha", str(alpha),
         "--categories", str(categories),
         "--reduction-ratio", str(reduction_ratio),
-        "-o", str(omega),
+        "--omega", str(omega),
         "--" + filter.lower(),
         "--" + ghosts.lower(),
         "-u", str(mu),
