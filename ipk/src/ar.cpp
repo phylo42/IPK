@@ -65,7 +65,7 @@ namespace ipk::ar
         raxmlng_reader& operator=(raxmlng_reader&&) = delete;
         ~raxmlng_reader() noexcept override = default;
 
-        proba_matrix read();
+        proba_matrix read() override;
 
     private:
         proba_matrix read_matrix();

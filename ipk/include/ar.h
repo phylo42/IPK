@@ -17,7 +17,7 @@ namespace ipk
 
     namespace cli
     {
-        class parameters;
+        struct parameters;
     }
 
     namespace ar
