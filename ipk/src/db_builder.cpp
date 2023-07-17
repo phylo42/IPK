@@ -140,7 +140,7 @@ namespace ipk
         double _mu;
 
         /// The number of batches in which the space of k-mers is split
-        const size_t _num_batches = 4;
+        const size_t _num_batches = 32;
 
         size_t _num_threads;
         phylo_kmer_db _phylo_kmer_db;
@@ -198,23 +198,15 @@ namespace ipk
         }
 
         /// The first stage of the algorithm: create a hashmap for every node group
-        std::cout << "Building database: [stage 1 / 2]:" << std::endl;
         const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
-        std::cout << "Calculated " << num_tuples << " phylo-k-mers.\nCalculation time: " << construction_time
-                  << "\n\n" << std::flush;
+        (void)num_tuples;
 
         /// The second stage of the algorithm: combine merge and filter
-        std::cout << "Building database: [stage 2 / 2]:" << std::endl;
         const auto merge_time = merge(group_ids);
-        //const auto merge_time = merge_filtered(group_ids);
         fs::remove_all(get_groups_dir(_working_directory));
 
         /// Calculate the number of phylo-kmers stored in the database
-        size_t total_entries = 0;
-        for (const auto& kmer_entry : _phylo_kmer_db)
-        {
-            total_entries += kmer_entry.second.size();
-        }
+        const auto total_entries = get_num_entries(_phylo_kmer_db);
 
         std::cout << "Building database: Done." << std::endl;
         std::cout << "Output: " << _output_filename << std::endl;
@@ -225,6 +217,7 @@ namespace ipk
 
     std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
     {
+        std::cout << "Computing phylo-k-mers [stage 1 / 3]:" << std::endl;
         /// create a temporary directory for hashmaps
         const auto temp_dir = get_groups_dir(_working_directory);
         fs::create_directories(temp_dir);
@@ -236,6 +229,9 @@ namespace ipk
             const auto& [group_ids, num_tuples] = explore_kmers();
             const auto end = std::chrono::steady_clock::now();
             const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+
+            std::cout << "Computed " << num_tuples << " phylo-k-mers.\nCalculation time: " << elapsed_time
+                      << "\n\n" << std::flush;
             return { group_ids, num_tuples, elapsed_time };
         }
         catch (const std::exception& error)
@@ -275,7 +271,21 @@ namespace ipk
         size_t total_num_kmers = 0;
         size_t total_num_entries = 0;
 
-        std::cout << "Merge stage 1... " << std::flush;
+        using namespace indicators;
+        ProgressBar bar{
+            option::BarWidth{60},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PostfixText{"Merge stage 1"},
+            option::ForegroundColor{Color::green},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+            option::MaxProgress{_num_batches}
+        };
+
+        std::cout << "Computing filter values [stage 2 / 3]:" << std::endl;
         /// Go over k-mer batches (ranges of k-mers)
         for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
@@ -307,15 +317,18 @@ namespace ipk
 
             /// Serialize the batch database
             i2l::save_uncompressed(batch_db, get_batch_db_name(batch_id));
+
+            /// Update progress bar
+            bar.set_option(option::PostfixText{std::to_string(batch_id) + "/" + std::to_string(_num_batches)});
+            bar.tick();
         }
-        std::cout << "OK" << std::endl;
 
         return { total_num_kmers, total_num_entries };
     }
 
     void db_builder::merge_stage2()
     {
-        std::cout << "Merge stage 2... " << std::flush;
+        std::cout << "Merging batches [stage 3 / 3]:" << std::endl;
 
         /// Lazy loaders for every batch
         std::vector<batch_loader> batches;
@@ -335,7 +348,29 @@ namespace ipk
             }
         }
 
+        /// Get the total number of k-mers in all batches
+        size_t num_kmers = 0;
+        for (const auto& loader: batches)
+        {
+            num_kmers += loader.get_num_kmers();
+        }
+
+        using namespace indicators;
+        ProgressBar bar{
+            option::BarWidth{60},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PostfixText{"Merge stage 1"},
+            option::ForegroundColor{Color::green},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+            option::MaxProgress{num_kmers}
+        };
+
         // Lazy N-way merge of phylo-k-mers of all batches
+        size_t kmers_loaded = 0;
         while (!pq.empty())
         {
             batch_loader* loader = pq.top();
@@ -352,8 +387,11 @@ namespace ipk
                 loader->next();
                 pq.push(loader);
             }
+
+            ++kmers_loaded;
+            bar.set_option(option::PostfixText{std::to_string(kmers_loaded) + "/" + std::to_string(num_kmers)});
+            bar.tick();
         }
-        std::cout << "OK" << std::endl;
     }
 
     std::string db_builder::get_batch_db_name(size_t batch_id)
