@@ -189,7 +189,8 @@ return_code build_database(const ipk::cli::parameters& parameters)
         parameters.omega,
         get_filter_type(parameters),
         parameters.mu,
-        parameters.num_threads);
+        parameters.num_threads,
+        parameters.on_disk);
     return return_code::success;
 }
 

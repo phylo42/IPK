@@ -50,6 +50,8 @@ namespace ipk::cli
     static std::string GHOSTS_OUTER = "outer-only";
     static std::string GHOSTS_BOTH = "both";
 
+    static std::string ON_DISK = "on-disk";
+
 
     /// Algorithm flags
     bool bb_flag = false;
@@ -72,6 +74,9 @@ namespace ipk::cli
     bool inner_only_flag = false;
     bool outer_only_flag = false;
     bool both_flag = true;
+
+    /// Filtering algorithm flags
+    bool on_disk_flag = false;
 
     po::options_description get_opt_description()
     {
@@ -130,6 +135,8 @@ namespace ipk::cli
             ((GHOSTS_INNER).c_str(), po::bool_switch(&inner_only_flag))
             ((GHOSTS_OUTER).c_str(), po::bool_switch(&outer_only_flag))
             ((GHOSTS_BOTH).c_str(), po::bool_switch(&both_flag))
+
+            ((ON_DISK).c_str(), po::bool_switch(&on_disk_flag))
             ;
         return desc;
     }
@@ -287,6 +294,8 @@ namespace ipk::cli
             parameters.inner_only = inner_only_flag;
             parameters.outer_only = outer_only_flag;
             parameters.both = both_flag;
+
+            parameters.on_disk = on_disk_flag;
         }
         catch (const po::error& e)
         {

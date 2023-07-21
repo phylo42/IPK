@@ -75,6 +75,10 @@ namespace ipk::cli
 
         // a strategy to pick ghost nodes into consideration
         ipk::ghost_strategy ghost_strategy;
+
+        // whether merge after batched filtering should be on disk
+        // (slower but takes less RAM)
+        bool on_disk;
     };
 
     std::string get_option_list();

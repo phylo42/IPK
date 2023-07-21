@@ -42,7 +42,7 @@ namespace ipk
                           ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                           size_t kmer_size, phylo_kmer::score_type omega,
                           filter_type filter, double mu,
-                          size_t num_threads);
+                          size_t num_threads, bool on_disk);
     public:
         /// Member types
 
@@ -63,7 +63,7 @@ namespace ipk
                    ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                    size_t kmer_size, phylo_kmer::score_type omega,
                    filter_type filter, double mu,
-                   size_t num_threads);
+                   size_t num_threads, bool on_disk);
         db_builder(const db_builder&) = delete;
         db_builder(db_builder&&) = delete;
         db_builder& operator=(const db_builder&) = delete;
@@ -151,6 +151,8 @@ namespace ipk
         std::ofstream _ofs;
         ::boost::archive::binary_oarchive _ar;
 
+        bool _on_disk;
+
     };
 
     db_builder::db_builder(std::string working_directory, const std::string& output_filename,
@@ -160,7 +162,7 @@ namespace ipk
                            ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                            size_t kmer_size, phylo_kmer::score_type omega,
                            filter_type filter, double mu,
-                           size_t num_threads)
+                           size_t num_threads, bool on_disk)
         : _working_directory{ std::move(working_directory) }
         , _original_tree{ original_tree }
         , _extended_tree{ extended_tree }
@@ -179,6 +181,7 @@ namespace ipk
         , _output_filename(output_filename)
         , _ofs(output_filename)
         , _ar(_ofs)
+        , _on_disk(on_disk)
     {}
 
     void db_builder::run()
@@ -202,18 +205,21 @@ namespace ipk
         (void)num_tuples;
 
         /// The second stage of the algorithm: combine merge and filter
-        //const auto fitlering_time = filter_on_disk(group_ids);
-        const auto fitlering_time = filter_in_ram(group_ids);
-        fs::remove_all(get_groups_dir(_working_directory));
+        size_t filtering_time = 0.0;
+        if (_on_disk)
+        {
+            filtering_time = filter_on_disk(group_ids);
+        }
+        else
+        {
+            filtering_time = filter_in_ram(group_ids);
+        }
 
-        /// Calculate the number of phylo-kmers stored in the database
-        const auto total_entries = get_num_entries(_phylo_kmer_db);
+        fs::remove_all(get_groups_dir(_working_directory));
 
         std::cout << "Building database: Done." << std::endl;
         std::cout << "Output: " << _output_filename << std::endl;
-        std::cout << "Built " << total_entries << " phylo-k-mers for "
-                  << _phylo_kmer_db.size() << " different k-mers.\nTotal time (ms): "
-                  << construction_time + fitlering_time << "\n\n" << std::flush;
+        std::cout << "Total time (ms): " << construction_time + filtering_time << "\n\n" << std::flush;
     }
 
     std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
@@ -231,8 +237,7 @@ namespace ipk
             const auto end = std::chrono::steady_clock::now();
             const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
-            std::cout << "Computed " << num_tuples << " phylo-k-mers.\nCalculation time: " << elapsed_time
-                      << "\n\n" << std::flush;
+            std::cout << "Computation time: " << elapsed_time << "\n\n" << std::flush;
             return { group_ids, num_tuples, elapsed_time };
         }
         catch (const std::exception& error)
@@ -252,7 +257,9 @@ namespace ipk
 
     unsigned long db_builder::filter_in_ram(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
-        const auto begin = std::chrono::steady_clock::now();
+
+        std::cout << "Filtering in RAM [stage 2 / 3]:" << std::endl;
+        auto begin = std::chrono::steady_clock::now();
 
         /// Filter phylo k-mers
         const auto threshold = score_threshold(_omega, _kmer_size);
@@ -292,6 +299,13 @@ namespace ipk
 
             bar1.tick();
         }
+        auto end = std::chrono::steady_clock::now();
+        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::cout << "Filtering time: " << time << "\n\n" << std::flush;
+
+
+        std::cout << "Merging [stage 3 / 3]:" << std::endl;
+        begin = std::chrono::steady_clock::now();
 
         /// Serialize the protocol header
         const auto header = i2l::ipk_header {
@@ -354,10 +368,9 @@ namespace ipk
             bar2.tick();
         }
 
-        const auto end = std::chrono::steady_clock::now();
-        const auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-
-        std::cout << "Filtering and merge time: " << time << "\n\n" << std::flush;
+        end = std::chrono::steady_clock::now();
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::cout << "Merge time: " << time << "\n\n" << std::flush;
         return time;
     }
 
@@ -380,7 +393,7 @@ namespace ipk
             option::MaxProgress{_num_batches}
         };
 
-        std::cout << "Computing filter values [stage 2 / 3]:" << std::endl;
+        std::cout << "Filtering on disk [stage 2 / 3]:" << std::endl;
         /// Go over k-mer batches (ranges of k-mers)
         for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
@@ -421,7 +434,7 @@ namespace ipk
 
     void db_builder::merge_stage2()
     {
-        std::cout << "Merging batches [stage 3 / 3]:" << std::endl;
+        std::cout << "Merging [stage 3 / 3]:" << std::endl;
 
         /// Lazy loaders for every batch
         std::vector<batch_loader> batches;
@@ -741,7 +754,7 @@ namespace ipk
                const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                size_t kmer_size, i2l::phylo_kmer::score_type omega,
-               filter_type filter, double mu, size_t num_threads)
+               filter_type filter, double mu, size_t num_threads, bool on_disk)
     {
         db_builder builder(working_directory, output_filename,
                            original_tree, extended_tree,
@@ -749,7 +762,7 @@ namespace ipk
                            mapping, ar_mapping, merge_branches,
                            algorithm, strategy,
                            kmer_size, omega,
-                           filter, mu, num_threads);
+                           filter, mu, num_threads, on_disk);
         builder.run();
     }
 }

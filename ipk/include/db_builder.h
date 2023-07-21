@@ -26,7 +26,7 @@ namespace ipk
                ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                size_t kmer_size, i2l::phylo_kmer::score_type omega,
                filter_type filter, double mu,
-               size_t num_threads);
+               size_t num_threads, bool on_disk);
 }
 
 #endif
