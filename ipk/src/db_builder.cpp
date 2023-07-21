@@ -403,18 +403,12 @@ namespace ipk
             const auto threshold = score_threshold(_omega, _kmer_size);
             auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
                                            _working_directory, _num_batches, threshold);
-            auto filter_values = filter->calc_filter_values(batch_db);
+            batch_db.kmer_order = filter->calc_filter_values(batch_db);
 
             /// Sort filter values. We want minimal values of filter score because
             /// they are inverted, Sw [ H(c | B_w = 1) - H(c) ] -> min.
             /// see calc_filter_values() for detail
-            std::sort(filter_values.begin(), filter_values.end());
-
-            /// Save the order in which k-mer should be saved
-            for (const auto& fv : filter_values)
-            {
-                batch_db.kmer_order.emplace_back(fv.key, (float)fv.filter_value);
-            }
+            std::sort(batch_db.kmer_order.begin(), batch_db.kmer_order.end());
 
             /// Since batches cover independent ranges of k-mers, we can simply
             /// sum up k-mer and entry counters
