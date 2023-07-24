@@ -71,6 +71,17 @@ score_t matrix::range_max_sum(size_t start_pos, size_t len) const
     return _best_scores[start_pos + len] - _best_scores[start_pos];
 }
 
+void matrix::clear()
+{
+    _data.clear();
+    /// Force to free the memory allocated
+    _data.shrink_to_fit();
+
+    _best_scores.clear();
+    _best_scores.shrink_to_fit();
+}
+
+
 window::window(const matrix* m, size_t start_pos, size_t size)
     : _matrix(m), _start_pos(start_pos), _size(size)
 {

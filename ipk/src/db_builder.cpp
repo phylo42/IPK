@@ -37,7 +37,7 @@ namespace ipk
     {
         friend void build(const string& working_directory,const string& output_filename,
                           const phylo_tree& original_tree, const phylo_tree& extended_tree,
-                          const proba_matrix& matrix,
+                          proba_matrix& matrix,
                           const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                           ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                           size_t kmer_size, phylo_kmer::score_type omega,
@@ -52,13 +52,13 @@ namespace ipk
         using id_group = std::vector<std::string>;
 
         /// \brief A group of probability submatrices that correspond to a group of nodes
-        using proba_group = std::vector<std::reference_wrapper<const proba_matrix::mapped_type>>;
+        using proba_group = std::vector<std::reference_wrapper<proba_matrix::mapped_type>>;
 
 
         /// Ctors, dtor and operator=
         db_builder(std::string working_directory, const std::string& output_filename,
                    const phylo_tree& original_tree, const phylo_tree& extended_tree,
-                   const proba_matrix& matrix,
+                   proba_matrix& matrix,
                    const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                    ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                    size_t kmer_size, phylo_kmer::score_type omega,
@@ -78,8 +78,8 @@ namespace ipk
         /// \brief The first stage of the construction algorithm. Creates a hashmap of phylo-kmers
         ///        for every node group.
         /// \return group ids (correspond to the post-order ids in the tree),
-        ///         number of tuples explored, elapsed time
-        std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> construct_group_hashmaps();
+        ///         elapsed time
+        std::tuple<std::vector<phylo_kmer::branch_type>, unsigned long> compute_phylo_kmers();
 
         /// \brief The second stage of the construction algorithm. Combines group hashmaps
         /// and runs batched filtering
@@ -115,7 +115,7 @@ namespace ipk
         ///        in the group correspond to one original node
         /// \return A hash map with phylo-kmers stored and a number of explored phylo-kmers
         [[nodiscard]]
-        std::pair<std::vector<group_hash_map>, size_t> explore_group(const proba_group& group, size_t postorder_id) const;
+        std::pair<std::vector<group_hash_map>, size_t> explore_group(const id_group& group, size_t postorder_id) const;
 
         /// \brief Working and output directory
         string _working_directory;
@@ -123,8 +123,7 @@ namespace ipk
         const phylo_tree& _original_tree;
         const phylo_tree& _extended_tree;
 
-        //const proba_matrix& _matrix;
-        const proba_matrix& _matrix;
+        proba_matrix& _matrix;
         const ghost_mapping& _extended_mapping;
         const ar::mapping& _ar_mapping;
 
@@ -157,7 +156,7 @@ namespace ipk
 
     db_builder::db_builder(std::string working_directory, const std::string& output_filename,
                            const phylo_tree& original_tree, const phylo_tree& extended_tree,
-                           const proba_matrix& matrix,
+                           proba_matrix& matrix,
                            const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                            ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                            size_t kmer_size, phylo_kmer::score_type omega,
@@ -201,11 +200,10 @@ namespace ipk
         }
 
         /// The first stage of the algorithm: create a hashmap for every node group
-        const auto& [group_ids, num_tuples, construction_time] = construct_group_hashmaps();
-        (void)num_tuples;
+        const auto& [group_ids, construction_time] = compute_phylo_kmers();
 
         /// The second stage of the algorithm: combine merge and filter
-        size_t filtering_time = 0.0;
+        size_t filtering_time;
         if (_on_disk)
         {
             filtering_time = filter_on_disk(group_ids);
@@ -222,7 +220,7 @@ namespace ipk
         std::cout << "Total time (ms): " << construction_time + filtering_time << "\n\n" << std::flush;
     }
 
-    std::tuple<std::vector<phylo_kmer::branch_type>, size_t, unsigned long> db_builder::construct_group_hashmaps()
+    std::tuple<std::vector<phylo_kmer::branch_type>, unsigned long> db_builder::compute_phylo_kmers()
     {
         std::cout << "Computing phylo-k-mers [stage 1 / 3]:" << std::endl;
         /// create a temporary directory for hashmaps
@@ -231,14 +229,15 @@ namespace ipk
 
         try
         {
-            /// Run the construction algorithm
+            /// Compute phylo-k-mers for every branch (node group)
             const auto begin = std::chrono::steady_clock::now();
             const auto& [group_ids, num_tuples] = explore_kmers();
+            (void)num_tuples;
             const auto end = std::chrono::steady_clock::now();
             const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
 
             std::cout << "Computation time: " << elapsed_time << "\n\n" << std::flush;
-            return { group_ids, num_tuples, elapsed_time };
+            return { group_ids, elapsed_time };
         }
         catch (const std::exception& error)
         {
@@ -598,14 +597,13 @@ namespace ipk
             const auto& ar_node_label = _ar_mapping.at(ext_node_label);
             if (const auto& it = _matrix.find(ar_node_label); it != _matrix.end())
             {
-                submatrices.push_back(std::cref(it->second));
+                submatrices.push_back(std::ref(it->second));
             }
             else
             {
                 throw std::runtime_error("Internal error: could not find " + ar_node_label + " node. "
                                          "Make sure it is in the ARTree_id_mapping file.");
             }
-
         }
 
         return submatrices;
@@ -651,12 +649,11 @@ namespace ipk
             const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
-
             /// Get sub-matrices of probabilities for the group
             const auto matrices = get_submatrices(node_group);
 
             /// Explore k-mers of the group and store results in a hash map
-            const auto& [hash_maps, branch_count] = explore_group(matrices, original_node_postorder_id);
+            const auto& [hash_maps, branch_count] = explore_group(node_group, original_node_postorder_id);
 
             /// Save the group hashmap on disk
             size_t index = 0;
@@ -706,17 +703,20 @@ namespace ipk
     }
     #else
 
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const id_group& group, size_t postorder_id) const
     {
         (void)postorder_id;
+
+        /// Lazy load of matrices from disk
+        auto matrix_refs = get_submatrices(group);
 
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         size_t count = 0;
         const auto log_threshold = std::log10(score_threshold(_omega, _kmer_size));
-        for (auto node_matrix_ref : group)
+        for (auto node_matrix_ref : matrix_refs)
         {
-            const auto& node_matrix = node_matrix_ref.get();
+            auto& node_matrix = node_matrix_ref.get();
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
                 auto alg = ipk::DCLA(window, _kmer_size);
@@ -727,8 +727,9 @@ namespace ipk
                     ipk::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
                     ++count;
                 }
-
             }
+            /// Clear the matrix as we don't need it anymore
+            node_matrix.clear();
         }
 
         return { std::move(hash_maps), count };
@@ -744,7 +745,7 @@ namespace ipk
     void build(const string& working_directory,
                const string& output_filename,
                const phylo_tree& original_tree, const phylo_tree& extended_tree,
-               const proba_matrix& matrix,
+               proba_matrix& matrix,
                const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                size_t kmer_size, i2l::phylo_kmer::score_type omega,

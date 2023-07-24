@@ -112,28 +112,6 @@ std::vector<uphylo_kmer> DCLA::DC(size_t j, size_t h, phylo_kmer::score_type eps
         return result;
     }
 }
-/*
-void DCLA::preprocess()
-{
-    _best_scores = std::vector<phylo_kmer::score_type>(_k + 1, 1.0f);
-    phylo_kmer::score_type product = 1.0f;
-    for (size_t j = 0; j < _k; ++j)
-    {
-        const auto& [index_best, score_best] = _window.max_at(j);
-        product += score_best;
-        //product *= score_best;
-        _best_scores[j + 1] = product;
-    }
-
-    /// We ignore 0s because they can not be highest values in the column
-}
-
-phylo_kmer::score_type DCLA::best_score(size_t start_pos, size_t h)
-{
-    return _best_scores[start_pos + h] - _best_scores[start_pos];
-    //return _best_scores[start_pos + h] / _best_scores[start_pos];
-}*/
-
 
 const std::vector<uphylo_kmer>& DCLA::get_result() const
 {

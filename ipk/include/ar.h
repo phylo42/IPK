@@ -1,5 +1,5 @@
-#ifndef AR_H
-#define AR_H
+#ifndef IPK_AR_H
+#define IPK_AR_H
 
 #include <string>
 #include <unordered_map>
@@ -14,6 +14,7 @@ namespace i2l
 namespace ipk
 {
     class proba_matrix;
+    class matrix;
 
     namespace cli
     {
@@ -94,6 +95,15 @@ namespace ipk
         /// Maps node labels of the extended tree to the node labels of the AR tree
         /// This mapping is needed to query proba_matrix.
         ar::mapping map_nodes(const i2l::phylo_tree& extended_tree, const i2l::phylo_tree& ar_tree);
+
+        /// \brief Interface for lazy readers of ancestral reconstruction output.
+        /// Takes the name of the node to read for. Format independent
+        class reader
+        {
+        public:
+            virtual ~reader() noexcept = default;
+            virtual ipk::matrix read_node(const std::string& node_label) = 0;
+        };
 
     }
 

@@ -1,8 +1,10 @@
-#ifndef RAPPAS_CPP_PROBA_MATRIX_H
-#define RAPPAS_CPP_PROBA_MATRIX_H
+#ifndef IPK_PROBA_MATRIX_H
+#define IPK_PROBA_MATRIX_H
 
 #include <unordered_map>
+#include <memory>
 #include <i2l/phylo_kmer.h>
+#include "ar.h"
 #include "window.h"
 
 namespace ipk
@@ -25,7 +27,7 @@ namespace ipk
         using const_iterator = typename storage::const_iterator;
         using mapped_type = storage::mapped_type;
 
-        proba_matrix() = default;
+        proba_matrix(std::unique_ptr<ipk::ar::reader> reader);
         proba_matrix(const proba_matrix&) = delete;
         proba_matrix(proba_matrix&& other) = default;
         proba_matrix& operator=(const proba_matrix&) = delete;
@@ -33,23 +35,38 @@ namespace ipk
         ~proba_matrix() = default;
 
         /// capacity
+        [[nodiscard]]
         size_t num_branches() const;
+
+        [[nodiscard]]
         size_t num_sites() const;
 
         // Lookup
+        [[nodiscard]]
         mapped_type& operator[](const std::string& ar_label);
+
+        [[nodiscard]]
         const mapped_type& at(const std::string& ar_label) const;
+
+        [[nodiscard]]
         iterator find(const std::string& ar_label);
-        const_iterator find(const std::string& ar_label) const;
 
         /// iterators
+        [[nodiscard]]
         iterator begin();
+
+        [[nodiscard]]
         iterator end();
+
+        [[nodiscard]]
         const_iterator begin() const;
+
+        [[nodiscard]]
         const_iterator end() const;
 
     private:
         storage _data;
+        std::unique_ptr<ipk::ar::reader> _reader;
     };
 }
 

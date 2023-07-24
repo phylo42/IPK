@@ -59,6 +59,10 @@ namespace ipk
         [[nodiscard]]
         impl::score_t range_max_sum(size_t start_pos, size_t len) const;
 
+        /// Clears all the data. Not only clears but calls shrink_to_fit
+        /// to guarantee deallocation
+        void clear();
+
     private:
         std::vector<column> _data;
 

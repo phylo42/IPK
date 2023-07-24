@@ -21,7 +21,7 @@ namespace ipk
 
     void build(const std::string& working_directory, const std::string& output_filename,
                const i2l::phylo_tree& original_tree, const i2l::phylo_tree& extended_tree,
-               const proba_matrix& matrix,
+               proba_matrix& matrix,
                const ghost_mapping& mapping, const ar::mapping& ar_mapping, bool merge_branches,
                ipk::algorithm algorithm, ipk::ghost_strategy strategy,
                size_t kmer_size, i2l::phylo_kmer::score_type omega,
