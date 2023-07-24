@@ -150,6 +150,7 @@ namespace ipk::ar
 
     void raxmlng_reader::build_index()
     {
+        std::cout << "Indexing " <<  _file_name << "..." << std::endl;
         _file_stream.open(_file_name);
 
         std::string line;

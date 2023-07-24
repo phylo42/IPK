@@ -148,11 +148,9 @@ namespace ipk::cli
         return ss.str();
     }
 
-    char* convert(const std::string &s)
+    const char* to_cstr(const std::string &s)
     {
-        char* pc = new char[s.size() + 1];
-        std::strcpy(pc, s.c_str());
-        return pc;
+        return s.c_str();
     }
 
     struct cli_args
@@ -208,7 +206,7 @@ namespace ipk::cli
         std::pair<int, std::vector<const char*>> to_cargs() const
         {
             std::vector<const char*>  vc;
-            std::transform(argv.begin(), argv.end(), std::back_inserter(vc), convert);
+            std::transform(argv.begin(), argv.end(), std::back_inserter(vc), to_cstr);
             return { argc, vc };
         }
 
