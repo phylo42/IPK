@@ -194,7 +194,6 @@ namespace ipk::ar
         ipk::matrix matrix;
 
         const auto pos = _index[current_node];
-
         std::ifstream file_stream(_file_name);
         file_stream.seekg(pos);
         ::io::CSVReader<7,
@@ -776,66 +775,34 @@ namespace ipk::ar
 
         ar::mapping ext_to_ar;
 
-        /// Traverse the AR tree
+        /// Traverse the extended and AR tree at the same time
         using const_iterator = i2l::postorder_tree_iterator<true>;
-        for (const auto& ext_node : i2l::visit_subtree<const_iterator>(extended_tree.get_root()))
+        auto visit_ext = i2l::visit_subtree<const_iterator>(extended_tree.get_root());
+        auto ext_it = visit_ext.begin();
+        auto visit_ar = i2l::visit_subtree<const_iterator>(ar_tree.get_root());
+        auto ar_it = visit_ar.begin();
+        while (ext_it != visit_ext.end())
         {
-            if (ext_node.is_root())
+            /// Inner nodes usually have no labels. However, we do not
+            /// need them in the mapping as it is only for ghost nodes anyway
+            if (ext_it->get_label().empty())
             {
+                ++ext_it;
+                ++ar_it;
                 continue;
             }
 
-            if (ext_node.is_leaf())
+            ext_to_ar[ext_it->get_label()] = ar_it->get_label();
+            ++ext_it;
+            ++ar_it;
+
+            if (ext_it->is_root())
             {
-                /// For leaves the node labels must be the same
-                const auto label = ext_node.get_label();
-                const auto ar_node_ptr = ar_tree.get_by_label(label);
-
-                if (!ar_node_ptr || *ar_node_ptr == nullptr)
-                {
-                    throw std::runtime_error("Internal error: could not find a node in the AR tree: label = '"
-                                             + label + "'");
-                }
-
-                /// Map the the Extended tree leaf to the AR tree leaf
-                /// They are actually the same.
-                ext_to_ar[label] = (*ar_node_ptr)->get_label();
-
-                /// Map their parents if they exist
-                if (!ext_node.is_root())
-                {
-                    const auto ext_parent_ptr = ext_node.get_parent();
-                    const auto ar_parent_ptr = (*ar_node_ptr)->get_parent();
-
-                    ext_to_ar[ext_parent_ptr->get_label()] = ar_parent_ptr->get_label();
-                }
-            }
-            /// Internal node
-            else
-            {
-                const auto ar_node_label = ext_to_ar[ext_node.get_label()];
-                const auto ar_node_ptr = ar_tree.get_by_label(ar_node_label);
-                if (!ar_node_ptr || *ar_node_ptr == nullptr)
-                {
-                    throw std::runtime_error("Internal error: could not a find node in the AR tree: label = '"
-                                             + ar_node_label + "'");
-                }
-
-                /// Map their parent if they exist
-                const auto ext_parent_ptr = ext_node.get_parent();
-                const auto ar_parent_ptr = (*ar_node_ptr)->get_parent();
-                if (ar_parent_ptr && ext_parent_ptr)
-                {
-                    ext_to_ar[ext_parent_ptr->get_label()] = ar_parent_ptr->get_label();
-                }
+                assert(ar_it->is_root());
             }
         }
 
-        /*std::cout << std::endl << "EXT -> AR MAPPING" << std::endl;
-        for (const auto& [ext_label, ar_label] : ext_to_ar)
-        {
-            std::cout << ext_label << " -> " << ar_label << std::endl;
-        }*/
+        assert (ar_it == visit_ar.end());
         return ext_to_ar;
     }
 }

@@ -649,9 +649,6 @@ namespace ipk
             const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
-            /// Get sub-matrices of probabilities for the group
-            const auto matrices = get_submatrices(node_group);
-
             /// Explore k-mers of the group and store results in a hash map
             const auto& [hash_maps, branch_count] = explore_group(node_group, original_node_postorder_id);
 
@@ -662,7 +659,6 @@ namespace ipk
                 save_group_map(hash_map, get_group_map_file(_working_directory, original_node_postorder_id, index));
                 ++index;
             }
-
 
             // update progress bar
             bar.set_option(option::PostfixText{std::to_string(i) + "/" + std::to_string(node_groups.size())});
