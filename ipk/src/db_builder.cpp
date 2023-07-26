@@ -673,15 +673,19 @@ namespace ipk
     }
 
     #ifdef KEEP_POSITIONS
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const proba_group& group, size_t postorder_id) const
+    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const id_group& group, size_t postorder_id) const
     {
         (void)postorder_id;
+
+        /// Lazy load of matrices from disk
+        auto matrix_refs = get_submatrices(group);
 
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
 
+
         const auto log_threshold = std::log10(i2l::score_threshold(_omega, _kmer_size));
-        for (auto node_matrix_ref : group)
+        for (auto node_matrix_ref : matrix_refs)
         {
             const auto& node_matrix = node_matrix_ref.get();
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
