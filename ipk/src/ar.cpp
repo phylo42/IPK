@@ -20,8 +20,6 @@
 #include "proba_matrix.h"
 #include "command_line.h"
 
-using std::string;
-using std::cout, std::endl;
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
@@ -31,7 +29,7 @@ namespace ipk::ar
     class phyml_reader : public reader
     {
     public:
-        phyml_reader(const string& file_name) noexcept;
+        phyml_reader(const std::string& file_name) noexcept;
         phyml_reader(const phyml_reader&) = delete;
         phyml_reader(phyml_reader&&) = delete;
         phyml_reader& operator=(const phyml_reader&) = delete;
@@ -43,14 +41,14 @@ namespace ipk::ar
     private:
         proba_matrix read_matrix();
 
-        string _file_name;
+        std::string _file_name;
     };
 
     /// \brief Reads RAXML-NG output into a matrix.
     class raxmlng_reader : public reader
     {
     public:
-        raxmlng_reader(const string& file_name) noexcept;
+        raxmlng_reader(std::string file_name) noexcept;
         raxmlng_reader(const phyml_reader&) = delete;
         raxmlng_reader(raxmlng_reader&&) = delete;
         raxmlng_reader& operator=(const raxmlng_reader&) = delete;
@@ -63,14 +61,14 @@ namespace ipk::ar
         void build_index();
         proba_matrix read_matrix();
 
-        string _file_name;
+        std::string _file_name;
         std::ifstream _file_stream;
 
         /// Index for Node -> position where the matrix for this node starts
         std::unordered_map<std::string, std::streampos> _index;
     };
 
-    phyml_reader::phyml_reader(const string& file_name) noexcept
+    phyml_reader::phyml_reader(const std::string& file_name) noexcept
         : _file_name{ file_name }
     {}
 
@@ -142,8 +140,8 @@ namespace ipk::ar
 
     }*/
 
-    raxmlng_reader::raxmlng_reader(const string& file_name) noexcept
-        : _file_name{ file_name }
+    raxmlng_reader::raxmlng_reader(std::string file_name) noexcept
+        : _file_name{ std::move(file_name) }
     {
         build_index();
     }
@@ -170,14 +168,14 @@ namespace ipk::ar
 
         while (std::getline(_file_stream, line))
         {
-            const auto node_label = get_label(line);
+            auto node_label = get_label(line);
 
             /// If read a new label, index the position before
             /// the current line as the beginning of the node block
             if (node_label != current_node)
             {
                 _index[node_label] = last_pos;
-                current_node = node_label;
+                current_node = std::move(node_label);
             }
 
             last_pos = _file_stream.tellg();
@@ -188,15 +186,30 @@ namespace ipk::ar
         _index[node_label] = last_pos;
     }
 
-#if defined(SEQ_TYPE_DNA)
+    /// The type for the csv reader for a given sequence type
+    template<typename SeqType>
+    using csv_reader = typename ::io::CSVReader<
+        /// Number of columns: Node + Site + State + every char in the alphabet
+        3 + i2l::seq_traits_impl<SeqType>::alphabet_size,
+        ::io::trim_chars<' '>,
+        ::io::no_quote_escape<'\t'>,
+        ::io::throw_on_overflow,
+        ::io::single_and_empty_line_comment<'.'>>;
+
     ipk::matrix raxmlng_reader::read_node(const std::string& current_node)
     {
         ipk::matrix matrix;
 
+        /// Number of columns: Node + Site + State + every char in the alphabet
+        constexpr size_t num_columns = 3 + i2l::seq_traits::alphabet_size;
+
+        /// The stream position of the node matrix in the file
         const auto pos = _index[current_node];
+
+        /// Make a csv-reader located at the node matrix position
         std::ifstream file_stream(_file_name);
         file_stream.seekg(pos);
-        ::io::CSVReader<7,
+        ::io::CSVReader<num_columns,
             ::io::trim_chars<' '>,
             ::io::no_quote_escape<'\t'>,
             ::io::throw_on_overflow,
@@ -204,9 +217,26 @@ namespace ipk::ar
 
         bool started = false;
         std::string node_label, site, state;
+#if defined(SEQ_TYPE_DNA)
         phylo_kmer::score_type a, c, g, t;
         while (_in.read_row(node_label, site, state, a, c, g, t))
         {
+            auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
+#elif defined(SEQ_TYPE_AA)
+        i2l::phylo_kmer::score_type a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v;
+        while (_in.read_row(node_label, site, state, a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v))
+        {
+            /// the order of acids in the RAxML-ng format is not the same as
+            /// in the encoding of RAPPAS and IPK
+            auto new_column = std::vector<phylo_kmer::score_type>{
+                r, h, k, d, e, s, t, n, q, c, g, p, a, i, l, m, f, w, y, v
+            };
+
+#else
+        static_assert(false, """Make sure the sequence type is defined. Supported types:\n"""
+                     """SEQ_TYPE_DNA"""
+                     """SEQ_TYPE_AA""");
+#endif
             (void)site;
             (void)state;
             if (node_label != current_node)
@@ -222,7 +252,6 @@ namespace ipk::ar
             }
 
             started = true;
-            auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
 
             /// log-transform the probabilities
             auto log = [](auto value) { return std::log10(value); };
@@ -238,13 +267,6 @@ namespace ipk::ar
         matrix.preprocess();
         return matrix;
     }
-#elif defined(SEQ_TYPE_AA)
-    static_assert(false, """Proteins not implemented in this version""");
-#else
-    static_assert(false, """Make sure the sequence type is defined. Supported types:\n"""
-                         """SEQ_TYPE_DNA"""
-                         """SEQ_TYPE_AA""");
-#endif
 
     /// Figures out which AR software is used by running BINARY_FILE --help
     class ar_guesser
@@ -284,11 +306,11 @@ namespace ipk::ar
                 {
                     boost::algorithm::to_lower(line);
 
-                    if (line.find("phyml") != string::npos)
+                    if (line.find("phyml") != std::string::npos)
                     {
                         return ar::software::PHYML;
                     }
-                    else if (line.find("raxml-ng") != string::npos)
+                    else if (line.find("raxml-ng") != std::string::npos)
                     {
                         return ar::software::RAXML_NG;
                     }
@@ -304,7 +326,7 @@ namespace ipk::ar
         fs::path _ar_output_file;
     };
 
-    std::unique_ptr<reader> make_reader(ar::software software, const string& filename)
+    std::unique_ptr<reader> make_reader(ar::software software, const std::string& filename)
     {
         if (software == ar::software::PHYML)
         {
