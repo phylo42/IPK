@@ -11,11 +11,13 @@ namespace ipk
 
     enum class filter_type
     {
+        /// Random filter values
         random,
+        /// Mutual information-based filter
         mif0,
     };
 
-    /// Determines if the given k-mer has to be filtered out or not.
+    /// Computes filter values
     class kmer_filter
     {
     public:

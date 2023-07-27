@@ -74,11 +74,7 @@ namespace ipk
         void run();
 
     private:
-
-        /// \brief The first stage of the construction algorithm. Creates a hashmap of phylo-kmers
-        ///        for every node group.
-        /// \return group ids (correspond to the post-order ids in the tree),
-        ///         elapsed time
+        /// Computes phylo-k-mers. See explore_group
         std::tuple<std::vector<phylo_kmer::branch_type>, unsigned long> compute_phylo_kmers();
 
         /// \brief The second stage of the construction algorithm. Combines group hashmaps
@@ -109,13 +105,12 @@ namespace ipk
         /// \return 1) A vector of group ids, which correspond to post-order node ids in the tree
         ///         2) The number of explored phylo-kmers. This number can be more than a size of a resulting database
         [[nodiscard]]
-        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers() const;
+        std::tuple<std::vector<phylo_kmer::branch_type>, size_t> explore_kmers();
 
-        /// \brief Explores phylo-kmers of a collection of ghost nodes. Here we assume that the nodes
+        /// \brief Explores phylo-kmers of a group of ghost nodes. Here we assume that the nodes
         ///        in the group correspond to one original node
-        /// \return A hash map with phylo-kmers stored and a number of explored phylo-kmers
         [[nodiscard]]
-        std::pair<std::vector<group_hash_map>, size_t> explore_group(const id_group& group, size_t postorder_id) const;
+        size_t explore_group(const id_group& group, size_t postorder_id);
 
         /// \brief Working and output directory
         string _working_directory;
@@ -181,15 +176,17 @@ namespace ipk
         , _ofs(output_filename)
         , _ar(_ofs)
         , _on_disk(on_disk)
-    {}
+    {
+    }
 
     void db_builder::run()
     {
-        std::cout << "Construction parameters:" << std::endl <<
-                  "\tSequence type: " << seq_type::name << std::endl <<
+        std::cout << "Computation parameters:" << std::endl <<
+                  "\tsequence type: " << seq_type::name << std::endl <<
                   "\tk: " << _kmer_size << std::endl <<
                   "\tomega: " << _omega << std::endl <<
-                  "\tKeep positions: " << (keep_positions ? "true" : "false") << std::endl << std::endl;
+                  "\ton disk: " << (_on_disk ? "true" : "false") << std::endl <<
+                  "\tkeep positions: " << (keep_positions ? "true" : "false") << std::endl << std::endl;
 
         /// Fill the tree index from the tree
         auto& index = _phylo_kmer_db.tree_index();
@@ -199,17 +196,17 @@ namespace ipk
             index.push_back(phylo_node::node_index{ node.get_num_nodes(), node.get_subtree_branch_length() });
         }
 
-        /// The first stage of the algorithm: create a hashmap for every node group
-        const auto& [group_ids, construction_time] = compute_phylo_kmers();
-
-        /// The second stage of the algorithm: combine merge and filter
-        size_t filtering_time;
+        size_t construction_time, filtering_time;
         if (_on_disk)
         {
+            const auto& [group_ids, time] = compute_phylo_kmers();
+            construction_time = time;
             filtering_time = filter_on_disk(group_ids);
         }
         else
         {
+            const auto& [group_ids, time] = compute_phylo_kmers();
+            construction_time = time;
             filtering_time = filter_in_ram(group_ids);
         }
 
@@ -256,123 +253,49 @@ namespace ipk
 
     unsigned long db_builder::filter_in_ram(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
+        (void)group_ids;
 
-        std::cout << "Filtering in RAM [stage 2 / 3]:" << std::endl;
-        auto begin = std::chrono::steady_clock::now();
+        unsigned long time = 0;
 
-        /// Filter phylo k-mers
-        const auto threshold = score_threshold(_omega, _kmer_size);
-        auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
-                                       _working_directory, _num_batches, threshold);
-
-        using namespace indicators;
-        ProgressBar bar1{
-            option::BarWidth{60},
-            option::Start{"["},
-            option::Fill{"="},
-            option::Lead{">"},
-            option::Remainder{" "},
-            option::End{"]"},
-            option::PostfixText{"Merge stage 1"},
-            option::ForegroundColor{Color::green},
-            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-            option::MaxProgress{_num_batches}
-        };
-
-        size_t total_num_kmers = 0;
-        size_t total_num_entries = 0;
-        std::vector<phylo_kmer_db> batch_dbs;
-        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
+        /// Filtering in RAM
         {
-            /// Merge hashmaps of the same batch
-            batch_dbs.push_back(merge_batch(_working_directory, group_ids, batch_idx));
-            auto& batch_db = batch_dbs.back();
+            std::cout << "Filtering in RAM [stage 2 / 3]:" << std::endl;
+            const auto begin = std::chrono::steady_clock::now();
 
-            /// Calculate filter values for the batch
-            batch_db.kmer_order = filter->calc_filter_values(batch_db);
+            const auto threshold = score_threshold(_omega, _kmer_size);
+            auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
+                                           _working_directory, _num_batches, threshold);
+            auto& order = _phylo_kmer_db.kmer_order;
+            /// Compute Mutual information
+            order = filter->calc_filter_values(_phylo_kmer_db);
+            /// Sort by its values
+            std::sort(order.begin(), order.end());
 
-            /// Sort k-mers by filter values
-            std::sort(batch_db.kmer_order.begin(), batch_db.kmer_order.end());
-            total_num_kmers += batch_db.size();
-            total_num_entries += get_num_entries(batch_db);
-
-            bar1.tick();
-        }
-        auto end = std::chrono::steady_clock::now();
-        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-        std::cout << "Filtering time: " << time << "\n\n" << std::flush;
-
-
-        std::cout << "Merging [stage 3 / 3]:" << std::endl;
-        begin = std::chrono::steady_clock::now();
-
-        /// Serialize the protocol header
-        const auto header = i2l::ipk_header {
-            _phylo_kmer_db.sequence_type(),
-            _phylo_kmer_db.tree_index(),
-            _phylo_kmer_db.tree(),
-            _phylo_kmer_db.kmer_size(),
-            _phylo_kmer_db.omega(),
-            total_num_kmers,
-            total_num_entries
-        };
-        i2l::save_header(_ar, header);
-
-        /// The vector of indexes of top kmers for every batch (needed for the merge)
-        std::vector<size_t> batch_idx(_num_batches, 0);
-
-        /// Initialize a min-heap for the merge algorithm
-        std::priority_queue<kmer_fv, std::vector<kmer_fv>, std::greater<>> heap;
-        for (const auto& batch_db : batch_dbs)
-        {
-            if (!batch_db.kmer_order.empty())
-            {
-                heap.push(batch_db.kmer_order[0]);
-            }
+            auto end = std::chrono::steady_clock::now();
+            auto filter_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+            std::cout << "Filtering time: " << filter_time << "\n\n" << std::flush;
+            time += filter_time;
         }
 
-        ProgressBar bar2{
-            option::BarWidth{60},
-            option::Start{"["},
-            option::Fill{"="},
-            option::Lead{">"},
-            option::Remainder{" "},
-            option::End{"]"},
-            option::PostfixText{"Merge stage 1"},
-            option::ForegroundColor{Color::green},
-            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
-            option::MaxProgress{total_num_kmers}
-        };
-
-        /// N-way merge algorithm (N=number of batches)
-        size_t kmers_processed = 0;
-        while (!heap.empty())
+        /// Deserialization. We do it here because if _on_disk is true,
+        /// deserialization is part of the merge procedure, so it is expected to be
+        /// done with filtering
         {
-            /// Get the top k-mer
-            const auto top = heap.top();
-            size_t batch_id = kmer_batch(top.key, _num_batches);
-            const auto& batch = batch_dbs[batch_id];
-            const auto& top_entries = batch.at(top.key);
-            heap.pop();
-
-            /// Serialize it
-            i2l::save_phylo_kmer(_ar, top.key, top.filter_value, top_entries);
-
-            /// Take the next k-mer of this batch and push it to the queue
-            batch_idx[batch_id]++;
-            if (batch_idx[batch_id] < batch.kmer_order.size())
-            {
-                heap.push(batch.kmer_order[batch_idx[batch_id]]);
-            }
-
-            ++kmers_processed;
-            bar2.set_option(option::PostfixText{std::to_string(kmers_processed) + "/" + std::to_string(total_num_kmers)});
-            bar2.tick();
+            std::cout << "Deserialization [stage 3 / 3]:" << std::endl;
+            /// Serialize the protocol header
+            const auto header = i2l::ipk_header {
+                _phylo_kmer_db.sequence_type(),
+                _phylo_kmer_db.tree_index(),
+                _phylo_kmer_db.tree(),
+                _phylo_kmer_db.kmer_size(),
+                _phylo_kmer_db.omega(),
+                _phylo_kmer_db.size(),
+                get_num_entries(_phylo_kmer_db)
+            };
+            i2l::save_header(_ar, header);
+            /// Serialize the content
+            i2l::save_filter_ordered_phylo_kmers(_ar, _phylo_kmer_db);
         }
-
-        end = std::chrono::steady_clock::now();
-        time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-        std::cout << "Merge time: " << time << "\n\n" << std::flush;
         return time;
     }
 
@@ -612,7 +535,7 @@ namespace ipk
         return submatrices;
     }
 
-    std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers() const
+    std::tuple<std::vector<phylo_kmer::branch_type>, size_t> db_builder::explore_kmers()
     {
         size_t count = 0;
 
@@ -652,22 +575,15 @@ namespace ipk
             const auto original_node_postorder_id = _extended_mapping.at(node_group[0]);
             node_postorder_ids[i] = original_node_postorder_id;
 
-            /// Explore k-mers of the group and store results in a hash map
-            const auto& [hash_maps, branch_count] = explore_group(node_group, original_node_postorder_id);
-
-            /// Save the group hashmap on disk
-            size_t index = 0;
-            for (const auto& hash_map : hash_maps)
-            {
-                save_group_map(hash_map, get_group_map_file(_working_directory, original_node_postorder_id, index));
-                ++index;
-            }
+            /// Compute phylo-k-mers for the branch and store them in the main DB
+            /// or on disk
+            const auto entry_count = explore_group(node_group, original_node_postorder_id);
 
             // update progress bar
             bar.set_option(option::PostfixText{std::to_string(i) + "/" + std::to_string(node_groups.size())});
             bar.tick();
 
-            count += branch_count;
+            count += entry_count;
         }
         return { node_postorder_ids, count };
     }
@@ -706,10 +622,8 @@ namespace ipk
     }
     #else
 
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const id_group& group, size_t postorder_id) const
+    size_t db_builder::explore_group(const id_group& group, size_t postorder_id)
     {
-        (void)postorder_id;
-
         /// Lazy load of matrices from disk
         auto matrix_refs = get_submatrices(group);
 
@@ -722,20 +636,42 @@ namespace ipk
             auto& node_matrix = node_matrix_ref.get();
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
+                /// Compute phylo-k-mers
                 auto alg = ipk::DCLA(window, _kmer_size);
                 alg.run(log_threshold);
 
+                /// Either drop them on disk or hash in the main hashmap
                 for (const auto& kmer : alg.get_result())
                 {
-                    ipk::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                    if (_on_disk)
+                    {
+                        ipk::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
+                    }
+                    else
+                    {
+                        _phylo_kmer_db.unsafe_insert(kmer.key, { (phylo_kmer::branch_type)postorder_id, kmer.score });
+                    }
+
                     ++count;
                 }
             }
+
             /// Clear the matrix as we don't need it anymore
             node_matrix.clear();
         }
 
-        return { std::move(hash_maps), count };
+        /// Save the group hashmap on disk
+        if (_on_disk)
+        {
+            size_t index = 0;
+            for (const auto& hash_map: hash_maps)
+            {
+                save_group_map(hash_map, get_group_map_file(_working_directory, postorder_id, index));
+                ++index;
+            }
+        }
+
+        return count;
     }
 
     #endif
