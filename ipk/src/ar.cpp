@@ -805,6 +805,8 @@ namespace ipk::ar
         auto ar_it = visit_ar.begin();
         while (ext_it != visit_ext.end())
         {
+            assert(ar_it != visit_ar.end());
+
             /// Inner nodes usually have no labels. However, we do not
             /// need them in the mapping as it is only for ghost nodes anyway
             if (ext_it->get_label().empty())
@@ -814,11 +816,12 @@ namespace ipk::ar
                 continue;
             }
 
+            //std::cout << ext_it->get_label() << " -> " << ar_it->get_label() << std::endl;
             ext_to_ar[ext_it->get_label()] = ar_it->get_label();
             ++ext_it;
             ++ar_it;
 
-            if (ext_it->is_root())
+            if (ext_it != visit_ext.end() && ext_it->is_root())
             {
                 assert(ar_it->is_root());
             }
