@@ -88,13 +88,15 @@ public:
             if (verbose)
             {
                 auto val_or_nan_to_string = [](auto score) { return std::isnan(score) ? "-" : std::to_string(score); };
-
+                (void)val_or_nan_to_string;
                 std::cout << "\t\tcode\tk-mer\tbranch\tA score\tB score\n";
                 for (const auto& [kmer, branch, a_score, b_score] : diffs)
                 {
                     std::cout << "\t\t" << kmer << "\t" << i2l::decode_kmer(kmer, a.kmer_size()) << "\t" << branch << "\t"
-                              << val_or_nan_to_string(a_score) << "\t"
-                              << val_or_nan_to_string(b_score) << "\t" << std::endl;
+                              //<< val_or_nan_to_string(a_score) << "\t"
+                              //<< val_or_nan_to_string(b_score) << "\t" << std::endl;
+                              << std::pow(10, a_score) << "\t"
+                              << std::pow(10, b_score) << "\t" << std::endl;
                 }
             }
         }

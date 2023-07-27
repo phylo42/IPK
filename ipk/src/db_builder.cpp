@@ -629,11 +629,15 @@ namespace ipk
 
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
+        /// A hashmap for the group used if we build in RAM
+        ipk::hash_map<i2l::phylo_kmer::key_type, i2l::phylo_kmer::score_type> group_map;
+
         size_t count = 0;
         const auto log_threshold = std::log10(score_threshold(_omega, _kmer_size));
         for (auto node_matrix_ref : matrix_refs)
         {
             auto& node_matrix = node_matrix_ref.get();
+
             for (const auto& window : to_windows(&node_matrix, _kmer_size))
             {
                 /// Compute phylo-k-mers
@@ -643,16 +647,9 @@ namespace ipk
                 /// Either drop them on disk or hash in the main hashmap
                 for (const auto& kmer : alg.get_result())
                 {
-                    if (_on_disk)
-                    {
-                        ipk::put(hash_maps[kmer_batch(kmer.key, _num_batches)], kmer);
-                    }
-                    else
-                    {
-                        _phylo_kmer_db.unsafe_insert(kmer.key, { (phylo_kmer::branch_type)postorder_id, kmer.score });
-                    }
-
-                    ++count;
+                    auto& hashmap = _on_disk ? hash_maps[kmer_batch(kmer.key, _num_batches)] : group_map;
+                    ipk::put(hashmap, kmer);
+                    ++count;q
                 }
             }
 
@@ -668,6 +665,14 @@ namespace ipk
             {
                 save_group_map(hash_map, get_group_map_file(_working_directory, postorder_id, index));
                 ++index;
+            }
+        }
+        /// Or hash in the main DB with the corresponding branch ID (postorder ID)
+        else
+        {
+            for (const auto& [kmer, score] : group_map)
+            {
+                _phylo_kmer_db.unsafe_insert(kmer, { (branch_type)postorder_id, score });
             }
         }
 
