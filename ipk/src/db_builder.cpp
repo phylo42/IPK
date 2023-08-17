@@ -588,39 +588,6 @@ namespace ipk
         return { node_postorder_ids, count };
     }
 
-    /*#ifdef KEEP_POSITIONS
-    size_t db_builder::explore_group(const id_group& group, size_t postorder_id)
-    {
-        (void)postorder_id;
-
-        /// Lazy load of matrices from disk
-        auto matrix_refs = get_submatrices(group);
-
-        auto hash_maps = std::vector<group_hash_map>(_num_batches);
-        size_t count = 0;
-
-        const auto log_threshold = std::log10(i2l::score_threshold(_omega, _kmer_size));
-        for (auto node_matrix_ref : matrix_refs)
-        {
-            const auto& node_matrix = node_matrix_ref.get();
-            for (const auto& window : to_windows(&node_matrix, _kmer_size))
-            {
-                auto alg = ipk::DCLA(window, _kmer_size);
-                alg.run(log_threshold);
-                for (const auto& kmer : alg.get_result())
-                {
-                    phylo_kmer positioned_kmer = { kmer.key, kmer.score,
-                                                   static_cast<phylo_kmer::pos_type>(window.get_position()) };
-                    put(hash_maps[kmer_batch(kmer.key, _num_batches)], positioned_kmer);
-                    ++count;
-                }
-            }
-        }
-
-        return count;
-    }
-    #else*/
-
     size_t db_builder::explore_group(const id_group& group, size_t postorder_id)
     {
         /// Lazy load of matrices from disk
