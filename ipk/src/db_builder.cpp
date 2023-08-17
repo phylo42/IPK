@@ -649,7 +649,7 @@ namespace ipk
                 {
                     auto& hashmap = _on_disk ? hash_maps[kmer_batch(kmer.key, _num_batches)] : group_map;
                     ipk::put(hashmap, kmer);
-                    ++count;q
+                    ++count;
                 }
             }
 
