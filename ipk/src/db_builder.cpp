@@ -588,8 +588,8 @@ namespace ipk
         return { node_postorder_ids, count };
     }
 
-    #ifdef KEEP_POSITIONS
-    std::pair<std::vector<group_hash_map>, size_t> db_builder::explore_group(const id_group& group, size_t postorder_id) const
+    /*#ifdef KEEP_POSITIONS
+    size_t db_builder::explore_group(const id_group& group, size_t postorder_id)
     {
         (void)postorder_id;
 
@@ -598,7 +598,6 @@ namespace ipk
 
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
         size_t count = 0;
-
 
         const auto log_threshold = std::log10(i2l::score_threshold(_omega, _kmer_size));
         for (auto node_matrix_ref : matrix_refs)
@@ -618,9 +617,9 @@ namespace ipk
             }
         }
 
-        return {std::move(hash_maps), count};
+        return count;
     }
-    #else
+    #else*/
 
     size_t db_builder::explore_group(const id_group& group, size_t postorder_id)
     {
@@ -630,7 +629,7 @@ namespace ipk
         auto hash_maps = std::vector<group_hash_map>(_num_batches);
 
         /// A hashmap for the group used if we build in RAM
-        ipk::hash_map<i2l::phylo_kmer::key_type, i2l::phylo_kmer::score_type> group_map;
+        group_hash_map group_map;
 
         size_t count = 0;
         const auto log_threshold = std::log10(score_threshold(_omega, _kmer_size));
@@ -648,7 +647,15 @@ namespace ipk
                 for (const auto& kmer : alg.get_result())
                 {
                     auto& hashmap = _on_disk ? hash_maps[kmer_batch(kmer.key, _num_batches)] : group_map;
-                    ipk::put(hashmap, kmer);
+#ifdef KEEP_POSITIONS
+                    auto value = phylo_kmer{
+                        kmer.key, kmer.score,
+                        static_cast<phylo_kmer::pos_type>(window.get_position())
+                    };
+#else
+                    auto value = kmer;
+#endif
+                    ipk::put(hashmap, value);
                     ++count;
                 }
             }
@@ -670,16 +677,22 @@ namespace ipk
         /// Or hash in the main DB with the corresponding branch ID (postorder ID)
         else
         {
-            for (const auto& [kmer, score] : group_map)
+            for (const auto& [kmer, value] : group_map)
             {
+#ifdef KEEP_POSITIONS
+                const auto& [score, position] = value;
+                _phylo_kmer_db.unsafe_insert(kmer, { (branch_type)postorder_id, score, position });
+#else
+                const auto score = value;
                 _phylo_kmer_db.unsafe_insert(kmer, { (branch_type)postorder_id, score });
+#endif
             }
         }
 
         return count;
     }
 
-    #endif
+    //#endif
 
 };
 
