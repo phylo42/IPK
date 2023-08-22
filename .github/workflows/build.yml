@@ -72,7 +72,7 @@ jobs:
         run: python3 ipk.py build --help
 
       - name: Build tools
-        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna ipk-dna -j ${{ steps.cpu-cores.outputs.count }}
+        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Test
         run: pwd && ls && echo "OK" && ls ../ && echo "OK ${{runner.workspace}}" && ls ${{runner.workspace}}
