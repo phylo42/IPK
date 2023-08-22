@@ -77,8 +77,8 @@ jobs:
 
       - name: Install
         run: |
-        mkdir -p /home/runner/opt
-        cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
+          mkdir -p /home/runner/opt
+          cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
 
       - name: Test installation complete
         run: | 
