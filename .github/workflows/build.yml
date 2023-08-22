@@ -78,5 +78,5 @@ jobs:
         run: pwd && ls && echo "OK" && ls ../ && echo "OK ${{runner.workspace}}" && ls ${{runner.workspace}}
 
       - name: Test database build
-        run: bash tests/test-db-build.sh ../ ${{runner.workspace}}/IPK/raxml-ng
+        run: bash tests/test-db-build.sh ${{runner.workspace}} ${{runner.workspace}}/IPK/raxml-ng
 
