@@ -16,7 +16,7 @@ fi
 
 BIN_DIR="${ROOT_DIR}"/bin
 IPK_BIN="${BIN_DIR}"/ipk/ipk-dna
-IPK_SCRIPT="${ROOT_DIR}"/ipk.py
+IPK_SCRIPT="${ROOT_DIR}"/IPK/ipk.py
 IPK_DIFF_BIN="${BIN_DIR}"/tools/ipkdiff-dna
 IPK_DIFF_AA_BIN="${BIN_DIR}"/tools/ipkdiff-aa
 WORKING_DIR="${ROOT_DIR}"/output
@@ -31,14 +31,18 @@ if [ ! -f "${IPK_BIN}" ]
 then
     echo "Error: could not find binary files of IPK: ${IPK_BIN}. Please make sure to compile the project"
     exit 1
+elif [ ! -f "${IPK_SCRIPT}" ]
+then
+    echo "Error: could not find ${IPK_SCRIPT}. Something went wrong"
+    exit 2
 elif [ ! -f "${IPK_DIFF_BIN}" ]
 then
     echo "Error: could not find tools: ${IPK_DIFF_BIN}. Please make sure to compile it separately, i.e. do 'make diff-dna' or 'cmake --build DIR --target diff-dna"
-    exit 2
+    exit 3
 elif [ ! "${RAXML_NG}" ]
 then
     echo "Error: could not find raxml-ng."
-    exit 3
+    exit 4
 else
     mkdir -p "${WORKING_DIR}"
 
@@ -57,14 +61,14 @@ else
     if [ ! -f "${NEOTROP_DATABASE_BUILD}" ]
     then
         echo "Error: could not find ${NEOTROP_DATABASE_BUILD}. Something went wrong"
-        exit 4
+        exit 5
     fi
 
     $IPK_DIFF_BIN 0 "${NEOTROP_DATABASE_REFERENCE}" "${NEOTROP_DATABASE_BUILD}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
-        exit 5
+        exit 6
     fi
 
 
@@ -83,13 +87,13 @@ else
     if [ ! -f "${D140_DATABASE_BUILD}" ]
     then
         echo "Error: could not find ${D140_DATABASE_BUILD}. Something went wrong"
-        exit 4
+        exit 7
     fi
 
     $IPK_DIFF_AA_BIN 0 "${D140_DATABASE_REFERENCE}" "${D140_DATABASE_BUILD}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
-        exit 5
+        exit 8
     fi
 fi
