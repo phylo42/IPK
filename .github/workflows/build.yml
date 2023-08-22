@@ -57,7 +57,7 @@ jobs:
       - name: (MacOS) Download RAxML-ng
         if: runner.os == 'macOS'
         run: | 
-          mkdir -p /home/runner/opt
+          mkdir -p /home/runner/opt/bin
           wget https://github.com/amkozlov/raxml-ng/releases/download/1.2.0/raxml-ng_v1.2.0_macos_x86_64.zip
           unzip raxml-ng_v1.2.0_macos_x86_64.zip
           mv raxml-ng /home/runner/opt/bin
@@ -65,7 +65,7 @@ jobs:
       - name: (Linux) Download RAxML-ng
         if: runner.os == 'Linux'
         run: |
-          mkdir -p /home/runner/opt
+          mkdir -p /home/runner/opt/bin
           wget https://github.com/amkozlov/raxml-ng/releases/download/1.2.0/raxml-ng_v1.2.0_linux_x86_64.zip
           unzip raxml-ng_v1.2.0_linux_x86_64.zip
           mv raxml-ng /home/runner/opt/bin
