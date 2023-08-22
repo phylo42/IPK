@@ -35,3 +35,6 @@ target_link_libraries(dump-aa PRIVATE i2l::aa)
 target_compile_options(dump-aa PRIVATE -Wall -Wextra -Werror -Wpedantic)
 set_property(TARGET dump-aa PROPERTY CXX_STANDARD 17)
 target_compile_features(dump-aa PUBLIC cxx_std_17)
+
+
+install(TARGETS diff-dna diff-aa dump-dna dump-aa DESTINATION bin)
