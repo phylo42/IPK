@@ -37,6 +37,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          lfs: 'true'
           submodules: recursive
 
       - name: Get number of CPU cores
@@ -75,7 +76,9 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Install
-        run: cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
+        run: |
+        mkdir -p /home/runner/opt
+        cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
 
       - name: Test installation complete
         run: | 

@@ -56,7 +56,6 @@ else
     ls $NEOTROP_TREE
     file $NEOTROP_TREE
     head $NEOTROP_TREE
-    exit
     command=python3 "${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
