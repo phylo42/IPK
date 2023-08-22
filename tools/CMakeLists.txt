@@ -37,4 +37,4 @@ set_property(TARGET dump-aa PROPERTY CXX_STANDARD 17)
 target_compile_features(dump-aa PUBLIC cxx_std_17)
 
 
-install(TARGETS diff-dna diff-aa dump-dna dump-aa DESTINATION bin)
+install(TARGETS diff-dna diff-aa DESTINATION bin)
