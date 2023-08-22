@@ -659,8 +659,6 @@ namespace ipk
         return count;
     }
 
-    //#endif
-
 };
 
 
