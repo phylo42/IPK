@@ -81,7 +81,7 @@ else
     D140_DATABASE_BUILD="${WORKING_DIR}"/DB_k4_o10.0.ipk
 
     rm -f "${D140_DATABASE_BUILD}"
-    command=python3 "${IPK_SCRIPT}" build -s amino -r "${D140_REFERENCE}" -t "${D140_TREE}" -m LG -k 4 --omega 10.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${D140_DATABASE_BUILD}"
+    command=python3 "${IPK_SCRIPT}" build -s amino -r "${D140_REFERENCE}" -t "${D140_TREE}" -m LG -k 4 --omega 10.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${D140_DATABASE_BUILD} --use-unrooted"
 
     echo "Binary files: OK. Running IPK as: ${command}"
     eval "${command}"
