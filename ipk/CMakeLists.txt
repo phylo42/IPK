@@ -118,3 +118,6 @@ target_compile_options(ipk-aa-pos
 target_compile_features(ipk-aa-pos
         PUBLIC
         cxx_std_17)
+
+
+install(TARGETS ipk-dna ipk-aa ipk-aa-pos DESTINATION bin)

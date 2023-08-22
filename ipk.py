@@ -261,17 +261,21 @@ def build_database(ar,
 
     ar_parameters = parse_config(ar_config) if ar_config else ""
 
+    # If IPK is installed, look for the binary in the installed location,
+    # otherwise it is run from sources
+    ipk_bin_dir = f"{current_dir}" if os.path.exists(f"{current_dir}/ipk-dna") else f"{current_dir}/bin/ipk"
+    
     # run IPK
     if states == 'nucl':
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            bin = f"{current_dir}/bin/ipk/ipk-dna"
+            bin = f"{ipk_bin_dir}/ipk-dna"
     else:
         if keep_positions:
-            bin = f"{current_dir}/bin/ipk/ipk-aa-pos"
+            bin = f"{ipk_bin_dir}/ipk-aa-pos"
         else:
-            bin = f"{current_dir}/bin/ipk/ipk-aa"
+            bin = f"{ipk_bin_dir}/ipk-aa"
 
 
     command = [
@@ -281,7 +285,7 @@ def build_database(ar,
         "-t", str(reftree),
         "-w", str(workdir),
         "-k", str(k),
-        #"--model", model,
+        "--model", model,
         "--alpha", str(alpha),
         "--categories", str(categories),
         "--reduction-ratio", str(reduction_ratio),
@@ -292,9 +296,6 @@ def build_database(ar,
         "-j", str(threads)
     ]
 
-    if model:
-        command.append("--model")
-        command.append(model)
     if ar_only:
         command.append("--ar-only")
     if ar_dir:

@@ -65,18 +65,18 @@ jobs:
       - name: Build
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE -j ${{ steps.cpu-cores.outputs.count }}
 
-      - name: Test build successful
-        run: test -f ${{runner.workspace}}/bin/ipk/ipk-dna && test -f ${{runner.workspace}}/bin/ipk/ipk-aa
+      - name: Install
+        run: cmake --install . --prefix "/home/runner/opt"
 
-      - name: Test python script
-        run: python3 ipk.py build --help
+      - name: Test installation complete
+        run: | 
+          export PATH="/home/runner/opt/bin:$PATH"
+          ipk.py
+          ipk.py build --help
 
       - name: Build tools
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
 
-      - name: Test
-        run: pwd && ls && echo "OK" && ls ../ && echo "OK ${{runner.workspace}}" && ls ${{runner.workspace}}
-
       - name: Test database build
-        run: bash tests/test-db-build.sh ${{runner.workspace}} ${{runner.workspace}}/IPK/raxml-ng
+        run: bash tests/test-db-build.sh /home/runner/opt/bin ${{runner.workspace}}/IPK/raxml-ng
 

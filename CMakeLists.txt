@@ -14,3 +14,9 @@ add_subdirectory(indicators)
 add_subdirectory(i2l)
 add_subdirectory(ipk)
 add_subdirectory(tools)
+
+install(FILES ipk.py
+        DESTINATION bin
+        PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE
+        WORLD_READ WORLD_EXECUTE)
