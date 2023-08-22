@@ -53,6 +53,7 @@ else
     NEOTROP_DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
 
     rm -f "${NEOTROP_DATABASE_BUILD}"
+    head $NEOTROP_TREE
     command=python3 "${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
