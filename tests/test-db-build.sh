@@ -17,8 +17,8 @@ fi
 BIN_DIR="${ROOT_DIR}"
 IPK_BIN="${BIN_DIR}"/ipk-dna
 IPK_SCRIPT="${ROOT_DIR}"/ipk.py
-IPK_DIFF_BIN="${BIN_DIR}"/tools/ipkdiff-dna
-IPK_DIFF_AA_BIN="${BIN_DIR}"/tools/ipkdiff-aa
+IPK_DIFF_BIN="${BIN_DIR}"/ipkdiff-dna
+IPK_DIFF_AA_BIN="${BIN_DIR}"/ipkdiff-aa
 WORKING_DIR="${ROOT_DIR}"/output
 
 echo "Pwd: `pwd`"
