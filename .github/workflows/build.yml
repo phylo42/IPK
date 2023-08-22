@@ -71,6 +71,9 @@ jobs:
       - name: Build
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE -j ${{ steps.cpu-cores.outputs.count }}
 
+      - name: Build tools
+        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
+
       - name: Install
         run: cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
 
@@ -79,9 +82,6 @@ jobs:
           export PATH="/home/runner/opt/bin:$PATH"
           ipk.py
           ipk.py build --help
-
-      - name: Build tools
-        run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Test database build
         run: bash tests/test-db-build.sh /home/runner/opt/bin ${{runner.workspace}}/IPK/raxml-ng
