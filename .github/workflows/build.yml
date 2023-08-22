@@ -57,14 +57,18 @@ jobs:
       - name: (MacOS) Download RAxML-ng
         if: runner.os == 'macOS'
         run: | 
+          mkdir -p /home/runner/opt
           wget https://github.com/amkozlov/raxml-ng/releases/download/1.2.0/raxml-ng_v1.2.0_macos_x86_64.zip
           unzip raxml-ng_v1.2.0_macos_x86_64.zip
+          mv raxml-ng /home/runner/opt/bin
 
       - name: (Linux) Download RAxML-ng
         if: runner.os == 'Linux'
         run: |
+          mkdir -p /home/runner/opt
           wget https://github.com/amkozlov/raxml-ng/releases/download/1.2.0/raxml-ng_v1.2.0_linux_x86_64.zip
           unzip raxml-ng_v1.2.0_linux_x86_64.zip
+          mv raxml-ng /home/runner/opt/bin
 
       - name: Configure CMake
         run: cmake -B ${{runner.workspace}}/bin -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
@@ -76,9 +80,7 @@ jobs:
         run: cmake --build ${{runner.workspace}}/bin --config $BUILD_TYPE --target diff-dna diff-aa -j ${{ steps.cpu-cores.outputs.count }}
 
       - name: Install
-        run: |
-          mkdir -p /home/runner/opt
-          cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
+        run: cmake --install ${{runner.workspace}}/bin --prefix "/home/runner/opt"
 
       - name: Test installation complete
         run: | 
@@ -87,5 +89,5 @@ jobs:
           ipk.py build --help
 
       - name: Test database build
-        run: bash tests/test-db-build.sh /home/runner/opt/bin ${{runner.workspace}}/IPK/raxml-ng
+        run: bash tests/test-db-build.sh /home/runner/opt/bin ${{runner.workspace}}
 

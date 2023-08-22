@@ -192,6 +192,7 @@ def validate_model(ctx, param, value):
              default=4, 
              show_default=True,
              help="Number of threads used to compute phylo-k-mers.")
+@click.option('--output', '-o')
 def build(ar,
           refalign, reftree, states,
           verbosity,
@@ -202,10 +203,13 @@ def build(ar,
           filter, mu, ghosts, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
-          threads):
+          threads, output):
     """
     Computes a database of phylo-k-mers.
     """
+    if not output:
+        output = os.path.join(workdir, "DB.ipk")
+
     build_database(ar,
                    refalign, reftree, states,
                    verbosity,
@@ -216,7 +220,7 @@ def build(ar,
                    filter, mu, ghosts, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads)
+                   threads, output)
 
 
 def find_raxmlng():
@@ -250,7 +254,7 @@ def build_database(ar,
                    use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads):
+                   threads, output_filename):
 
     if not ar:
         ar = find_raxmlng()
@@ -293,7 +297,8 @@ def build_database(ar,
         "--" + filter.lower(),
         "--" + ghosts.lower(),
         "-u", str(mu),
-        "-j", str(threads)
+        "-j", str(threads),
+        "-o", output_filename
     ]
 
     if ar_only:

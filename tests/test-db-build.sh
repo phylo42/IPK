@@ -7,10 +7,13 @@ echo "Parameters: $#"
 if [ $# -eq 2 ]; then
     echo "Parameters: $@"
     ROOT_DIR=`realpath $1`
-    RAXML_NG=`realpath $2`
+    WORKING_DIR=`realpath $2`
+    RAXML_NG=$ROOT_DIR/raxml-ng
+    BIN_DIR="${ROOT_DIR}"
 else
-    ROOT_DIR=`realpath "${SCRIPT_DIR}"/../..`
+    ROOT_DIR=`realpath "${SCRIPT_DIR}"/..`
     RAXML_NG=`which raxml-ng`
+    WORKING_DIR="${ROOT_DIR}"/output
 fi
 
 
@@ -19,7 +22,6 @@ IPK_BIN="${BIN_DIR}"/ipk-dna
 IPK_SCRIPT="${ROOT_DIR}"/ipk.py
 IPK_DIFF_BIN="${BIN_DIR}"/ipkdiff-dna
 IPK_DIFF_AA_BIN="${BIN_DIR}"/ipkdiff-aa
-WORKING_DIR="${ROOT_DIR}"/output
 
 echo "Pwd: `pwd`"
 echo "Root dir: ${ROOT_DIR}"
@@ -29,7 +31,7 @@ echo
 
 if [ ! -f "${IPK_BIN}" ]
 then
-    echo "Error: could not find binary files of IPK: ${IPK_BIN}. Please make sure to compile the project"
+    echo "Error: could not find binary files of IPK: ${IPK_BIN}. Please compile and install IPK"
     exit 1
 elif [ ! -f "${IPK_SCRIPT}" ]
 then
@@ -53,10 +55,7 @@ else
     NEOTROP_DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
 
     rm -f "${NEOTROP_DATABASE_BUILD}"
-    ls $NEOTROP_TREE
-    file $NEOTROP_TREE
-    head $NEOTROP_TREE
-    command=python3 "${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
+    command="${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${NEOTROP_DATABASE_BUILD}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
     eval "${command}"
@@ -82,7 +81,7 @@ else
     D140_DATABASE_BUILD="${WORKING_DIR}"/DB_k4_o10.0.ipk
 
     rm -f "${D140_DATABASE_BUILD}"
-    command=python3 "${IPK_SCRIPT}" build -s amino -r "${D140_REFERENCE}" -t "${D140_TREE}" -m LG -k 4 --omega 10.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
+    command=python3 "${IPK_SCRIPT}" build -s amino -r "${D140_REFERENCE}" -t "${D140_TREE}" -m LG -k 4 --omega 10.0 -b "${RAXML_NG}" -w "${WORKING_DIR}  -o "${D140_DATABASE_BUILD}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
     eval "${command}"
