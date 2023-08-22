@@ -27,7 +27,7 @@ AMINO_MODELS = ['Blosum62', 'cpREV', 'Dayhoff', 'DCMut', 'DEN', 'FLU', 'HIVb', '
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
-KMER_FILTERS = ["no-filter", "mif0", "random"]
+KMER_FILTERS = ["mif0", "random"]
 
 GHOST_STRATEGIES = ["inner-only", "outer-only", "both"]
 
@@ -138,9 +138,9 @@ def validate_model(ctx, param, value):
               (omega / #states)^k""")
 @click.option('--filter',
               callback=validate_filter,
-              default="no-filter", show_default=True,
+              default="mif0", show_default=True,
               help="""Filtering function used to filter phylo-k-mers. Currently supported values:
-              no-filter, mif0, mif1, random.""")
+              mif0, random.""")
 @click.option('-u', '--mu',
               type=float,
               default=1.0, show_default=True,
@@ -317,14 +317,16 @@ def build_database(ar,
     #subprocess.call(["rm", "-rf", hashmaps_dir])
 
     command_str = " ".join(s for s in command)
-    print(command_str)
-    p = subprocess.run(command_str, shell=True, check=True)
+    print("Running", command_str)
+    print()
+    try:
+        subprocess.run(command_str, shell=True, check=True)
 
-    # clean after
-    subprocess.call(["rm", "-rf", hashmaps_dir])
+        # clean after
+        subprocess.call(["rm", "-rf", hashmaps_dir])
 
-    if p.returncode != 0:
-        raise RuntimeError(f"IPK returned error: {p.returncode}")
+    except subprocess.CalledProcessError as error:
+        print(error.output)
 
 
 if __name__ == "__main__":
