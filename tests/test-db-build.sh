@@ -47,15 +47,16 @@ else
     mkdir -p "${WORKING_DIR}"
 
     # Neotrop test
-    NEOTROP_REFERENCE="${SCRIPT_DIR}"/tests/data/neotrop/reference.fasta
-    NEOTROP_TREE="${SCRIPT_DIR}"/tests/data/neotrop/tree.rooted.newick
-    NEOTROP_DATABASE_REFERENCE="${SCRIPT_DIR}"/tests/data/neotrop/DB_k7_o2.0.ipk
+    NEOTROP_REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
+    NEOTROP_TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
+    NEOTROP_DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.ipk
     NEOTROP_DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
 
     rm -f "${NEOTROP_DATABASE_BUILD}"
     ls $NEOTROP_TREE
     file $NEOTROP_TREE
     head $NEOTROP_TREE
+    exit
     command=python3 "${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
@@ -76,9 +77,9 @@ else
 
 
     # D140
-    D140_REFERENCE="${SCRIPT_DIR}"/tests/data/D140/reference.fasta
-    D140_TREE="${SCRIPT_DIR}"/tests/data/D140/tree.newick
-    D140_DATABASE_REFERENCE="${SCRIPT_DIR}"/tests/data/D140/DB_k4_o10.ipk
+    D140_REFERENCE="${SCRIPT_DIR}"/data/D140/reference.fasta
+    D140_TREE="${SCRIPT_DIR}"/data/D140/tree.newick
+    D140_DATABASE_REFERENCE="${SCRIPT_DIR}"/data/D140/DB_k4_o10.ipk
     D140_DATABASE_BUILD="${WORKING_DIR}"/DB_k4_o10.0.ipk
 
     rm -f "${D140_DATABASE_BUILD}"
