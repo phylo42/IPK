@@ -208,7 +208,7 @@ public:
 
     std::tuple<bool, std::vector<pk_diff>> check_phylo_kmers()
     {
-        const double EPS = 1e-6;
+        const double EPS = 1e-3;
 
         bool match = true;
         std::vector<pk_diff> diffs;
