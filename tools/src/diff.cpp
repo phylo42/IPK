@@ -112,7 +112,7 @@ public:
                 }
             }
         }
-        return 0 ? all_ok : 1;
+        return 0;
     }
 
     static std::string bool_to_OK(bool x)
