@@ -48,25 +48,25 @@ then
 else
     mkdir -p "${WORKING_DIR}"
 
-    # Neotrop test
-    NEOTROP_REFERENCE="${SCRIPT_DIR}"/data/neotrop/reference.fasta
-    NEOTROP_TREE="${SCRIPT_DIR}"/data/neotrop/tree.rooted.newick
-    NEOTROP_DATABASE_REFERENCE="${SCRIPT_DIR}"/data/neotrop/DB_k7_o2.0.ipk
-    NEOTROP_DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
+    # D652 test
+    REFERENCE="${SCRIPT_DIR}"/data/D652/reference.fasta
+    TREE="${SCRIPT_DIR}"/data/D652/tree.rooted.newick
+    DATABASE_REFERENCE="${SCRIPT_DIR}"/data/D652/DB_k7_o2.0.ipk
+    DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
 
-    rm -f "${NEOTROP_DATABASE_BUILD}"
-    command=python3 "${IPK_SCRIPT}" build -r "${NEOTROP_REFERENCE}" -t "${NEOTROP_TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${NEOTROP_DATABASE_BUILD}"
+    rm -f "${DATABASE_BUILD}"
+    command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${NEOTROP_DATABASE_BUILD}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
     eval "${command}"
 
-    if [ ! -f "${NEOTROP_DATABASE_BUILD}" ]
+    if [ ! -f "${DATABASE_BUILD}" ]
     then
-        echo "Error: could not find ${NEOTROP_DATABASE_BUILD}. Something went wrong"
+        echo "Error: could not find ${DATABASE_BUILD}. Something went wrong"
         exit 5
     fi
 
-    $IPK_DIFF_BIN 0 "${NEOTROP_DATABASE_REFERENCE}" "${NEOTROP_DATABASE_BUILD}"
+    $IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
