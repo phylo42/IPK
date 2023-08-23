@@ -112,6 +112,7 @@ public:
                 }
             }
         }
+        (void)all_ok;
         return 0;
     }
 
