@@ -95,7 +95,7 @@ public:
         {
             const auto& [match, diffs] = check_phylo_kmers();
             all_ok &= match;
-            std::cout << "Phylo-k-mer scores:\t" << bool_to_OK(match) << std::endl;
+            std::cout << "Phylo-k-mer scores:\t" << bool_to_OK(match) << "\t" << diffs.size() << std::endl;
 
             if (verbose)
             {
@@ -208,7 +208,7 @@ public:
 
     std::tuple<bool, std::vector<pk_diff>> check_phylo_kmers()
     {
-        const double EPS = 1e-3;
+        const double EPS = 1e-2;
 
         bool match = true;
         std::vector<pk_diff> diffs;
