@@ -66,7 +66,7 @@ else
         exit 5
     fi
 
-    $IPK_DIFF_BIN 1 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
+    $IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
@@ -92,7 +92,7 @@ else
         exit 7
     fi
 
-    $IPK_DIFF_AA_BIN 1 "${D140_DATABASE_REFERENCE}" "${D140_DATABASE_BUILD}"
+    $IPK_DIFF_AA_BIN 0 "${D140_DATABASE_REFERENCE}" "${D140_DATABASE_BUILD}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
