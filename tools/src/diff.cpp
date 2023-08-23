@@ -23,36 +23,44 @@ public:
 
     int check(bool verbose)
     {
+        bool all_ok = true;
         {
             const auto& [match, va, vb] = check_sequence_type();
+            all_ok &= match;
             std::cout << "Sequence type:\t" << bool_to_OK(match)
                       << "\t" << va << "\t" << vb << std::endl;
         }
 
-        {
+        // FIXME: in IPK v0.4.x+ this field is broken, ignore
+        /*{
             const auto& [match, va, vb] = check_positions();
+            all_ok &= match;
             std::cout << "Position support:\t" << bool_to_OK(match) << "\t"
                       << bool_to_str(va) << "\t" << bool_to_str(vb) << std::endl;
-        }
+        }*/
 
         {
             const auto& [match, va, vb] = check_version();
+            all_ok &= match;
             std::cout << "Protocol version:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
         }
 
 
         const auto& [k_match, a_k, b_k] = check_kmer_size();
+        all_ok &= k_match;
         std::cout << "k-mer size:\t" << bool_to_OK(k_match) << "\t"
                   << a_k << "\t" << b_k << std::endl;
 
 
         {
             const auto& [match, va, vb] = check_omega();
+            all_ok &= match;
             std::cout << "Omega:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
 
             auto eps = [](float omega, size_t k) { return std::log10(i2l::score_threshold(omega, k)); };
+            all_ok &= match;
             std::cout << "Threshold:\t" << bool_to_OK(match) << "\t"
                       << eps(va, a_k) << "\t" << eps(vb, b_k) << std::endl;
         }
@@ -60,6 +68,7 @@ public:
         {
             const auto& [match, va, vb] = check_tree();
             (void)va; (void) vb;
+            all_ok &= match;
             std::cout << "Reference tree:\t" << bool_to_OK(match) << "\t"
                       << " " << "\t" << " " << std::endl;
         }
@@ -71,18 +80,21 @@ public:
 
         {
             const auto& [match, va, vb] = check_size();
+            all_ok &= match;
             std::cout << "Number of k-mers:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
         }
 
         {
             const auto& [match, va, vb] = check_num_phylokmers();
+            all_ok &= match;
             std::cout << "Number of phylo-k-mers:\t" << bool_to_OK(match) << "\t"
                       << va << "\t" << vb << std::endl;
         }
 
         {
             const auto& [match, diffs] = check_phylo_kmers();
+            all_ok &= match;
             std::cout << "Phylo-k-mer scores:\t" << bool_to_OK(match) << std::endl;
 
             if (verbose)
@@ -100,7 +112,7 @@ public:
                 }
             }
         }
-        return 0;
+        return 0 ? all_ok : 1;
     }
 
     static std::string bool_to_OK(bool x)
