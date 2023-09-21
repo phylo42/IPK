@@ -327,19 +327,23 @@ def build_database(ar,
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
-    #subprocess.call(["rm", "-rf", hashmaps_dir])
 
     command_str = " ".join(s for s in command)
     print("Running", command_str)
     print()
+
     try:
-        subprocess.run(command_str, shell=True, check=True)
+        p = subprocess.run(command_str, shell=True, check=True)
 
         # clean after
         subprocess.call(["rm", "-rf", hashmaps_dir])
 
+        if p.returncode != 0:
+            raise RuntimeError(f"IPK returned error: {p.returncode}")
+
     except subprocess.CalledProcessError as error:
-        print(error.output)
+        pass
+
 
 
 if __name__ == "__main__":

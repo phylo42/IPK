@@ -1,4 +1,5 @@
 # IPK: Inference of Phylo-K-mers
+[![build](https://github.com/phylo42/IPK/actions/workflows/build.yml/badge.svg)](https://github.com/phylo42/IPK/actions/workflows/build.yml)
 
 IPK is a tool for computing phylo-k-mers for a fixed phylogeny.
 

@@ -73,6 +73,7 @@ namespace ipk
             std::string binary_file;
             std::string tree_file;
             std::string alignment_file;
+            std::string num_threads;
 
             /// User-defined arguments for the AR software
             std::string ar_parameters;

@@ -18,10 +18,8 @@ On a Debian-based system, it can be installed with the following commands:
 .. code-block:: console
 
    $ sudo apt-get update
-   $ sudo apt-get install -yq libboost-dev libboost-serialization-dev \
-                              libboost-filesystem-dev libboost-iostreams-dev \
-                              libboost-program-options-dev
-   $ sudo apt-get install -yq zlib1g-dev
+   $ sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
+   $ pip3 install click
 
 Clone the repository including the submodules:
 
@@ -37,6 +35,20 @@ Compile the code:
     $ cd ipk && mkdir bin && cd bin
     $ cmake -DHASH_MAP=USE_TSL_ROBIN_MAP -DCMAKE_CXX_FLAGS="-O3" ..
     $ make -j4
+
+Install system-wide:
+
+.. code-block:: console
+
+   $ sudo cmake --install .
+
+Or for the current user (replace ``DIRECTORY`` with any directory you like):
+
+.. code-block:: console
+
+   $ cmake --install . --prefix DIRECTORY
+   $ export PATH=DIRECTORY/bin:$PATH
+
 
 Other dependencies
 ------------------
@@ -66,6 +78,7 @@ To check that installation is complete, run the following command to see the hel
 
 .. code-block:: console
 
-    $ python ipk.py --help
+    $ ipk.py --help
+    $ ipk.py build --help
 
 
