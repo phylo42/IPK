@@ -192,7 +192,12 @@ def validate_model(ctx, param, value):
              default=4, 
              show_default=True,
              help="Number of threads used to compute phylo-k-mers.")
-@click.option('--output', '-o')
+@click.option('--output', '-o',
+              help="""Output file name""")
+@click.option('--on-disk',
+             is_flag=True,
+             default=False, show_default=True,
+             help="""If set, builds the database on disk (slower but takes minimal RAM).""")
 def build(ar,
           refalign, reftree, states,
           verbosity,
@@ -203,7 +208,7 @@ def build(ar,
           filter, mu, ghosts, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
-          threads, output):
+          threads, output, on_disk):
     """
     Computes a database of phylo-k-mers.
     """
@@ -220,7 +225,7 @@ def build(ar,
                    filter, mu, ghosts, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads, output)
+                   threads, output, on_disk)
 
 
 def find_raxmlng():
@@ -254,7 +259,7 @@ def build_database(ar,
                    use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads, output_filename):
+                   threads, output_filename, on_disk):
 
     if not ar:
         ar = find_raxmlng()
@@ -317,6 +322,8 @@ def build_database(ar,
         command.append("--use-unrooted")
     if uncompressed:
         command.append("--uncompressed")
+    if on_disk:
+        command.append("--on-disk")
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
