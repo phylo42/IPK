@@ -192,7 +192,7 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     /// Prepare and run ancestral reconstruction
     auto [ar_software, ar_parameters] = ipk::ar::make_parameters(parameters,
-                                                                  extended_tree_file, ext_alignment_phylip);
+                                                                 extended_tree_file, ext_alignment_phylip);
     auto [proba_matrix, ar_tree] = ipk::ar::ancestral_reconstruction(ar_software, ar_parameters);
 
     if (parameters.ar_only)
