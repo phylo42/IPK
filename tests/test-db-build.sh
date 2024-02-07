@@ -66,5 +66,7 @@ else
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
         exit 5
+    else
+        echo "OK! Databases are the same."
     fi
 fi
