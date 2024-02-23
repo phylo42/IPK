@@ -191,7 +191,7 @@ def validate_model(ctx, param, value):
               Saves time during database load and save, but requires more disk space.""")
 @click.option('--threads',
              type=int,
-             default=4, 
+             default=1, 
              show_default=True,
              help="Number of threads used to compute phylo-k-mers.")
 def build(ar,
