@@ -18,7 +18,7 @@ On a Debian-based system, it can be installed with the following commands:
 .. code-block:: console
 
    $ sudo apt-get update
-   $ sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev
+   $ sudo apt-get install -yq libboost-dev libboost-serialization-dev libboost-filesystem-dev libboost-iostreams-dev libboost-program-options-dev zlib1g-dev git git-lfs cmake
    $ pip3 install click
 
 Clone the repository including the submodules:
