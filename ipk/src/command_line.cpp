@@ -13,6 +13,7 @@ namespace ipk::cli
 
     /// Input files
     static std::string WORKING_DIR = "workdir", WORKING_DIR_SHORT = "w";
+    static std::string OUTPUT_FILENAME = "output", OUTPUT_FILENAME_SHORT = "o";
     static std::string REFALIGN = "refalign";
     static std::string REFTREE = "reftree", REFTREE_SHORT = "t";
 
@@ -29,21 +30,12 @@ namespace ipk::cli
     static std::string REDUCTION_RATIO = "reduction-ratio";
     static std::string NO_REDUCTION = "no-reduction";
     static std::string K = "k", K_SHORT = "k";
-    static std::string OMEGA="omega", OMEGA_SHORT="o";
+    static std::string OMEGA="omega";
     static std::string NUM_THREADS = "num-threads", NUM_THREADS_SHORT = "j";
 
     /// Filtering options
     static std::string MU = "mu", MU_SHORT = "u";
-    static std::string NO_FILTER = "no-filter";
-    static std::string ENTROPY = "entropy";
     static std::string MIF0 = "mif0";
-    static std::string MIF1 = "mif1";
-    static std::string MAX_DEVIATION = "max-deviation";
-    static std::string LOG_MAX_DEVIATION = "log-max-deviation";
-    static std::string MAX_DIFF = "max-difference";
-    static std::string LOG_MAX_DIFF = "log-max-difference";
-    static std::string STD_DEVIATION = "sd";
-    static std::string LOG_STD_DEVIATION = "log-sd";
     static std::string RANDOM = "random";
     static std::string MERGE_BRANCHES = "merge-branches";
     static std::string USE_UNROOTED = "use-unrooted";
@@ -58,6 +50,8 @@ namespace ipk::cli
     static std::string GHOSTS_OUTER = "outer-only";
     static std::string GHOSTS_BOTH = "both";
 
+    static std::string ON_DISK = "on-disk";
+
 
     /// Algorithm flags
     bool bb_flag = false;
@@ -66,9 +60,7 @@ namespace ipk::cli
     bool dccw_flag = false;
 
     /// Filters flags
-    bool no_filter_flag = true;
-    bool mif0_flag = false;
-    bool mif1_flag = false;
+    bool mif0_flag = true;
     bool random_filter_flag = false;
 
     /// Flags for other options
@@ -83,6 +75,9 @@ namespace ipk::cli
     bool outer_only_flag = false;
     bool both_flag = true;
 
+    /// Filtering algorithm flags
+    bool on_disk_flag = false;
+
     po::options_description get_opt_description()
     {
         po::options_description desc("General options");
@@ -91,12 +86,13 @@ namespace ipk::cli
                 "Show help")
             ((WORKING_DIR + "," + WORKING_DIR_SHORT).c_str(), po::value<fs::path>()->default_value(fs::current_path()),
                 "Path to the working directory")
+            ((OUTPUT_FILENAME + "," + OUTPUT_FILENAME_SHORT).c_str(), po::value<fs::path>()->default_value(""),
+             "Output filename")
             (REFALIGN .c_str(), po::value<fs::path>()->required(),
                 "Reference alignment in fasta format."
                 "It must be the multiple alignment from which the reference tree was built.")
             ((REFTREE + "," + REFTREE_SHORT).c_str(), po::value<fs::path>()->required(),
                 "Original phylogenetic tree file")
-
             (AR_DIR.c_str(), po::value<std::string>()->default_value(""),
                 "Skips ancestral sequence reconstruction uses outputs from the specified directory.")
             (AR_BINARY.c_str(), po::value<std::string>()->required(),
@@ -120,16 +116,14 @@ namespace ipk::cli
             (NO_REDUCTION.c_str(), po::bool_switch(&no_reduction_flag),
                 "Disable alignment reduction. This will keep all sites of the reference alignment and "
                 "may produce erroneous ancestral k-mers.")
-            ((OMEGA + "," + OMEGA_SHORT).c_str(), po::value<i2l::phylo_kmer::score_type>()->default_value(1.5),
+            ((OMEGA).c_str(), po::value<i2l::phylo_kmer::score_type>()->default_value(1.5f),
                 "Score threshold parameter")
             ((NUM_THREADS + "," + NUM_THREADS_SHORT).c_str(), po::value<size_t>()->default_value(1),
                 "Number of threads")
             ((MERGE_BRANCHES).c_str(), po::bool_switch(&merge_branches_flag))
             ((USE_UNROOTED).c_str(), po::bool_switch(&use_unrooted_flag))
 
-            ((NO_FILTER).c_str(), po::bool_switch(&no_filter_flag))
             ((MIF0).c_str(), po::bool_switch(&mif0_flag))
-            ((MIF1).c_str(), po::bool_switch(&mif1_flag))
             ((RANDOM).c_str(), po::bool_switch(&random_filter_flag))
             ((MU + "," + MU_SHORT).c_str(), po::value<double>()->default_value(0.8))
             ((UNCOMPRESSED).c_str(), po::bool_switch(&uncompressed_flag))
@@ -141,6 +135,8 @@ namespace ipk::cli
             ((GHOSTS_INNER).c_str(), po::bool_switch(&inner_only_flag))
             ((GHOSTS_OUTER).c_str(), po::bool_switch(&outer_only_flag))
             ((GHOSTS_BOTH).c_str(), po::bool_switch(&both_flag))
+
+            ((ON_DISK).c_str(), po::bool_switch(&on_disk_flag))
             ;
         return desc;
     }
@@ -152,11 +148,9 @@ namespace ipk::cli
         return ss.str();
     }
 
-    char* convert(const std::string &s)
+    const char* to_cstr(const std::string &s)
     {
-        char* pc = new char[s.size() + 1];
-        std::strcpy(pc, s.c_str());
-        return pc;
+        return s.c_str();
     }
 
     struct cli_args
@@ -212,7 +206,7 @@ namespace ipk::cli
         std::pair<int, std::vector<const char*>> to_cargs() const
         {
             std::vector<const char*>  vc;
-            std::transform(argv.begin(), argv.end(), std::back_inserter(vc), convert);
+            std::transform(argv.begin(), argv.end(), std::back_inserter(vc), to_cstr);
             return { argc, vc };
         }
 
@@ -253,6 +247,14 @@ namespace ipk::cli
             }
 
             parameters.working_directory = vm[WORKING_DIR].as<fs::path>().string();
+            parameters.output_filename = vm[OUTPUT_FILENAME].as<fs::path>().string();
+
+            /// Default output name if not given
+            if (parameters.output_filename.empty())
+            {
+                parameters.output_filename = (parameters.working_directory / fs::path("DB.ipk")).string();
+            }
+
             parameters.alignment_file = vm[REFALIGN].as<fs::path>().string();
             parameters.original_tree_file = vm[REFTREE].as<fs::path>().string();
             parameters.kmer_size = vm[K].as<size_t>();
@@ -275,8 +277,6 @@ namespace ipk::cli
             parameters.no_reduction = no_reduction_flag;
 
             /// filters
-            parameters.no_filter = no_filter_flag;
-            parameters.mif1_filter = mif1_flag;
             parameters.mif0_filter = mif0_flag;
             parameters.random_filter = random_filter_flag;
 
@@ -292,6 +292,8 @@ namespace ipk::cli
             parameters.inner_only = inner_only_flag;
             parameters.outer_only = outer_only_flag;
             parameters.both = both_flag;
+
+            parameters.on_disk = on_disk_flag;
         }
         catch (const po::error& e)
         {

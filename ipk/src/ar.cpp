@@ -6,6 +6,7 @@
 #include <optional>
 #include <regex>
 #include <array>
+#include <sstream>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -20,83 +21,65 @@
 #include "proba_matrix.h"
 #include "command_line.h"
 
-using std::string;
-using std::cout, std::endl;
 namespace bp = boost::process;
 namespace fs = boost::filesystem;
 
 namespace ipk::ar
 {
-    /// \brief Reads ancestral reconstruction output
-    class ar_reader
-    {
-    public:
-        virtual ~ar_reader() noexcept = default;
-        virtual ipk::proba_matrix read() = 0;
-    };
-
     /// \brief Reads a PhyML output into a matrix.
-    class phyml_reader : public ar_reader
+    class phyml_reader : public reader
     {
     public:
-        phyml_reader(const string& file_name) noexcept;
+        phyml_reader(const std::string& file_name) noexcept;
         phyml_reader(const phyml_reader&) = delete;
         phyml_reader(phyml_reader&&) = delete;
         phyml_reader& operator=(const phyml_reader&) = delete;
         phyml_reader& operator=(phyml_reader&&) = delete;
         ~phyml_reader() noexcept override = default;
 
-        proba_matrix read() override;
+        ipk::matrix read_node(const std::string& node_label) override;
 
     private:
         proba_matrix read_matrix();
 
-        string _file_name;
+        std::string _file_name;
     };
 
     /// \brief Reads RAXML-NG output into a matrix.
-    class raxmlng_reader : public ar_reader
+    class raxmlng_reader : public reader
     {
     public:
-        raxmlng_reader(const string& file_name) noexcept;
+        raxmlng_reader(std::string file_name) noexcept;
         raxmlng_reader(const phyml_reader&) = delete;
         raxmlng_reader(raxmlng_reader&&) = delete;
         raxmlng_reader& operator=(const raxmlng_reader&) = delete;
         raxmlng_reader& operator=(raxmlng_reader&&) = delete;
         ~raxmlng_reader() noexcept override = default;
 
-        proba_matrix read();
+        ipk::matrix read_node(const std::string& node_label) override;
 
     private:
+        void build_index();
         proba_matrix read_matrix();
 
-        string _file_name;
+        std::string _file_name;
+        std::ifstream _file_stream;
+
+        /// Index for Node -> position where the matrix for this node starts
+        std::unordered_map<std::string, std::streampos> _index;
     };
 
-    phyml_reader::phyml_reader(const string& file_name) noexcept
+    phyml_reader::phyml_reader(const std::string& file_name) noexcept
         : _file_name{ file_name }
     {}
 
-    proba_matrix phyml_reader::read()
+
+    ipk::matrix phyml_reader::read_node(const std::string& node_label)
     {
-        try
-        {
-            cout << "Loading PhyML results: " + _file_name << "..." << endl;
-            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-            auto matrix = read_matrix();
-
-            cout << "Loaded " << matrix.num_branches() << " matrices of " <<
-                 matrix.num_sites() << " rows." << endl;
-            cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - begin).count() << endl << endl;
-            return matrix;
-        }
-        catch (::io::error::integer_overflow& error)
-        {
-            throw std::runtime_error("PhyML result parsing error: " + string(error.what()));
-        }
+        (void)node_label;
+        throw std::runtime_error("PhyML is not supported in this version.");
     }
-
+/*
     proba_matrix phyml_reader::read_matrix()
     {
 #ifdef SEQ_TYPE_DNA
@@ -130,7 +113,7 @@ namespace ipk::ar
                     throw std::runtime_error("Parsing error: could not parse the line " + line);
                 }
 
-                auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
+                auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
 
                 /// log-transform the probabilities
                 auto log = [](auto value) { return std::log10(value); };
@@ -156,107 +139,134 @@ namespace ipk::ar
                              """SEQ_TYPE_AA""");
 #endif
 
+    }*/
+
+    raxmlng_reader::raxmlng_reader(std::string file_name) noexcept
+        : _file_name{ std::move(file_name) }
+    {
+        build_index();
     }
 
-    raxmlng_reader::raxmlng_reader(const string& file_name) noexcept
-        : _file_name{ file_name }
-    {}
-
-    proba_matrix raxmlng_reader::read()
+    void raxmlng_reader::build_index()
     {
-        try
-        {
-            cout << "Loading RAXML-NG results: " + _file_name << "..." << endl;
-            std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-            auto matrix = read_matrix();
+        std::cout << "Indexing " <<  _file_name << "..." << std::endl;
+        _file_stream.open(_file_name);
 
-            cout << "Loaded " << matrix.num_branches() << " matrices of " <<
-                 matrix.num_sites() << " rows." << endl;
-            cout << "Time (ms): " << std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - begin).count() << endl << endl;
-            return matrix;
-        }
-        catch (::io::error::integer_overflow& error)
+        std::string line;
+        std::string current_node;
+
+        /// Skip the header
+        std::getline(_file_stream, line);
+
+        /// Remember the stream position right before reading
+        auto last_pos = _file_stream.tellg();
+
+        /// A lambda to get the node label from a line
+        auto get_label = [](const std::string& line) {
+            auto pos = line.find('\t');
+            return line.substr(0, pos);
+        };
+
+        while (std::getline(_file_stream, line))
         {
-            throw std::runtime_error("PhyML result parsing error: " + string(error.what()));
+            auto node_label = get_label(line);
+
+            /// If read a new label, index the position before
+            /// the current line as the beginning of the node block
+            if (node_label != current_node)
+            {
+                _index[node_label] = last_pos;
+                current_node = std::move(node_label);
+            }
+
+            last_pos = _file_stream.tellg();
         }
+
+        /// Process the last node
+        const auto node_label = get_label(line);
+        _index[node_label] = last_pos;
     }
 
-    proba_matrix raxmlng_reader::read_matrix()
-    {
-        proba_matrix result;
+    /// The type for the csv reader for a given sequence type
+    template<typename SeqType>
+    using csv_reader = typename ::io::CSVReader<
+        /// Number of columns: Node + Site + State + every char in the alphabet
+        3 + i2l::seq_traits_impl<SeqType>::alphabet_size,
+        ::io::trim_chars<' '>,
+        ::io::no_quote_escape<'\t'>,
+        ::io::throw_on_overflow,
+        ::io::single_and_empty_line_comment<'.'>>;
 
-#ifdef SEQ_TYPE_DNA
-        ::io::CSVReader<5,
+    ipk::matrix raxmlng_reader::read_node(const std::string& current_node)
+    {
+        ipk::matrix matrix;
+
+        /// Number of columns: Node + Site + State + every char in the alphabet
+        constexpr size_t num_columns = 3 + i2l::seq_traits::alphabet_size;
+
+        /// The stream position of the node matrix in the file
+        const auto pos = _index[current_node];
+
+        /// Make a csv-reader located at the node matrix position
+        std::ifstream file_stream(_file_name);
+        file_stream.seekg(pos);
+        ::io::CSVReader<num_columns,
             ::io::trim_chars<' '>,
             ::io::no_quote_escape<'\t'>,
             ::io::throw_on_overflow,
-            ::io::single_and_empty_line_comment<'.'>> _in(_file_name);
+            ::io::single_and_empty_line_comment<'.'>> _in(_file_name, file_stream);
 
-        _in.read_header(::io::ignore_extra_column, "Node", "p_A", "p_C", "p_G", "p_T");
-
-        std::string node_label;
+        bool started = false;
+        std::string node_label, site, state;
+#if defined(SEQ_TYPE_DNA)
         phylo_kmer::score_type a, c, g, t;
-        while (_in.read_row(node_label, a, c, g, t))
+        while (_in.read_row(node_label, site, state, a, c, g, t))
         {
-            auto new_column = std::vector<phylo_kmer::score_type>{ a, c, g, t };
-
-            /// log-transform the probabilities
-            auto log = [](auto value) { return std::log10(value); };
-            std::transform(begin(new_column), end(new_column), begin(new_column), log);
-
-            auto& node_matrix = result[node_label];
-            node_matrix.set_label(node_label);
-            node_matrix.get_data().push_back(new_column);
-        }
-
-        for (auto& [label, node_matrix] : result)
-        {
-            (void)label;
-            node_matrix.preprocess();
-        }
-
-#elif SEQ_TYPE_AA
-        ::io::CSVReader<21,
-            ::io::trim_chars<' '>,
-            ::io::no_quote_escape<'\t'>,
-            ::io::throw_on_overflow,
-            ::io::single_and_empty_line_comment<'.'>> _in(_file_name);
-
-        _in.read_header(::io::ignore_extra_column, "Node", "p_A", "p_R", "p_N", "p_D", "p_C", "p_Q", "p_E", "p_G",
-                        "p_H", "p_I", "p_L", "p_K", "p_M", "p_F", "p_P", "p_S", "p_T", "p_W", "p_Y", "p_V");
-
-        std::string node_label;
+            auto new_column = std::array<phylo_kmer::score_type, 4>{ a, c, g, t };
+#elif defined(SEQ_TYPE_AA)
         i2l::phylo_kmer::score_type a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v;
-        while (_in.read_row(node_label, a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v))
+        while (_in.read_row(node_label, site, state, a, r, n, d, c, q, e, g, h, i, l, k, m, f, p, s, t, w, y, v))
         {
             /// the order of acids in the RAxML-ng format is not the same as
             /// in the encoding of RAPPAS and IPK
-            auto new_column = std::vector<phylo_kmer::score_type> {
+            auto new_column = std::array<phylo_kmer::score_type, 20>{
                 r, h, k, d, e, s, t, n, q, c, g, p, a, i, l, m, f, w, y, v
             };
+
+#else
+        static_assert(false, """Make sure the sequence type is defined. Supported types:\n"""
+                     """SEQ_TYPE_DNA"""
+                     """SEQ_TYPE_AA""");
+#endif
+            (void)site;
+            (void)state;
+            if (node_label != current_node)
+            {
+                /// If we did not read anything, that's an error
+                [[unlikely]]
+                if (!started)
+                {
+                    throw std::runtime_error("Error while AR indexing: wrong position for node " + current_node);
+                }
+                /// Finished reading the matrix
+                break;
+            }
+
+            started = true;
 
             /// log-transform the probabilities
             auto log = [](auto value) { return std::log10(value); };
             std::transform(begin(new_column), end(new_column), begin(new_column), log);
-
-            auto& node_matrix = result[node_label];
-            node_matrix.set_label(node_label);
-            node_matrix.get_data().push_back(new_column);
+            matrix.get_data().push_back(new_column);
         }
 
-        for (auto& [label, node_matrix] : result)
+        if (!started)
         {
-            (void)label;
-            node_matrix.preprocess();
+            throw std::runtime_error("Could not read the AR matrix for the node " + current_node);
         }
-#else
-            static_assert(false, """Make sure the sequence type is defined. Supported types:\n"""
-                             """SEQ_TYPE_DNA"""
-                             """SEQ_TYPE_AA""");
-#endif
-
-        return result;
+        matrix.set_label(current_node);
+        matrix.preprocess();
+        return matrix;
     }
 
     /// Figures out which AR software is used by running BINARY_FILE --help
@@ -297,11 +307,11 @@ namespace ipk::ar
                 {
                     boost::algorithm::to_lower(line);
 
-                    if (line.find("phyml") != string::npos)
+                    if (line.find("phyml") != std::string::npos)
                     {
                         return ar::software::PHYML;
                     }
-                    else if (line.find("raxml-ng") != string::npos)
+                    else if (line.find("raxml-ng") != std::string::npos)
                     {
                         return ar::software::RAXML_NG;
                     }
@@ -317,7 +327,7 @@ namespace ipk::ar
         fs::path _ar_output_file;
     };
 
-    std::unique_ptr<ar_reader> make_reader(ar::software software, const string& filename)
+    std::unique_ptr<reader> make_reader(ar::software software, const std::string& filename)
     {
         if (software == ar::software::PHYML)
         {
@@ -332,75 +342,6 @@ namespace ipk::ar
             throw std::runtime_error("Unsupported ancestral reconstruction output format.");
         }
     }
-
-/*
-    /// \brief Reads a "extended_tree_node_mapping.tsv" file produced by the old RAPPAS.
-    extended_mapping load_extended_mapping(const string& file_name)
-    {
-        cout << "Loading a node mapping: " + file_name << endl;
-        extended_mapping mapping;
-
-        ::io::CSVReader<2, ::io::trim_chars<' '>, ::io::no_quote_escape<'\t'>> in(file_name);
-        in.read_header(::io::ignore_extra_column, "original_id", "extended_name");
-        std::string extended_name;
-        branch_type original_id = i2l::phylo_kmer::na_branch;
-        while (in.read_row(original_id, extended_name))
-        {
-            mapping[extended_name] = original_id;
-        }
-        cout << "Loaded " << mapping.size() << " mapped ids." << endl << endl;
-        return mapping;
-    }*/
-
-    std::optional<i2l::phylo_kmer::branch_type> extract_number(const std::string& s)
-    {
-        /// take the first sequence of digits from the string
-        string output = std::regex_replace(s,
-            std::regex("[^0-9]*([0-9]+).*"),
-            string("$1")
-        );
-
-        /// return it if there was any
-        if (output.size() > 0)
-        {
-            const auto casted = static_cast<i2l::phylo_kmer::branch_type>(std::stoul(output));
-            return { casted };
-        }
-        else
-        {
-            return std::nullopt;
-        }
-    }
-
-    /// \brief Returns if the input string is a number
-    bool is_number(const std::string& s)
-    {
-        auto it = s.begin();
-        while (it != s.end() && std::isdigit(*it))
-        {
-            ++it;
-        }
-        return !s.empty() && it == s.end();
-    }
-    /*
-
-    /// \brief Reads a "ARtree_id_mapping.tsv" file produced by the old RAPPAS.
-    artree_label_mapping load_artree_mapping(const std::string& file_name)
-    {
-        cout << "Loading a node mapping: " + file_name << endl;
-        artree_label_mapping mapping;
-
-        ::io::CSVReader<2, ::io::trim_chars<' '>, ::io::no_quote_escape<'\t'>> in(file_name);
-        in.read_header(::io::ignore_extra_column, "extended_label", "ARtree_label");
-        std::string extended_label, artree_label;
-        while (in.read_row(extended_label, artree_label))
-        {
-            mapping[extended_label] = artree_label;
-        }
-        cout << "Loaded " << mapping.size() << " mapped ids." << endl << endl;
-        return mapping;
-    }
-*/
 
     ar::model parse_model(const std::string& model)
     {
@@ -822,9 +763,10 @@ namespace ipk::ar
         auto wrapper = make_ar_wrapper(software, parameters);
         const auto& result = wrapper->run();
 
-        /// Parse the probability matrix
         auto reader = make_reader(software, result.matrix_file);
-        auto matrix = reader->read();
+        /// Create the wrapper for the AR results
+        auto matrix = proba_matrix(std::move(reader));
+
 
         /// Read the tree generated by AR software
         auto ar_tree = i2l::io::load_newick(result.tree_file);
@@ -857,66 +799,37 @@ namespace ipk::ar
 
         ar::mapping ext_to_ar;
 
-        /// Traverse the AR tree
+        /// Traverse the extended and AR tree at the same time
         using const_iterator = i2l::postorder_tree_iterator<true>;
-        for (const auto& ext_node : i2l::visit_subtree<const_iterator>(extended_tree.get_root()))
+        auto visit_ext = i2l::visit_subtree<const_iterator>(extended_tree.get_root());
+        auto ext_it = visit_ext.begin();
+        auto visit_ar = i2l::visit_subtree<const_iterator>(ar_tree.get_root());
+        auto ar_it = visit_ar.begin();
+        while (ext_it != visit_ext.end())
         {
-            if (ext_node.is_root())
+            assert(ar_it != visit_ar.end());
+
+            /// Inner nodes usually have no labels. However, we do not
+            /// need them in the mapping as it is only for ghost nodes anyway
+            if (ext_it->get_label().empty())
             {
+                ++ext_it;
+                ++ar_it;
                 continue;
             }
 
-            if (ext_node.is_leaf())
+            //std::cout << ext_it->get_label() << " -> " << ar_it->get_label() << std::endl;
+            ext_to_ar[ext_it->get_label()] = ar_it->get_label();
+            ++ext_it;
+            ++ar_it;
+
+            if (ext_it != visit_ext.end() && ext_it->is_root())
             {
-                /// For leaves the node labels must be the same
-                const auto label = ext_node.get_label();
-                const auto ar_node_ptr = ar_tree.get_by_label(label);
-
-                if (!ar_node_ptr || *ar_node_ptr == nullptr)
-                {
-                    throw std::runtime_error("Internal error: could not find a node in the AR tree: label = '"
-                                             + label + "'");
-                }
-
-                /// Map the the Extended tree leaf to the AR tree leaf
-                /// They are actually the same.
-                ext_to_ar[label] = (*ar_node_ptr)->get_label();
-
-                /// Map their parents if they exist
-                if (!ext_node.is_root())
-                {
-                    const auto ext_parent_ptr = ext_node.get_parent();
-                    const auto ar_parent_ptr = (*ar_node_ptr)->get_parent();
-
-                    ext_to_ar[ext_parent_ptr->get_label()] = ar_parent_ptr->get_label();
-                }
-            }
-            /// Internal node
-            else
-            {
-                const auto ar_node_label = ext_to_ar[ext_node.get_label()];
-                const auto ar_node_ptr = ar_tree.get_by_label(ar_node_label);
-                if (!ar_node_ptr || *ar_node_ptr == nullptr)
-                {
-                    throw std::runtime_error("Internal error: could not a find node in the AR tree: label = '"
-                                             + ar_node_label + "'");
-                }
-
-                /// Map their parent if they exist
-                const auto ext_parent_ptr = ext_node.get_parent();
-                const auto ar_parent_ptr = (*ar_node_ptr)->get_parent();
-                if (ar_parent_ptr && ext_parent_ptr)
-                {
-                    ext_to_ar[ext_parent_ptr->get_label()] = ar_parent_ptr->get_label();
-                }
+                assert(ar_it->is_root());
             }
         }
 
-        /*std::cout << std::endl << "EXT -> AR MAPPING" << std::endl;
-        for (const auto& [ext_label, ar_label] : ext_to_ar)
-        {
-            std::cout << ext_label << " -> " << ar_label << std::endl;
-        }*/
+        assert (ar_it == visit_ar.end());
         return ext_to_ar;
     }
 }
