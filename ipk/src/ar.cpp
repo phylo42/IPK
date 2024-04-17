@@ -6,6 +6,7 @@
 #include <optional>
 #include <regex>
 #include <array>
+#include <sstream>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/join.hpp>
