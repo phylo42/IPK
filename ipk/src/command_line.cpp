@@ -246,7 +246,9 @@ namespace ipk::cli
                 parameters.action = action_t::build;
             }
 
-            parameters.working_directory = vm[WORKING_DIR].as<fs::path>().string();
+            const auto workdir_relative = vm[WORKING_DIR].as<fs::path>().string();
+            parameters.working_directory = fs::system_complete(workdir_relative).string();
+
             parameters.output_filename = vm[OUTPUT_FILENAME].as<fs::path>().string();
 
             /// Default output name if not given
