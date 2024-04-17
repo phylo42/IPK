@@ -326,7 +326,10 @@ namespace ipk
         std::priority_queue<kmer_fv, std::vector<kmer_fv>, std::greater<>> heap;
         for (const auto& batch_db : batch_dbs)
         {
-            heap.push(batch_db.kmer_order[0]);
+            if (!batch_db.kmer_order.empty())
+            {
+                heap.push(batch_db.kmer_order[0]);
+            }
         }
 
         ProgressBar bar2{
@@ -438,7 +441,7 @@ namespace ipk
         for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
             batches.emplace_back(get_batch_db_name(batch_id));
-            auto& loader = batches[batch_id];
+            auto& loader= batches[batch_id];
 
             /// pre-load the first k-mer and push the loader to the queue
             if (loader.has_next())
