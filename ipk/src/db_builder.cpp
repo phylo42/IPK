@@ -253,49 +253,122 @@ namespace ipk
 
     unsigned long db_builder::filter_in_ram(const std::vector<phylo_kmer::branch_type>& group_ids)
     {
-        (void)group_ids;
+        std::cout << "Filtering in RAM [stage 2 / 3]:" << std::endl;
+        auto begin = std::chrono::steady_clock::now();
 
-        unsigned long time = 0;
+        /// Filter phylo k-mers
+        const auto threshold = score_threshold(_omega, _kmer_size);
+        auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
+                                       _working_directory, _num_batches, threshold);
 
-        /// Filtering in RAM
+        using namespace indicators;
+        ProgressBar bar1{
+            option::BarWidth{60},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PostfixText{"Merge stage 1"},
+            option::ForegroundColor{Color::green},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+            option::MaxProgress{_num_batches}
+        };
+
+        size_t total_num_kmers = 0;
+        size_t total_num_entries = 0;
+        std::vector<phylo_kmer_db> batch_dbs;
+        for (size_t batch_idx = 0; batch_idx < _num_batches; ++batch_idx)
         {
-            std::cout << "Filtering in RAM [stage 2 / 3]:" << std::endl;
-            const auto begin = std::chrono::steady_clock::now();
+            /// Merge hashmaps of the same batch
+            batch_dbs.push_back(merge_batch(_working_directory, group_ids, batch_idx));
+            auto& batch_db = batch_dbs.back();
 
-            const auto threshold = score_threshold(_omega, _kmer_size);
-            auto filter = ipk::make_filter(_filter, _original_tree.get_node_count(),
-                                           _working_directory, _num_batches, threshold);
-            auto& order = _phylo_kmer_db.kmer_order;
-            /// Compute Mutual information
-            order = filter->calc_filter_values(_phylo_kmer_db);
-            /// Sort by its values
-            std::sort(order.begin(), order.end());
+            /// Calculate filter values for the batch
+            batch_db.kmer_order = filter->calc_filter_values(batch_db);
 
-            auto end = std::chrono::steady_clock::now();
-            auto filter_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-            std::cout << "Filtering time: " << filter_time << "\n\n" << std::flush;
-            time += filter_time;
+            /// Sort k-mers by filter values
+            std::sort(batch_db.kmer_order.begin(), batch_db.kmer_order.end());
+            total_num_kmers += batch_db.size();
+            total_num_entries += get_num_entries(batch_db);
+
+            bar1.tick();
+        }
+        auto end = std::chrono::steady_clock::now();
+        auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::cout << "Filtering time: " << time << "\n\n" << std::flush;
+
+
+        std::cout << "Merging [stage 3 / 3]:" << std::endl;
+        begin = std::chrono::steady_clock::now();
+
+        /// Serialize the protocol header
+        const auto header = i2l::ipk_header {
+            _phylo_kmer_db.sequence_type(),
+            _phylo_kmer_db.tree_index(),
+            _phylo_kmer_db.tree(),
+            _phylo_kmer_db.kmer_size(),
+            _phylo_kmer_db.omega(),
+            total_num_kmers,
+            total_num_entries
+        };
+        i2l::save_header(_ar, header);
+
+        /// The vector of indexes of top kmers for every batch (needed for the merge)
+        std::vector<size_t> batch_idx(_num_batches, 0);
+
+        /// Initialize a min-heap for the merge algorithm
+        std::priority_queue<kmer_fv, std::vector<kmer_fv>, std::greater<>> heap;
+        for (const auto& batch_db : batch_dbs)
+        {
+            if (!batch_db.kmer_order.empty())
+            {
+                heap.push(batch_db.kmer_order[0]);
+            }
         }
 
-        /// Deserialization. We do it here because if _on_disk is true,
-        /// deserialization is part of the merge procedure, so it is expected to be
-        /// done with filtering
+        ProgressBar bar2{
+            option::BarWidth{60},
+            option::Start{"["},
+            option::Fill{"="},
+            option::Lead{">"},
+            option::Remainder{" "},
+            option::End{"]"},
+            option::PostfixText{"Merge stage 1"},
+            option::ForegroundColor{Color::green},
+            option::FontStyles{std::vector<FontStyle>{FontStyle::bold}},
+            option::MaxProgress{total_num_kmers}
+        };
+
+        /// N-way merge algorithm (N=number of batches)
+        size_t kmers_processed = 0;
+        while (!heap.empty())
         {
-            std::cout << "Deserialization [stage 3 / 3]:" << std::endl;
-            /// Serialize the protocol header
-            const auto header = i2l::ipk_header {
-                _phylo_kmer_db.sequence_type(),
-                _phylo_kmer_db.tree_index(),
-                _phylo_kmer_db.tree(),
-                _phylo_kmer_db.kmer_size(),
-                _phylo_kmer_db.omega(),
-                _phylo_kmer_db.size(),
-                get_num_entries(_phylo_kmer_db)
-            };
-            i2l::save_header(_ar, header);
-            /// Serialize the content
-            i2l::save_filter_ordered_phylo_kmers(_ar, _phylo_kmer_db);
+            /// Get the top k-mer
+            const auto top = heap.top();
+            size_t batch_id = kmer_batch(top.key, _num_batches);
+            const auto& batch = batch_dbs[batch_id];
+            const auto& top_entries = batch.at(top.key);
+            heap.pop();
+
+            /// Serialize it
+            i2l::save_phylo_kmer(_ar, top.key, top.filter_value, top_entries);
+
+            /// Take the next k-mer of this batch and push it to the queue
+            batch_idx[batch_id]++;
+            if (batch_idx[batch_id] < batch.kmer_order.size())
+            {
+                heap.push(batch.kmer_order[batch_idx[batch_id]]);
+            }
+
+            ++kmers_processed;
+            bar2.set_option(option::PostfixText{std::to_string(kmers_processed) + "/" + std::to_string(total_num_kmers)});
+            bar2.tick();
         }
+
+        end = std::chrono::steady_clock::now();
+        time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+        std::cout << "Merge time: " << time << "\n\n" << std::flush;
         return time;
     }
 
@@ -363,7 +436,7 @@ namespace ipk
         for (size_t batch_id = 0; batch_id < _num_batches; ++batch_id)
         {
             batches.emplace_back(get_batch_db_name(batch_id));
-            auto& loader = batches[batch_id];
+            auto& loader= batches[batch_id];
 
             /// pre-load the first k-mer and push the loader to the queue
             if (loader.has_next())
