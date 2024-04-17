@@ -53,29 +53,40 @@ else
     REFERENCE="${SCRIPT_DIR}"/data/D652/reference.fasta
     TREE="${SCRIPT_DIR}"/data/D652/tree.rooted.newick
     DATABASE_REFERENCE="${SCRIPT_DIR}"/data/D652/DB_k7_o2.0.ipk
-    DATABASE_BUILD="${WORKING_DIR}"/DB_k7_o2.0.ipk
+    DATABASE_RAM="${WORKING_DIR}"/DB_ram.ipk
 
-    rm -f "${DATABASE_BUILD}"
-    command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${DATABASE_BUILD}"
+    rm -f "${DATABASE_RAM}"
+    command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${DATABASE_RAM}"
 
     echo "Binary files: OK. Running IPK as: ${command}"
     eval "${command}" 
 
-    if [ ! -f "${DATABASE_BUILD}" ]
+    if [ ! -f "${DATABASE_RAM}" ]
     then
-        echo "Error: could not find ${DATABASE_BUILD}. Something went wrong"
+        echo "Error: could not find ${DATABASE_RAM}. Something went wrong"
         exit 5
     fi
 
-    $IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_BUILD}"
+    $IPK_DIFF_BIN 0 "${DATABASE_REFERENCE}" "${DATABASE_RAM}"
 
     if [ $? -ne 0 ]; then
         echo "Error: databases are different. See the ipkdiff log"
         exit 6
-    else
-        echo "OK! Databases are the same."
     fi
 
+    rm -f "${DATABASE_DISK}"
+    DATABASE_DISK="${WORKING_DIR}"/DB_disk.ipk
+    command=python3 "${IPK_SCRIPT}" build -r "${REFERENCE}" -t "${TREE}" -m GTR -k 7 --omega 2.0 -b "${RAXML_NG}" -w "${WORKING_DIR}" -o "${DATABASE_DISK} --on-disk"
+
+    echo "Running IPK as: ${command}"
+    eval "${command}"
+
+    $IPK_DIFF_BIN 0 "${DATABASE_RAM}" "${DATABASE_DISK}"
+
+    if [ $? -ne 0 ]; then
+        echo "Error: databases are different. See the ipkdiff log"
+        exit 6
+    fi
 
     # D140
     D140_REFERENCE="${SCRIPT_DIR}"/data/D140/reference.fasta
