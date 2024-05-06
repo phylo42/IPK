@@ -91,8 +91,8 @@ def validate_model(ctx, param, value):
               help="States used in the analysis, either `nucl` for DNA or `amino` for proteins.")
 @click.option('-v', '--verbosity',
               type=int,
-              default=0, show_default=True,
-              help="Verbosity level: -1=none ; 0=default ; 1=high")
+              default=1, show_default=True,
+              help="Verbosity level: 0=none ; 1=default ; 2=high")
 @click.option('-w', '--workdir',
               required=True,
               type=click.Path(dir_okay=True, file_okay=False),
@@ -303,7 +303,8 @@ def build_database(ar,
         "--" + ghosts.lower(),
         "-u", str(mu),
         "-j", str(threads),
-        "-o", output_filename
+        "-o", output_filename,
+        "-v", str(verbosity)
     ]
 
     if ar_only:
@@ -327,6 +328,7 @@ def build_database(ar,
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
+    print(command)
 
     command_str = " ".join(s for s in command)
     print("Running", command_str)

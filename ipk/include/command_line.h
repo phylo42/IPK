@@ -79,6 +79,9 @@ namespace ipk::cli
         // whether merge after batched filtering should be on disk
         // (slower but takes less RAM)
         bool on_disk;
+
+        // output verbosity
+        bool verbose;
     };
 
     std::string get_option_list();

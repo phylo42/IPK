@@ -138,7 +138,8 @@ return_code build_database(const ipk::cli::parameters& parameters)
     auto alignment = ipk::preprocess_alignment(parameters.working_directory,
                                                 parameters.alignment_file,
                                                 parameters.reduction_ratio,
-                                                parameters.no_reduction);
+                                                parameters.no_reduction,
+                                                parameters.verbose);
 
     /// Load and extend the reference tree
     const auto& [original_tree, extended_tree, ghost_mapping] = ipk::preprocess_tree(parameters.original_tree_file,
@@ -158,7 +159,11 @@ return_code build_database(const ipk::cli::parameters& parameters)
 
     if (parameters.ar_only)
     {
-        std::cout << "--ar-only requested. Finishing after ancestral reconstruction." << std::endl;
+        if (parameters.verbose > 0)
+        {
+            std::cout << "--ar-only requested. Finishing after ancestral reconstruction." << std::endl;
+        }
+
         return return_code::success;
     }
 

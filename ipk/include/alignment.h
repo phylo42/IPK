@@ -64,7 +64,8 @@ namespace ipk
     alignment preprocess_alignment(const std::string& working_dir,
                                    const std::string& alignment_file,
                                    double reduction_ratio,
-                                   bool no_reduction);
+                                   bool no_reduction,
+                                   int verbose);
 
     alignment extend_alignment(alignment original_alignment, const i2l::phylo_tree& tree);
 

@@ -276,11 +276,19 @@ ipk::alignment _preprocess_alignment(const std::string& working_dir,
 ipk::alignment ipk::preprocess_alignment(const std::string& working_dir,
                                          const std::string& alignment_file,
                                          double reduction_ratio,
-                                         bool no_reduction)
+                                         bool no_reduction,
+                                         int verbose)
 {
-    std::cout << "Loading the reference alignment: " << alignment_file <<  std::endl;
+    if (verbose > 0)
+    {
+        std::cout << "Loading the reference alignment: " << alignment_file << std::endl;
+    }
     auto alignment = _preprocess_alignment(working_dir, alignment_file, reduction_ratio, no_reduction);
-    std::cout << "Loaded and filtered " << alignment.height() <<  " sequences." << std::endl << std::endl;
+
+    if (verbose > 0)
+    {
+        std::cout << "Loaded and filtered " << alignment.height() << " sequences." << std::endl << std::endl;
+    }
     return alignment;
 }
 
