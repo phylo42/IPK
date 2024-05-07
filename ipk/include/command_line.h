@@ -21,6 +21,7 @@ namespace ipk::cli
 
         /// Input parameters
         std::string working_directory;
+        std::string output_filename;
         std::string alignment_file;
         std::string original_tree_file;
 
@@ -74,6 +75,13 @@ namespace ipk::cli
 
         // a strategy to pick ghost nodes into consideration
         ipk::ghost_strategy ghost_strategy;
+
+        // whether merge after batched filtering should be on disk
+        // (slower but takes less RAM)
+        bool on_disk;
+
+        // output verbosity
+        bool verbose;
     };
 
     std::string get_option_list();

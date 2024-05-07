@@ -20,6 +20,10 @@ void ipk::save_group_map(const group_hash_map& map, const std::string& filename)
 group_hash_map ipk::load_group_map(const std::string& filename)
 {
     std::ifstream ifs(filename);
+    if (!ifs)
+    {
+        throw std::runtime_error("Internal error: could not load an auxiliary database: " + filename);
+    }
     boost::archive::binary_iarchive ia(ifs);
 
     group_hash_map map;

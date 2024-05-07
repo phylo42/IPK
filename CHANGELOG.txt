@@ -1,3 +1,8 @@
+v0.5.1
+- Fixed #31: v0.5.0 databases are incompatible with latest EPIK (v0.2.0)
+- Fixed #30: setting a working directory as '.' throws a boost error
+- Fixed #9: Missing <stdexcept> include
+
 v0.5.0
 - Changed the serialization protocol to sort databases by MI
 - The functionality for the option --mu moved to EPIK

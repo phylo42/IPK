@@ -28,7 +28,7 @@ AMINO_MODELS = ['Blosum62', 'cpREV', 'Dayhoff', 'DCMut', 'DEN', 'FLU', 'HIVb', '
 ALL_MODELS = NUCL_MODELS + AMINO_MODELS
 
 
-KMER_FILTERS = ["no-filter", "mif0", "mif1", "random"]
+KMER_FILTERS = ["mif0", "random"]
 
 GHOST_STRATEGIES = ["inner-only", "outer-only", "both"]
 
@@ -93,8 +93,8 @@ def validate_model(ctx, param, value):
               help="States used in the analysis, either `nucl` for DNA or `amino` for proteins.")
 @click.option('-v', '--verbosity',
               type=int,
-              default=0, show_default=True,
-              help="Verbosity level: -1=none ; 0=default ; 1=high")
+              default=1, show_default=True,
+              help="Verbosity level: 0=none ; 1=default ; 2=high")
 @click.option('-w', '--workdir',
               required=True,
               type=click.Path(dir_okay=True, file_okay=False),
@@ -140,9 +140,9 @@ def validate_model(ctx, param, value):
               (omega / #states)^k""")
 @click.option('--filter',
               callback=validate_filter,
-              default="no-filter", show_default=True,
+              default="mif0", show_default=True,
               help="""Filtering function used to filter phylo-k-mers. Currently supported values:
-              no-filter, mif0, mif1, random.""")
+              mif0, random.""")
 @click.option('-u', '--mu',
               type=float,
               default=1.0, show_default=True,
@@ -191,9 +191,15 @@ def validate_model(ctx, param, value):
               Saves time during database load and save, but requires more disk space.""")
 @click.option('--threads',
              type=int,
-             default=4, 
+             default=1, 
              show_default=True,
              help="Number of threads used to compute phylo-k-mers.")
+@click.option('--output', '-o',
+              help="""Output file name""")
+@click.option('--on-disk',
+             is_flag=True,
+             default=False, show_default=True,
+             help="""If set, builds the database on disk (slower but takes minimal RAM).""")
 def build(ar,
           refalign, reftree, states,
           verbosity,
@@ -204,10 +210,13 @@ def build(ar,
           filter, mu, ghosts, use_unrooted, merge_branches,
           ar_dir, ar_only, ar_config,
           keep_positions, uncompressed,
-          threads):
+          threads, output, on_disk):
     """
     Computes a database of phylo-k-mers.
     """
+    if not output:
+        output = os.path.join(workdir, "DB.ipk")
+
     build_database(ar,
                    refalign, reftree, states,
                    verbosity,
@@ -218,7 +227,7 @@ def build(ar,
                    filter, mu, ghosts, use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads)
+                   threads, output, on_disk)
 
 
 def find_raxmlng():
@@ -252,7 +261,7 @@ def build_database(ar,
                    use_unrooted, merge_branches,
                    ar_dir, ar_only, ar_config,
                    keep_positions, uncompressed,
-                   threads):
+                   threads, output_filename, on_disk):
 
     if not ar:
         ar = find_raxmlng()
@@ -263,17 +272,21 @@ def build_database(ar,
 
     ar_parameters = parse_config(ar_config) if ar_config else ""
 
+    # If IPK is installed, look for the binary in the installed location,
+    # otherwise it is run from sources
+    ipk_bin_dir = f"{current_dir}" if os.path.exists(f"{current_dir}/ipk-dna") else f"{current_dir}/bin/ipk"
+    
     # run IPK
     if states == 'nucl':
         if keep_positions:
             raise RuntimeError("--keep-positions is not supported for DNA.")
         else:
-            bin = f"{current_dir}/bin/ipk/ipk-dna"
+            bin = f"{ipk_bin_dir}/ipk-dna"
     else:
         if keep_positions:
-            bin = f"{current_dir}/bin/ipk/ipk-aa-pos"
+            bin = f"{ipk_bin_dir}/ipk-aa-pos"
         else:
-            bin = f"{current_dir}/bin/ipk/ipk-aa"
+            bin = f"{ipk_bin_dir}/ipk-aa"
 
 
     command = [
@@ -283,20 +296,19 @@ def build_database(ar,
         "-t", str(reftree),
         "-w", str(workdir),
         "-k", str(k),
-        #"--model", model,
+        "--model", model,
         "--alpha", str(alpha),
         "--categories", str(categories),
         "--reduction-ratio", str(reduction_ratio),
-        "-o", str(omega),
+        "--omega", str(omega),
         "--" + filter.lower(),
         "--" + ghosts.lower(),
         "-u", str(mu),
-        "-j", str(threads)
+        "-j", str(threads),
+        "-o", output_filename,
+        "-v", str(verbosity)
     ]
 
-    if model:
-        command.append("--model")
-        command.append(model)
     if ar_only:
         command.append("--ar-only")
     if ar_dir:
@@ -313,13 +325,17 @@ def build_database(ar,
         command.append("--use-unrooted")
     if uncompressed:
         command.append("--uncompressed")
+    if on_disk:
+        command.append("--on-disk")
 
     # remove the temporary folder just in case
     hashmaps_dir = f"{workdir}/hashmaps"
-    #subprocess.call(["rm", "-rf", hashmaps_dir])
+    print(command)
 
     command_str = " ".join(s for s in command)
-    print(command_str)
+    print("Running", command_str)
+    print()
+
     try:
         p = subprocess.run(command_str, shell=True, check=True)
 
@@ -329,7 +345,7 @@ def build_database(ar,
         if p.returncode != 0:
             raise RuntimeError(f"IPK returned error: {p.returncode}")
 
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as error:
         pass
 
 
