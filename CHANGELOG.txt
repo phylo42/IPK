@@ -1,3 +1,9 @@
+v0.5.0
+- Changed the serialization protocol to sort databases by MI
+- The functionality for the option --mu moved to EPIK
+- Implemented a second database build algorithm: --on-disk for external merge and filtering
+- AR parsers are now on-demand and memory-frugal
+
 v0.4.0
 - The project has been renamed to IPK
 - Serialization and main data structures moved to I2L, changed namespaces

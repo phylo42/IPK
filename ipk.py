@@ -6,6 +6,7 @@ IPK wrapper script.
 
 __author__ = "Nikolai Romashchenko"
 __license__ = "MIT"
+__version__ = "0.5.0"
 
 
 import os
@@ -33,6 +34,7 @@ GHOST_STRATEGIES = ["inner-only", "outer-only", "both"]
 
 
 @click.group()
+@click.version_option(__version__)
 def ipk():
     """
     IPK
