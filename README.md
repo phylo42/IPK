@@ -12,6 +12,18 @@ For more information about phylo-k-mers, see our papers: [one](https://academic.
 If you want to experiment with phylo-k-mers and write some code, check out our [examples](https://github.com/phylo42/I2L/tree/master/examples) to see how to use the code of IPK.
 
 
+## Rapid installation via Bioconda
+It is advised to install the package in a new environment, because our C++ dependencies are strict and may clash with other packages requiring, for instance, libboost.
+We also recommend to use `mamba, which is more faster in solving environment dependencies.
+```
+conda create -n my_env
+conda activate my_env
+conda config --set channel_priority strict
+mamba install ipk
+```
+
+## References
+
 ---
 [1] Romashchenko, Nikolai et al. EPIK: precise and scalable evolutionary placement with informative k-mers. Bioinformatics, 39.12 (2023), btad692.
 
