@@ -49,6 +49,14 @@ Or for the current user (replace ``DIRECTORY`` with any directory you like):
    $ cmake --install . --prefix DIRECTORY
    $ export PATH=DIRECTORY/bin:$PATH
 
+To run ipk.py wrapper script, you will need to install click python module :
+
+.. code-block:: console
+
+   $ sudo apt install python-pip
+   $ pip install click # or sudo pip install click
+
+
 
 Other dependencies
 ------------------
