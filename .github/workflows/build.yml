@@ -28,10 +28,6 @@ jobs:
             buildname: 'macos-13'
             triplet: x64-osx
             compiler: clang_64
-          - os: macos-12
-            buildname: 'macos-12'
-            triplet: x64-osx
-            compiler: clang_64
 
     steps:
       - name: Checkout
