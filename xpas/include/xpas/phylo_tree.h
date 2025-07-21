@@ -4,6 +4,7 @@
 #include <xpas/optional.h>
 #include <xpas/phylo_kmer.h>
 #include <xpas/phylo_node.h>
+#include <stdexcept>
 
 namespace xpas {
 
