@@ -139,9 +139,9 @@ namespace xpas::cli
             const po::options_description desc = get_opt_description();
             po::variables_map vm;
             po::store(po::parse_command_line(argc, argv, desc), vm);
-            po::notify(vm);
+            //po::notify(vm);
 
-            if (vm.count(HELP))
+            if (vm.count(HELP) || argc == 1)
             {
                 parameters.action = action_t::help;
                 return parameters;

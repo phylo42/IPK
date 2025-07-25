@@ -19,8 +19,8 @@ namespace fs = boost::filesystem;
 
 return_code print_help()
 {
-    std::cout << "RAPPAS2" << std::endl << std::endl
-              << "Usage: rappas2 [...]" << std::endl
+    std::cout << "xpas (IPK)" << std::endl << std::endl
+              << "Usage: xpas-[*] [...]" << std::endl
               << xpas::cli::get_option_list() << std::endl;
 
     return return_code::help;
