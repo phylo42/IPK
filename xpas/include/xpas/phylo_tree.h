@@ -5,6 +5,7 @@
 #include <xpas/phylo_kmer.h>
 #include <xpas/phylo_node.h>
 #include <stdexcept>
+#include <fstream>
 
 namespace xpas {
 
